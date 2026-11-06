@@ -1,0 +1,28 @@
+@theme {
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+
+  /* Semantic aliases */
+  --radius-control: 8px;   /* Default input & button radius */
+  --radius-card: 16px;     /* Card container radius */
+  --radius-login-card: 20px; /* Admin login card radius */
+  --radius-popover: 12px;
+  --radius-modal: 16px;    /* Modal dialog radius */
+}
+
+:root {
+  /* 03 / Foundations - Radius Tokens */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+  --radius-control: 8px;
+  --radius-card: 16px;
+  --radius-login-card: 20px;
+}

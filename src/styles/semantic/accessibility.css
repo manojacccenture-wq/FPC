@@ -1,0 +1,48 @@
+@layer utilities {
+  /* 05 / Foundations - Accessibility Contracts */
+
+  /* Minimum touch & pointer target: 44 x 44 px */
+  .accessible-target {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Persistent accessible focus ring: 2px brand-600 outline + 2px white offset */
+  .accessible-focus {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+
+  /* Screen-reader only text utility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Transitions respecting token durations and easings */
+  .motion-enter {
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-enter);
+  }
+
+  .motion-base {
+    transition-duration: var(--duration-base);
+    transition-timing-function: var(--ease-standard);
+  }
+
+  .motion-exit {
+    transition-duration: var(--duration-slow);
+    transition-timing-function: var(--ease-exit);
+  }
+}
+

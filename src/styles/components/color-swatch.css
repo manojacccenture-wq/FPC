@@ -1,0 +1,41 @@
+@layer components {
+  /* Swatch container */
+  .color-swatch-box {
+    position: relative;
+    width: 100%;
+    height: 44px;
+    border-radius: var(--radius-swatch);
+    transition: transform 150ms ease, box-shadow 150ms ease;
+    cursor: pointer;
+  }
+
+  .color-swatch-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(14, 27, 22, 0.12);
+  }
+
+  .color-swatch-box:active {
+    transform: translateY(0);
+  }
+
+  /* Grid layout for 10 swatches in a row */
+  .color-palette-row {
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  @media (max-width: 860px) {
+    .color-palette-row {
+      gap: 12px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .color-palette-row {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+  }
+}
+

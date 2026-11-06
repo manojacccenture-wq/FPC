@@ -1,0 +1,116 @@
+@theme {
+  /* ==============================================================
+     PRIMITIVE PALETTES (Raw reference values - 50 to 900)
+     Source: Foundations / Color System specification
+     ============================================================== */
+
+  /* 1. Forest Green (Brand scale) */
+  --color-forest-50: #EDF8F3;
+  --color-forest-100: #DCF2E9;
+  --color-forest-200: #BCE5D3;
+  --color-forest-300: #8DD2B2;
+  --color-forest-400: #54B189;
+  --color-forest-500: #298A63;
+  --color-forest-600: #166B4B; /* Brand Key */
+  --color-forest-700: #0E593E;
+  --color-forest-800: #0C4A33;
+  --color-forest-900: #093A2A;
+
+  /* 2. Emerald / Mint / Teal scale */
+  --color-emerald-50: #F0FBF6;
+  --color-emerald-100: #E6F8F0;
+  --color-emerald-200: #A9E3C7;
+  --color-emerald-300: #83D5B1;
+  --color-emerald-400: #57C298;
+  --color-emerald-500: #30A97A;
+  --color-emerald-600: #208660;
+  --color-emerald-700: #196C4E; /* Status Text Key */
+  --color-emerald-800: #12553F;
+  --color-emerald-900: #0B4030;
+
+  /* 3. Amber / Ochre scale */
+  --color-amber-50: #FFF9EB;
+  --color-amber-100: #FDF1D5;
+  --color-amber-200: #FADFA4;
+  --color-amber-300: #F7CE72;
+  --color-amber-400: #F4BE50;
+  --color-amber-500: #F2B13C; /* Amber Key - Chart/Accent only */
+  --color-amber-600: #B8770F;
+  --color-amber-700: #8E5909;
+  --color-amber-800: #72480C;
+  --color-amber-900: #5F3B0D;
+
+  /* 4. Slate / Neutral scale */
+  --color-neutral-50: #F5F7F7;
+  --color-neutral-100: #EEF2F1;
+  --color-neutral-200: #E1E8E6;
+  --color-neutral-300: #B9C6C0;
+  --color-neutral-400: #9AA7A3;
+  --color-neutral-500: #75847D;
+  --color-neutral-600: #5B6B65; /* Secondary & Muted Key */
+  --color-neutral-700: #3B4D43;
+  --color-neutral-800: #22342A;
+  --color-neutral-900: #0E1B16; /* Primary Key */
+
+  /* ==============================================================
+     SEMANTIC ROLES (Components bind exclusively to these roles)
+     ============================================================== */
+
+  /* Surfaces & Backgrounds */
+  --color-background: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F5F7F7;
+  --color-surface-active: #EEF2F1;
+  --color-surface-muted: #F5F7F7;
+
+  /* Typography Roles */
+  --color-primary: #0E1B16;          /* Primary body & headings: 17.69:1 on white (AA PASS) */
+  --color-secondary: #5B6B65;        /* Secondary & muted: 5.62:1 on white (AA PASS) */
+  --color-muted: #5B6B65;
+  --color-brand: #166B4B;            /* Brand identity: 6.48:1 on white (AA PASS) */
+  --color-brand-600: #166B4B;
+  --color-brand-hover: #0E593E;
+  --color-brand-active: #0C4A33;
+  --color-brand-soft: #EDF8F3;
+  --color-accent-amber: #F2B13C;      /* Decorative chart/accent only (1.89:1 - not for text) */
+
+  /* Borders & Dividers */
+  --color-default: #E1E8E6;          /* Neutral 200 */
+  --color-border-subtle: #EEF2F1;     /* Neutral 100 */
+  --color-hover: #B9C6C0;            /* Neutral 300 */
+
+  /* Semantic Status States (Using 700 text shades on 50 soft surfaces) */
+  --color-success: #0E593E;          /* Forest 700 */
+  --color-success-soft: #EDF8F3;     /* Forest 50 */
+  --color-success-border: #BCE5D3;   /* Forest 200 */
+
+  --color-info: #196C4E;             /* Emerald 700 */
+  --color-info-soft: #F0FBF6;        /* Emerald 50 */
+  --color-info-border: #A9E3C7;      /* Emerald 200 */
+
+  --color-warning: #8E5909;          /* Amber 700 */
+  --color-warning-soft: #FFF9EB;     /* Amber 50 */
+  --color-warning-border: #FADFA4;   /* Amber 200 */
+
+  --color-danger: #A61A24;           /* Deep crimson 700 */
+  --color-danger-soft: #FEF3F2;      /* Crimson 50 */
+  --color-danger-border: #FECDCA;
+
+  --color-secondary-soft: #EEF2F1;   /* Neutral 100 */
+
+  /* Sidebar Tokens */
+  --color-sidebar-bg: #083B2A;
+  --color-sidebar-surface: #0E4D37;
+  --color-sidebar-muted: #8AA89B;
+  --color-sidebar-icon: #A3B8B0;
+  --color-sidebar-border: #0E4D37;
+  --color-sidebar-hover: #0E4D37;
+  --color-sidebar-active: #166B4B;
+
+  /* ==============================================================
+     CONTROL HEIGHTS (03 / Foundations - Controls S 36 / M 44 / L 52)
+     ============================================================== */
+  --height-control-s: 36px;
+  --height-control-m: 44px;
+  --height-control-l: 52px;
+}

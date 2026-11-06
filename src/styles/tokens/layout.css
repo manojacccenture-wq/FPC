@@ -1,0 +1,31 @@
+@theme {
+  /* 04 / Foundations - Layout Dimensions */
+  --width-max-content: 1200px;
+  --width-sidebar: 280px;
+  --width-sidebar-collapsed: 72px;
+  --height-topbar: 72px;
+  --padding-content: 40px;
+  --margin-mobile: 16px;
+
+  /* Form & Rail Dimensions */
+  --width-form-body: 800px;
+  --width-summary-rail: 280px;
+
+  /* Grid Columns */
+  --grid-columns-desktop: 12;
+  --grid-columns-tablet: 8;
+  --grid-columns-mobile: 4;
+}
+
+:root {
+  /* Layout Tokens */
+  --layout-max-content: 1200px;
+  --layout-sidebar-width: 280px;
+  --layout-sidebar-collapsed: 72px;
+  --layout-topbar-height: 72px;
+  --layout-content-padding: 40px;
+  --layout-mobile-margin: 16px;
+  --layout-form-body-max: 800px;
+  --layout-summary-rail-width: 280px;
+}
+

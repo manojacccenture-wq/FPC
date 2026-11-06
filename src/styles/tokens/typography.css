@@ -1,0 +1,111 @@
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans Oriya", "Noto Sans Tamil", system-ui, -apple-system, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* 02 / Foundations - Typography Scale: Name Size/LineHeight */
+  --text-display: 40px;
+  --text-display--line-height: 48px;
+
+  --text-h1: 32px;
+  --text-h1--line-height: 40px;
+
+  --text-h2: 24px;
+  --text-h2--line-height: 32px;
+
+  --text-h3: 20px;
+  --text-h3--line-height: 28px;
+
+  --text-h4: 16px;
+  --text-h4--line-height: 24px;
+
+  --text-body-l: 16px;
+  --text-body-l--line-height: 24px;
+
+  --text-body-m: 14px;
+  --text-body-m--line-height: 20px;
+
+  --text-body-s: 13px;
+  --text-body-s--line-height: 18px;
+
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+
+  --text-eyebrow: 12px;
+  --text-eyebrow--line-height: 16px;
+
+  --text-label: 14px;
+  --text-label--line-height: 20px;
+
+  --text-numeric: 32px;
+  --text-numeric--line-height: 36px;
+
+  --text-button-l: 16px;
+  --text-button-l--line-height: 24px;
+
+  --text-button-m: 14px;
+  --text-button-m--line-height: 20px;
+
+  --text-button-s: 13px;
+  --text-button-s--line-height: 18px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+}
+
+:root {
+  --font-family-sans: "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans Oriya", "Noto Sans Tamil", system-ui, sans-serif;
+  --font-family-mono: "DM Mono", ui-monospace, monospace;
+
+  /* Font Sizes */
+  --font-size-display: 40px;
+  --font-size-h1: 32px;
+  --font-size-h2: 24px;
+  --font-size-h3: 20px;
+  --font-size-h4: 16px;
+  --font-size-body-l: 16px;
+  --font-size-body-m: 14px;
+  --font-size-body-s: 13px;
+  --font-size-caption: 12px;
+  --font-size-eyebrow: 12px;
+  --font-size-label: 14px;
+  --font-size-numeric: 32px;
+  --font-size-button-l: 16px;
+  --font-size-button-m: 14px;
+  --font-size-button-s: 13px;
+
+  /* Line Heights */
+  --line-height-display: 48px;
+  --line-height-h1: 40px;
+  --line-height-h2: 32px;
+  --line-height-h3: 28px;
+  --line-height-h4: 24px;
+  --line-height-body-l: 24px;
+  --line-height-body-m: 20px;
+  --line-height-body-s: 18px;
+  --line-height-caption: 16px;
+  --line-height-eyebrow: 16px;
+  --line-height-label: 20px;
+  --line-height-numeric: 36px;
+  --line-height-button-l: 24px;
+  --line-height-button-m: 20px;
+  --line-height-button-s: 18px;
+
+  /* Font Weights */
+  --font-weight-display: 700;
+  --font-weight-h1: 700;
+  --font-weight-h2: 600;
+  --font-weight-h3: 600;
+  --font-weight-h4: 600;
+  --font-weight-body-l: 400;
+  --font-weight-body-m: 400;
+  --font-weight-body-s: 400;
+  --font-weight-caption: 400;
+  --font-weight-eyebrow: 600;
+  --font-weight-label: 500;
+  --font-weight-numeric: 700;
+  --font-weight-button-l: 500;
+  --font-weight-button-m: 500;
+  --font-weight-button-s: 500;
+}

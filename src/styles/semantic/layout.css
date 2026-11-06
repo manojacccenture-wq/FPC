@@ -1,0 +1,92 @@
+@layer utilities {
+  /* 04 / Foundations - Layout Architecture */
+
+  /* Central max content wrapper */
+  .layout-max-content {
+    max-width: var(--layout-max-content);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Shell specifications */
+  .shell-topbar {
+    height: var(--layout-topbar-height); /* 72px */
+  }
+
+  .shell-sidebar-expanded {
+    width: var(--layout-sidebar-width); /* 280px */
+  }
+
+  .shell-sidebar-collapsed {
+    width: var(--layout-sidebar-collapsed); /* 72px */
+  }
+
+  .shell-content-padding {
+    padding: var(--layout-content-padding); /* 40px */
+  }
+
+  /* Form & Summary Rail Architecture */
+  .form-container {
+    max-width: var(--layout-max-content); /* 1200px */
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    gap: var(--space-24);
+  }
+
+  .form-body-area {
+    max-width: var(--layout-form-body-max); /* 800px */
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .form-summary-rail {
+    width: var(--layout-summary-rail-width); /* 280px */
+    flex-shrink: 0;
+  }
+
+  /* Card and Data Table Utilities */
+  .card-container {
+    background-color: var(--color-surface, #ffffff);
+    border: 1px solid var(--color-default, #E1E8E6);
+    border-radius: var(--radius-card, 16px);
+    padding: 1.5rem;
+    box-shadow: 0 1px 2px 0 rgba(14, 27, 22, 0.04);
+  }
+
+  .table-header-cell {
+    padding: 0.75rem 1rem;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-secondary, #5B6B65);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background-color: var(--color-neutral-50, #F5F7F7);
+    border-bottom: 1px solid var(--color-default, #E1E8E6);
+  }
+
+  .table-body-cell {
+    padding: 0.875rem 1rem;
+    font-size: 12px;
+    color: var(--color-primary, #0E1B16);
+    border-bottom: 1px solid var(--color-default, #E1E8E6);
+  }
+
+  /* Mobile specifications */
+  @media (max-width: 768px) {
+    .shell-content-padding {
+      padding-left: var(--layout-mobile-margin); /* 16px */
+      padding-right: var(--layout-mobile-margin);
+    }
+
+    .form-container {
+      flex-direction: column;
+    }
+
+    .form-summary-rail {
+      width: 100%;
+      order: 2; /* Summary below form on mobile */
+    }
+  }
+}
+

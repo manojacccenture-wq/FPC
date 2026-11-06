@@ -1,0 +1,128 @@
+@layer utilities {
+  /* 02 / Foundations - Typography Classes */
+  .type-display {
+    font-size: var(--font-size-display);
+    line-height: var(--line-height-display);
+    font-weight: var(--font-weight-display);
+    letter-spacing: -0.025em;
+  }
+
+  .type-h1 {
+    font-size: var(--font-size-h1);
+    line-height: var(--line-height-h1);
+    font-weight: var(--font-weight-h1);
+    letter-spacing: -0.02em;
+  }
+
+  .type-h2 {
+    font-size: var(--font-size-h2);
+    line-height: var(--line-height-h2);
+    font-weight: var(--font-weight-h2);
+    letter-spacing: -0.015em;
+  }
+
+  .type-h3 {
+    font-size: var(--font-size-h3);
+    line-height: var(--line-height-h3);
+    font-weight: var(--font-weight-h3);
+  }
+
+  .type-h4 {
+    font-size: var(--font-size-h4);
+    line-height: var(--line-height-h4);
+    font-weight: var(--font-weight-h4);
+  }
+
+  .type-body-l {
+    font-size: var(--font-size-body-l);
+    line-height: var(--line-height-body-l);
+    font-weight: var(--font-weight-body-l);
+  }
+
+  .type-body-m {
+    font-size: var(--font-size-body-m);
+    line-height: var(--line-height-body-m);
+    font-weight: var(--font-weight-body-m);
+  }
+
+  .type-body-s {
+    font-size: var(--font-size-body-s);
+    line-height: var(--line-height-body-s);
+    font-weight: var(--font-weight-body-s);
+  }
+
+  .type-caption {
+    font-size: var(--font-size-caption);
+    line-height: var(--line-height-caption);
+    font-weight: var(--font-weight-caption);
+  }
+
+  .type-eyebrow {
+    font-size: var(--font-size-eyebrow);
+    line-height: var(--line-height-eyebrow);
+    font-weight: var(--font-weight-eyebrow);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .type-label {
+    font-size: var(--font-size-label);
+    line-height: var(--line-height-label);
+    font-weight: var(--font-weight-label);
+  }
+
+  .type-numeric {
+    font-size: var(--font-size-numeric);
+    line-height: var(--line-height-numeric);
+    font-weight: var(--font-weight-numeric);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .type-button-l {
+    font-size: var(--font-size-button-l);
+    line-height: var(--line-height-button-l);
+    font-weight: var(--font-weight-button-l);
+  }
+
+  .type-button-m {
+    font-size: var(--font-size-button-m);
+    line-height: var(--line-height-button-m);
+    font-weight: var(--font-weight-button-m);
+  }
+
+  .type-button-s {
+    font-size: var(--font-size-button-s);
+    line-height: var(--line-height-button-s);
+    font-weight: var(--font-weight-button-s);
+  }
+
+  /* Reusable Page Header Typography */
+  .page-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-brand);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+  @media (min-width: 640px) {
+    .page-title {
+      font-size: 28px;
+    }
+  }
+
+  .page-subtitle {
+    font-size: 0.75rem;
+    color: var(--color-secondary);
+    margin-top: 0.25rem;
+    font-weight: 400;
+  }
+}

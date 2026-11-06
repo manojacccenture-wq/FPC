@@ -1,0 +1,45 @@
+@layer components {
+  /* 03 / Foundations - Focus specification: 2 px brand-600 outline + 2 px white offset */
+  .focus-ring {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+
+  /* 03 / Foundations - Controls: S 36 / M 44 / L 52 */
+  .control-s {
+    height: 36px;
+    min-height: 36px;
+    padding-left: 12px;
+    padding-right: 12px;
+    font-size: 0.875rem;
+    border-radius: var(--radius-xs); /* 6px */
+  }
+
+  .control-m {
+    height: 44px;
+    min-height: 44px;
+    padding-left: 16px;
+    padding-right: 16px;
+    font-size: 0.9375rem;
+    border-radius: var(--radius-sm); /* 8px */
+  }
+
+  .control-l {
+    height: 52px;
+    min-height: 52px;
+    padding-left: 20px;
+    padding-right: 20px;
+    font-size: 1rem;
+    border-radius: var(--radius-md); /* 12px */
+  }
+
+  /* Compact controls touch hit area wrapper */
+  .touch-hit-area-44 {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
