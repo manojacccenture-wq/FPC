@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { TsfAdminLoginPage } from '../../pages/TsfAdminLoginPage';
 import { tsfAdminRoutes } from '../../roles/tsf-admin/routing';
 import { AuthGuard } from '../../shared/guards/AuthGuard';
+import { FpcRegistrationPage } from '../../features/onboarding/pages/FpcRegistrationPage';
 
 /**
  * LoginRoute: Renders the TSF Admin Login page,
@@ -26,6 +27,14 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginRoute />,
+  },
+  {
+    path: '/onboard/register',
+    element: <FpcRegistrationPage />,
+  },
+  {
+    path: '/invite/register',
+    element: <FpcRegistrationPage />,
   },
   {
     path: '/',

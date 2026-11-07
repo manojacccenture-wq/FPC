@@ -1,5 +1,8 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { Button } from './Button';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
 
@@ -31,6 +34,7 @@ const SIZE_MAP: Record<ModalSize, string> = {
 /**
  * Centralized, fully reusable Modal component for the FPC application.
  * Independent of specific feature logic and styled using design tokens.
+ * Guaranteed rock-solid responsive behavior with non-clipping header & footer.
  */
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
@@ -68,48 +72,56 @@ export const Modal: React.FC<ModalProps> = ({
       tabIndex={-1}
       onKeyDown={handleKeyDown}
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/40 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8 bg-black/40 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150"
     >
       <div
-        className={`bg-white rounded-[24px] sm:rounded-[28px] border border-[#E1E8E6] shadow-2xl w-full ${SIZE_MAP[size]} overflow-hidden my-auto flex flex-col text-left transition-all ${className}`}
+        className={twMerge(clsx(
+          "bg-white rounded-[24px] sm:rounded-[28px] border border-default shadow-2xl w-full flex flex-col text-left transition-all my-auto",
+          "max-h-[calc(100vh-2rem)] sm:max-h-[min(90vh,720px)]",
+          SIZE_MAP[size],
+          className
+        ))}
       >
-        {/* Modal Header */}
+        {/* Modal Header (Fixed, non-shrinking) */}
         {(title || description || showCloseButton) && (
-          <div className={`px-6 sm:px-10 pt-6 sm:pt-8 pb-3 sm:pb-4 flex items-start justify-between ${headerClassName}`}>
+          <div className={twMerge(clsx("modal-header-padding shrink-0 flex items-start justify-between", headerClassName))}>
             <div>
               {title && (
-                <h2 className="text-xl sm:text-2xl font-bold text-[#0E1B16] tracking-tight leading-tight">
+                <h2 className="text-xl sm:text-2xl font-bold text-primary tracking-tight leading-tight">
                   {title}
                 </h2>
               )}
               {description && (
-                <p className="text-xs sm:text-[13px] text-[#5B6B65] mt-1 font-normal">
+                <p className="text-xs sm:text-[13px] text-secondary mt-1 font-normal">
                   {description}
                 </p>
               )}
             </div>
 
             {showCloseButton && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="xs"
+                iconOnly
                 onClick={onClose}
-                className="p-1.5 rounded-full text-[#5B6B65] hover:text-[#0E1B16] hover:bg-[#F5F8F7] transition-colors cursor-pointer"
+                className="p-1.5 rounded-full text-secondary hover:text-primary hover:bg-neutral-50 transition-colors w-8 h-8"
                 aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
             )}
           </div>
         )}
 
-        {/* Modal Content Body */}
-        <div className={`px-6 sm:px-10 py-4 flex-1 overflow-y-auto ${bodyClassName}`}>
+        {/* Modal Content Body (Independently scrollable) */}
+        <div className={twMerge(clsx("modal-body-padding flex-1 overflow-y-auto overscroll-contain scrollbar-thin", bodyClassName))}>
           {children}
         </div>
 
-        {/* Modal Footer Actions */}
+        {/* Modal Footer Actions (Fixed, non-shrinking, always visible) */}
         {footer && (
-          <div className={`px-6 sm:px-10 pb-6 sm:pb-8 pt-4 flex items-center justify-end gap-3.5 ${footerClassName}`}>
+          <div className={twMerge(clsx("modal-footer-padding shrink-0 flex items-center justify-end gap-3.5 border-t border-transparent", footerClassName))}>
             {footer}
           </div>
         )}

@@ -56,12 +56,12 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(({
           "w-11 h-6 rounded-full transition-colors duration-200 p-0.5 flex items-center",
           className,
           // Background states
-          checked && !disabled && !hasError && "bg-[#166B4B]",
-          !checked && !disabled && !hasError && "bg-[#75847D]",
-          disabled && "bg-[#E1E8E6] cursor-not-allowed",
-          hasError && "bg-[#A61A24]",
+          checked && !disabled && !hasError && "bg-brand",
+          !checked && !disabled && !hasError && "bg-neutral-400",
+          disabled && "bg-neutral-200 cursor-not-allowed",
+          hasError && "bg-danger",
           // Focus state
-          "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[#166B4B] peer-focus-visible:ring-offset-2"
+          "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-brand peer-focus-visible:ring-offset-2"
         )}
       >
         {/* Thumb */}
@@ -69,10 +69,10 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(({
           className={cn(
             "w-5 h-5 rounded-full bg-white shadow-xs transition-transform duration-200 flex items-center justify-center",
             checked ? "translate-x-5" : "translate-x-0",
-            disabled && "bg-[#F5F8F7]"
+            disabled && "bg-neutral-50"
           )}
         >
-          {loading && <Loader2 className="w-3 h-3 text-[#166B4B] animate-spin" />}
+          {loading && <Loader2 className="w-3 h-3 text-brand animate-spin" />}
         </div>
       </div>
     </div>
@@ -84,19 +84,19 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(({
       <label
         htmlFor={inputId}
         className={cn(
-          "min-h-[44px] px-4 py-2.5 rounded-[12px] border transition-all duration-150 flex items-center gap-3 select-none cursor-pointer w-full",
+          "min-h-11 px-4 py-2.5 rounded-card border transition-all duration-150 flex items-center gap-3 select-none cursor-pointer w-full",
           // Background & border states
-          !checked && !hasError && !disabled && "bg-white border-[#E1E8E6] hover:bg-[#F5F8F7] hover:border-[#B9C6C0]",
-          checked && !hasError && !disabled && "bg-[#EDF8F3] border-[#166B4B]",
-          hasError && !disabled && "bg-white border-[#A61A24]",
-          disabled && "bg-[#F5F8F7] border-[#E1E8E6] opacity-60 cursor-not-allowed",
+          !checked && !hasError && !disabled && "bg-white border-default hover:bg-neutral-50 hover:border-neutral-400",
+          checked && !hasError && !disabled && "bg-brand-soft border-brand",
+          hasError && !disabled && "bg-white border-danger",
+          disabled && "bg-neutral-50 border-default opacity-60 cursor-not-allowed",
           containerClassName
         )}
       >
         {switchTrack}
         <span className={cn(
           "text-sm font-medium",
-          disabled ? "text-[#9AA7A3]" : "text-[#0E1B16]"
+          disabled ? "text-neutral-400" : "text-primary"
         )}>
           {currentLabel}
         </span>
@@ -109,21 +109,22 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(({
     <label
       htmlFor={inputId}
       className={cn(
-        "min-h-[44px] inline-flex items-center gap-3 select-none cursor-pointer py-1.5",
-        !isInteractive && "cursor-not-allowed opacity-60",
+        "min-h-11 inline-flex items-center gap-3 select-none cursor-pointer py-1.5",
+        disabled && "cursor-not-allowed opacity-60",
         containerClassName
       )}
     >
       {switchTrack}
-      <span className={cn(
-        "text-sm font-normal",
-        disabled ? "text-[#9AA7A3]" : "text-[#0E1B16]"
-      )}>
-        {currentLabel}
-      </span>
+      {currentLabel && (
+        <span className={cn(
+          "text-sm font-normal",
+          disabled ? "text-neutral-400" : "text-primary"
+        )}>
+          {currentLabel}
+        </span>
+      )}
     </label>
   );
 });
 
 Switch.displayName = "Switch";
-

@@ -25,43 +25,43 @@ const toneStyles: Record<AlertTone, {
   defaultIcon: React.ReactNode;
 }> = {
   info: {
-    soft: "bg-[#EFF6FF] border-transparent",
-    bordered: "bg-[#EFF6FF] border-[#DDEBFE]",
-    card: "bg-[#EFF6FF] border-[#BFDBFE] shadow-xs",
-    text: "text-[#2A5C8E]",
-    iconClass: "text-[#2A5C8E]",
+    soft: "bg-info-soft border-transparent",
+    bordered: "bg-info-soft border-info-border",
+    card: "bg-info-soft border-info-border shadow-xs",
+    text: "text-info",
+    iconClass: "text-info",
     defaultIcon: <ShieldCheck className="w-4 h-4 stroke-[2]" />,
   },
   success: {
-    soft: "bg-[#EEF9F4] border-transparent",
-    bordered: "bg-[#EEF9F4] border-[#DFF4EB]",
-    card: "bg-[#EEF9F4] border-[#BCE5D3] shadow-xs",
-    text: "text-[#166B4B]",
-    iconClass: "text-[#166B4B]",
+    soft: "bg-success-soft border-transparent",
+    bordered: "bg-success-soft border-success-border",
+    card: "bg-success-soft border-success-border shadow-xs",
+    text: "text-success",
+    iconClass: "text-success",
     defaultIcon: <CheckCircle2 className="w-4 h-4 stroke-[2]" />,
   },
   warning: {
-    soft: "bg-[#FFFAEB] border-transparent",
-    bordered: "bg-[#FFFAEB] border-[#FDF2D9]",
-    card: "bg-[#FFFAEB] border-[#FDE68A] shadow-xs",
-    text: "text-[#946014]",
-    iconClass: "text-[#946014]",
+    soft: "bg-warning-soft border-transparent",
+    bordered: "bg-warning-soft border-warning-border",
+    card: "bg-warning-soft border-warning-border shadow-xs",
+    text: "text-warning",
+    iconClass: "text-warning",
     defaultIcon: <Clock className="w-4 h-4 stroke-[2]" />,
   },
   danger: {
-    soft: "bg-[#FFF1F0] border-transparent",
-    bordered: "bg-[#FFF1F0] border-[#FFE3DF]",
-    card: "bg-[#FFF1F0] border-[#FECACA] shadow-xs",
-    text: "text-[#A61A24]",
-    iconClass: "text-[#A61A24]",
+    soft: "bg-danger-soft border-transparent",
+    bordered: "bg-danger-soft border-danger-border",
+    card: "bg-danger-soft border-danger-border shadow-xs",
+    text: "text-danger",
+    iconClass: "text-danger",
     defaultIcon: <CircleHelp className="w-4 h-4 stroke-[2]" />,
   },
   demo: {
-    soft: "bg-[#EEF9F4] border-transparent",
-    bordered: "bg-[#EEF9F4] border-[#DFF4EB]",
-    card: "bg-[#EEF9F4] border-[#BCE5D3] shadow-xs",
-    text: "text-[#166B4B]",
-    iconClass: "text-[#166B4B]",
+    soft: "bg-brand-soft border-transparent",
+    bordered: "bg-brand-soft border-forest-200",
+    card: "bg-brand-soft border-forest-200 shadow-xs",
+    text: "text-brand",
+    iconClass: "text-brand",
     defaultIcon: <ShieldCheck className="w-4 h-4 stroke-[2]" />,
   },
 };
@@ -98,53 +98,57 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(({
   showIcon = true,
   onClose,
   children,
-  role,
   ...props
 }, ref) => {
   const currentTone = toneStyles[tone];
   const currentSize = sizeStyles[size];
-  const alertRole = role || (tone === 'danger' ? 'alert' : 'status');
-  const alertAriaLive = tone === 'danger' ? 'assertive' : 'polite';
+
+  const variantClass = variant === 'soft'
+    ? currentTone.soft
+    : variant === 'card'
+      ? currentTone.card
+      : currentTone.bordered;
 
   return (
     <div
       ref={ref}
-      role={alertRole}
-      aria-live={alertAriaLive}
+      role="alert"
       className={cn(
-        // Base structure & tokens
-        "w-full rounded-[8px] border flex items-center transition-all",
-        currentTone[variant],
-        currentTone.text,
+        "rounded-control border transition-all flex items-start gap-2.5 w-full select-none text-left",
+        variantClass,
         currentSize.container,
-        currentSize.textSize,
         className
       )}
       {...props}
     >
-      <div className="flex items-center gap-2.5 w-full">
-        {showIcon && (
-          <span className={cn("shrink-0 flex items-center justify-center", currentTone.iconClass)}>
-            {icon || currentTone.defaultIcon}
-          </span>
-        )}
+      {showIcon && (
+        <span className={cn("shrink-0 mt-0.5", currentTone.iconClass)}>
+          {icon || currentTone.defaultIcon}
+        </span>
+      )}
 
-        <div className="flex-1 font-normal select-none">
-          {title && <div className="font-semibold text-current mb-0.5">{title}</div>}
-          <div>{children}</div>
-        </div>
-
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Dismiss alert"
-            className="shrink-0 p-1 rounded hover:bg-black/5 active:bg-black/10 transition-colors cursor-pointer ml-auto"
-          >
-            <X className="w-3.5 h-3.5 text-current opacity-70 hover:opacity-100" />
-          </button>
+      <div className={cn("flex-1 min-w-0 font-normal", currentTone.text, currentSize.textSize)}>
+        {title && (
+          <div className="font-semibold text-xs mb-0.5">
+            {title}
+          </div>
         )}
+        <div>{children}</div>
       </div>
+
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close notification"
+          className={cn(
+            "shrink-0 p-1 rounded-sm hover:bg-black/5 transition-colors cursor-pointer -mr-1 -mt-0.5",
+            currentTone.text
+          )}
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 });

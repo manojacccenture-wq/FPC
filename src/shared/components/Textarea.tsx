@@ -1,4 +1,4 @@
-import { forwardRef, useId } from 'react';
+import React, { forwardRef, useId } from 'react';
 import { cn } from '../utils/cn';
 import { FormField } from './FormField';
 
@@ -46,21 +46,22 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
         aria-describedby={error ? `${id}-error` : helperText ? `${id}-desc` : undefined}
         className={cn(
           // Base textarea styling
-          "w-full rounded-[8px] border bg-white text-[#0E1B16] text-sm p-3 font-normal placeholder:text-[#9AA7A3] transition-colors resize-y min-h-[90px]",
+          "w-full rounded-control border bg-white text-primary text-sm p-3 font-normal placeholder:text-neutral-400 transition-colors resize-y min-h-[96px]",
+          "outline-none",
           // Border & focus
-          "border-[#CDD7D4] hover:border-[#9AA7A3]",
-          "focus:outline-none focus:ring-2 focus:ring-[#166B4B] focus:ring-offset-2 focus:border-transparent",
+          "border-neutral-200 hover:border-neutral-400",
+          "focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:border-transparent",
           // Error tokens
-          error && "border-[#A61A24] focus:ring-[#A61A24] text-[#A61A24]",
+          error && "border-danger focus:ring-danger text-danger",
           // Disabled tokens
-          disabled && "bg-[#F5F8F7] text-[#9AA7A3] border-[#E1E8E6] cursor-not-allowed",
+          disabled && "bg-neutral-50 text-neutral-400 border-default cursor-not-allowed",
           className
         )}
         {...props}
       />
 
       {showCount && maxLength && (
-        <div className="text-right text-[11px] text-[#5B6B65] mt-1">
+        <div className="text-right text-[11px] text-secondary mt-1">
           {currentLength} / {maxLength}
         </div>
       )}
@@ -86,4 +87,3 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
 });
 
 Textarea.displayName = "Textarea";
-

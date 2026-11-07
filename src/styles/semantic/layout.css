@@ -1,5 +1,8 @@
 @layer utilities {
-  /* 04 / Foundations - Layout Architecture */
+  /* ==============================================================
+     04 / FOUNDATIONS - LAYOUT & SPACING UTILITIES
+     Centralized semantic classes consuming design tokens
+     ============================================================== */
 
   /* Central max content wrapper */
   .layout-max-content {
@@ -10,24 +13,167 @@
 
   /* Shell specifications */
   .shell-topbar {
-    height: var(--layout-topbar-height); /* 72px */
+    height: var(--spacing-topbar-h);
   }
 
   .shell-sidebar-expanded {
-    width: var(--layout-sidebar-width); /* 280px */
+    width: var(--spacing-sidebar-w);
   }
 
   .shell-sidebar-collapsed {
-    width: var(--layout-sidebar-collapsed); /* 72px */
+    width: var(--layout-sidebar-collapsed);
   }
 
-  .shell-content-padding {
-    padding: var(--layout-content-padding); /* 40px */
+  /* 1. Page Shell Spacing */
+  .page-container {
+    padding-left: var(--spacing-page-x-mobile);
+    padding-right: var(--spacing-page-x-mobile);
+    padding-top: var(--spacing-page-y-mobile);
+    padding-bottom: var(--spacing-page-y-mobile);
+  }
+  @media (min-width: 640px) {
+    .page-container {
+      padding-left: var(--spacing-page-x-tablet);
+      padding-right: var(--spacing-page-x-tablet);
+      padding-top: var(--spacing-page-y-desktop);
+      padding-bottom: var(--spacing-page-y-desktop);
+    }
+  }
+  @media (min-width: 1024px) {
+    .page-container {
+      padding-left: var(--spacing-page-x-desktop);
+      padding-right: var(--spacing-page-x-desktop);
+    }
+  }
+
+  .page-header-spacing {
+    padding-left: var(--spacing-page-x-mobile);
+    padding-right: var(--spacing-page-x-mobile);
+  }
+  @media (min-width: 640px) {
+    .page-header-spacing {
+      padding-left: var(--spacing-page-x-tablet);
+      padding-right: var(--spacing-page-x-tablet);
+    }
+  }
+  @media (min-width: 1024px) {
+    .page-header-spacing {
+      padding-left: var(--spacing-page-x-desktop);
+      padding-right: var(--spacing-page-x-desktop);
+    }
+  }
+
+  /* 2. Section Flow Spacing */
+  .section-flow {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-section-gap-sm);
+  }
+  @media (min-width: 640px) {
+    .section-flow {
+      gap: var(--spacing-section-gap);
+    }
+  }
+
+  /* 3. Card Padding */
+  .card-padding {
+    padding: var(--spacing-card-p-mobile);
+  }
+  @media (min-width: 640px) {
+    .card-padding {
+      padding: var(--spacing-card-p-desktop);
+    }
+  }
+
+  .card-padding-compact {
+    padding: var(--spacing-card-compact-p);
+  }
+
+  /* 4. Modal Spacing Architecture */
+  .modal-header-padding {
+    padding-left: var(--spacing-modal-x-mobile);
+    padding-right: var(--spacing-modal-x-mobile);
+    padding-top: var(--spacing-modal-header-pt-mobile);
+    padding-bottom: var(--spacing-modal-header-pb);
+  }
+  @media (min-width: 640px) {
+    .modal-header-padding {
+      padding-left: var(--spacing-modal-x-desktop);
+      padding-right: var(--spacing-modal-x-desktop);
+      padding-top: var(--spacing-modal-header-pt-desktop);
+    }
+  }
+
+  .modal-body-padding {
+    padding-left: var(--spacing-modal-x-mobile);
+    padding-right: var(--spacing-modal-x-mobile);
+    padding-top: var(--spacing-modal-body-py);
+    padding-bottom: var(--spacing-modal-body-py);
+  }
+  @media (min-width: 640px) {
+    .modal-body-padding {
+      padding-left: var(--spacing-modal-x-desktop);
+      padding-right: var(--spacing-modal-x-desktop);
+    }
+  }
+
+  .modal-footer-padding {
+    padding-left: var(--spacing-modal-x-mobile);
+    padding-right: var(--spacing-modal-x-mobile);
+    padding-top: var(--spacing-modal-footer-pt);
+    padding-bottom: var(--spacing-modal-footer-pb-mobile);
+  }
+  @media (min-width: 640px) {
+    .modal-footer-padding {
+      padding-left: var(--spacing-modal-x-desktop);
+      padding-right: var(--spacing-modal-x-desktop);
+      padding-bottom: var(--spacing-modal-footer-pb-desktop);
+    }
+  }
+
+  /* 5. Form & Grid Spacing */
+  .form-flow-spacing {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-form-flow-mobile);
+  }
+  @media (min-width: 640px) {
+    .form-flow-spacing {
+      gap: var(--spacing-form-flow-desktop);
+    }
+  }
+
+  .form-grid-spacing {
+    gap: var(--spacing-form-grid-mobile);
+  }
+  @media (min-width: 640px) {
+    .form-grid-spacing {
+      gap: var(--spacing-form-grid-desktop);
+    }
+  }
+
+  /* 6. Table Cell & Action Spacing */
+  .table-th-padding {
+    padding-left: var(--spacing-table-header-px);
+    padding-right: var(--spacing-table-header-px);
+    padding-top: var(--spacing-table-header-py);
+    padding-bottom: var(--spacing-table-header-py);
+  }
+
+  .table-td-padding {
+    padding-left: var(--spacing-table-body-px);
+    padding-right: var(--spacing-table-body-px);
+    padding-top: var(--spacing-table-body-py);
+    padding-bottom: var(--spacing-table-body-py);
+  }
+
+  .table-actions-gap {
+    gap: var(--spacing-table-action-gap);
   }
 
   /* Form & Summary Rail Architecture */
   .form-container {
-    max-width: var(--layout-max-content); /* 1200px */
+    max-width: var(--layout-max-content);
     margin-left: auto;
     margin-right: auto;
     display: flex;
@@ -35,13 +181,13 @@
   }
 
   .form-body-area {
-    max-width: var(--layout-form-body-max); /* 800px */
+    max-width: var(--layout-form-body-max);
     flex: 1 1 auto;
     width: 100%;
   }
 
   .form-summary-rail {
-    width: var(--layout-summary-rail-width); /* 280px */
+    width: var(--layout-summary-rail-width);
     flex-shrink: 0;
   }
 
@@ -50,12 +196,12 @@
     background-color: var(--color-surface, #ffffff);
     border: 1px solid var(--color-default, #E1E8E6);
     border-radius: var(--radius-card, 16px);
-    padding: 1.5rem;
+    padding: var(--spacing-card-p-mobile);
     box-shadow: 0 1px 2px 0 rgba(14, 27, 22, 0.04);
   }
 
   .table-header-cell {
-    padding: 0.75rem 1rem;
+    padding: var(--spacing-table-header-py) var(--spacing-table-header-px);
     font-size: 11px;
     font-weight: 600;
     color: var(--color-secondary, #5B6B65);
@@ -66,7 +212,7 @@
   }
 
   .table-body-cell {
-    padding: 0.875rem 1rem;
+    padding: var(--spacing-table-body-py) var(--spacing-table-body-px);
     font-size: 12px;
     color: var(--color-primary, #0E1B16);
     border-bottom: 1px solid var(--color-default, #E1E8E6);
@@ -74,19 +220,13 @@
 
   /* Mobile specifications */
   @media (max-width: 768px) {
-    .shell-content-padding {
-      padding-left: var(--layout-mobile-margin); /* 16px */
-      padding-right: var(--layout-mobile-margin);
-    }
-
     .form-container {
       flex-direction: column;
     }
 
     .form-summary-rail {
       width: 100%;
-      order: 2; /* Summary below form on mobile */
+      order: 2;
     }
   }
 }
-

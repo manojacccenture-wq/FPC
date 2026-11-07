@@ -76,7 +76,7 @@ export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
       {/* =========================================================================
           1. Top Navigation Bar: White Background & English Pill Button (Right)
           ========================================================================= */}
-      <header className="w-full bg-white px-4.5 sm:px-8 md:px-12 lg:px-12 h-16 flex items-center justify-between shrink-0">
+      <header className="w-full bg-white page-header-spacing h-16 flex items-center justify-between shrink-0">
         {/* Left Brand Identity */}
         <div className="text-[11px] sm:text-xs font-bold tracking-wider text-brand uppercase">
           <span className="hidden sm:inline">
@@ -89,44 +89,44 @@ export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
 
         {/* Right: English Pill Button Reusing Shared Button */}
         <div>
-            <Button
+          <Button
             type="button"
             variant="secondary"
             size="sm"
             className="h-8 min-w-[100px] sm:min-w-[125px] px-5 bg-brand-soft hover:bg-forest-100 text-brand text-xs sm:text-[13px] font-semibold rounded-control transition-colors shadow-2xs border-transparent"
           >
             English
-        </Button>
-    </div>
-      </header >
+          </Button>
+        </div>
+      </header>
 
-{/* =========================================================================
+      {/* =========================================================================
           2. Hero Section: Anchored Upper-Left (Exactly Matching Image 1 & Mobile)
           ========================================================================= */}
-  < div className = "w-full px-4.5 sm:px-8 md:px-12 lg:pl-22 lg:pr-12 pt-2 sm:pt-4 text-left" >
-    <div className="max-w-[480px]">
-      {/* Eyebrow */}
-      <div className="page-eyebrow mb-2">
-        CENTRAL ADMINISTRATION
+      <div className="w-full page-header-spacing pt-2 sm:pt-4 text-left">
+        <div className="max-w-[480px]">
+          {/* Eyebrow */}
+          <div className="page-eyebrow mb-2">
+            CENTRAL ADMINISTRATION
+          </div>
+
+          {/* Heading */}
+          <h1 className="text-[24px] sm:text-[28px] md:text-[32px] font-bold text-primary tracking-tight leading-[1.18] mb-1.5">
+            Supporting the people<br className="hidden sm:inline" /> behind stronger FPCs.
+          </h1>
+
+          {/* Subtitle */}
+          <p className="text-xs sm:text-[13px] text-secondary font-normal">
+            A secure workspace for TSF programme administrators.
+          </p>
+        </div>
       </div>
 
-      {/* Heading */}
-      <h1 className="text-[24px] sm:text-[28px] md:text-[32px] font-bold text-primary tracking-tight leading-[1.18] mb-1.5">
-        Supporting the people<br className="hidden sm:inline" /> behind stronger FPCs.
-      </h1>
-
-      {/* Subtitle */}
-      <p className="text-xs sm:text-[13px] text-secondary font-normal">
-        A secure workspace for TSF programme administrators.
-      </p>
-    </div>
-      </div >
-
-{/* =========================================================================
+      {/* =========================================================================
           3. Login Card: Horizontally Centered in Viewport Reusing Shared Card
           ========================================================================= */}
-  < main className = "w-full flex items-center justify-center px-4 py-4 sm:py-6 flex-1 my-auto" >
-      <Card className="w-full max-w-[360px] rounded-login-card p-6 sm:p-7 shadow-xs">
+      <main className="w-full flex items-center justify-center px-4 py-4 sm:py-6 flex-1 my-auto">
+        <Card className="w-full max-w-[360px] rounded-login-card card-padding shadow-xs">
 
         {/* Title & Subtitle */}
         <div className="text-left mb-5">
@@ -254,17 +254,17 @@ export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
   )
 }
 
-        </Card >
-      </main >
+        </Card>
+      </main>
 
-{/* =========================================================================
+      {/* =========================================================================
           4. Footer: Edge-to-Edge Left Anchored (Exactly Matching Image 1 & Mobile)
           ========================================================================= */}
-  < footer className = "w-full px-4.5 sm:px-8 md:px-12 lg:px-12 py-4 text-left" >
-    <span className="text-[11px] text-secondary font-normal">
-      Secure access · TSF FPC Management / v1.0
-    </span>
-      </footer >
+      <footer className="w-full page-header-spacing py-4 text-left">
+        <span className="text-[11px] text-secondary font-normal">
+          Secure access · TSF FPC Management / v1.0
+        </span>
+      </footer>
 
         {/* Reset Password: Reusing Shared Modal & Button */}
         <Modal

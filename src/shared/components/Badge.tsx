@@ -17,31 +17,31 @@ const variantStyles: Record<BadgeVariant, {
   dot: string;
 }> = {
   brand: {
-    container: "bg-[#E6F8F0] text-[#166B4B] border-transparent",
-    dot: "bg-[#166B4B]",
+    container: "bg-brand-soft text-brand border-forest-200/50",
+    dot: "bg-brand",
   },
   success: {
-    container: "bg-[#EEF9F4] text-[#166B4B] border-transparent",
-    dot: "bg-[#166B4B]",
+    container: "bg-success-soft text-success border-success-border/50",
+    dot: "bg-success",
   },
   warning: {
-    container: "bg-[#FFFAEB] text-[#946014] border-transparent",
-    dot: "bg-[#946014]",
+    container: "bg-warning-soft text-warning border-warning-border/50",
+    dot: "bg-warning",
   },
   danger: {
-    container: "bg-[#FFF1F0] text-[#A61A24] border-transparent",
-    dot: "bg-[#A61A24]",
+    container: "bg-danger-soft text-danger border-danger-border/50",
+    dot: "bg-danger",
   },
   info: {
-    container: "bg-[#EFF6FF] text-[#2A5C8E] border-transparent",
-    dot: "bg-[#2A5C8E]",
+    container: "bg-info-soft text-info border-info-border/50",
+    dot: "bg-info",
   },
   neutral: {
-    container: "bg-[#F0F4F2] text-[#5B6B65] border-transparent",
-    dot: "bg-[#5B6B65]",
+    container: "bg-neutral-50 text-secondary border-default",
+    dot: "bg-secondary",
   },
   count: {
-    container: "bg-[#FFFAEB] text-[#946014] border-transparent font-bold min-w-[20px] h-[20px] p-0 flex items-center justify-center",
+    container: "bg-warning-soft text-warning border-warning-border/50 font-bold min-w-[20px] h-[20px] p-0 flex items-center justify-center",
     dot: "",
   },
 };
@@ -85,4 +85,3 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(({
 });
 
 Badge.displayName = "Badge";
-

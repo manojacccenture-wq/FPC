@@ -19,8 +19,8 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
 
     const paddingStyles = {
       none: '',
-      sm: 'p-4',
-      md: 'p-6',
+      sm: 'card-padding-compact',
+      md: 'card-padding',
       lg: 'p-8',
     }[padding];
 

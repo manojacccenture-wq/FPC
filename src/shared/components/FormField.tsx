@@ -20,26 +20,29 @@ export const FormField: React.FC<FormFieldProps> = ({
   className,
   children,
 }) => {
+  const labelText = typeof label === 'string' ? label.replace(/\s*\*+$/, '') : label;
+  const isRequired = required || (typeof label === 'string' && label.includes('*'));
+
   return (
-    <div className={cn("flex flex-col gap-1.5 w-full text-left", className)}>
+    <div className={cn("flex flex-col gap-2 w-full text-left", className)}>
       {label && (
         <label
           htmlFor={id}
-          className="text-[13px] sm:text-sm font-medium text-[#0E1B16] flex items-center gap-1 select-none"
+          className="text-xs sm:text-[13px] font-semibold text-primary flex items-center gap-0.5 select-none"
         >
-          <span>{label}</span>
-          {required && <span className="text-[#A61A24] font-bold" aria-hidden="true">*</span>}
+          <span>{labelText}</span>
+          {isRequired && <span className="text-danger font-semibold text-xs ml-0.5" aria-hidden="true">*</span>}
         </label>
       )}
 
       {children}
 
       {error ? (
-        <p id={id ? `${id}-error` : undefined} className="text-xs text-[#A61A24] font-medium flex items-center gap-1">
+        <p id={id ? `${id}-error` : undefined} className="text-xs text-danger font-medium flex items-center gap-1 mt-0.5">
           {error}
         </p>
       ) : helperText ? (
-        <p id={id ? `${id}-desc` : undefined} className="text-xs text-[#5B6B65]">
+        <p id={id ? `${id}-desc` : undefined} className="text-xs text-secondary mt-0.5">
           {helperText}
         </p>
       ) : null}

@@ -28,93 +28,92 @@ const variantStyles: Record<ButtonVariant, {
   disabled: string;
 }> = {
   primary: {
-    default: "bg-[#166B4B] text-white border-transparent",
-    hover: "hover:bg-[#0E593E]",
-    active: "active:bg-[#0C4A34]",
-    focus: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166B4B] focus-visible:ring-offset-2",
-    disabled: "disabled:bg-[#E1E8E6] disabled:text-[#9AA7A3] disabled:border-transparent",
+    default: "bg-brand text-white border-transparent shadow-xs",
+    hover: "hover:bg-brand-hover",
+    active: "active:bg-brand-active",
+    focus: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2",
+    disabled: "disabled:bg-neutral-200 disabled:text-neutral-400 disabled:border-transparent",
   },
   secondary: {
-    default: "bg-[#EDF8F3] text-[#166B4B] border-transparent",
-    hover: "hover:bg-[#DCF2E9]",
-    active: "active:bg-[#BCE5D3]",
-    focus: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166B4B] focus-visible:ring-offset-2",
-    disabled: "disabled:bg-[#E1E8E6] disabled:text-[#9AA7A3] disabled:border-transparent",
+    default: "bg-brand-soft text-brand border-transparent shadow-2xs",
+    hover: "hover:bg-forest-100",
+    active: "active:bg-forest-200",
+    focus: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2",
+    disabled: "disabled:bg-neutral-200 disabled:text-neutral-400 disabled:border-transparent",
   },
   outline: {
-    default: "bg-transparent text-[#166B4B] border-[#166B4B]",
-    hover: "hover:bg-[#EDF8F3]",
-    active: "active:bg-[#DCF2E9]",
-    focus: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166B4B] focus-visible:ring-offset-2",
-    disabled: "disabled:bg-transparent disabled:text-[#9AA7A3] disabled:border-[#E1E8E6]",
+    default: "bg-white text-primary border-default hover:border-neutral-400 shadow-2xs",
+    hover: "hover:bg-neutral-50",
+    active: "active:bg-neutral-100",
+    focus: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2",
+    disabled: "disabled:bg-transparent disabled:text-neutral-400 disabled:border-default",
   },
   ghost: {
-    default: "bg-transparent text-[#166B4B] border-transparent",
-    hover: "hover:bg-[#EDF8F3]",
-    active: "active:bg-[#DCF2E9]",
-    focus: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166B4B] focus-visible:ring-offset-2",
-    disabled: "disabled:bg-transparent disabled:text-[#9AA7A3] disabled:border-transparent",
+    default: "bg-transparent text-secondary border-transparent",
+    hover: "hover:text-primary hover:bg-neutral-50",
+    active: "active:bg-neutral-100",
+    focus: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2",
+    disabled: "disabled:bg-transparent disabled:text-neutral-400 disabled:border-transparent",
   },
   destructive: {
-    default: "bg-[#A61A24] text-white border-transparent",
+    default: "bg-danger text-white border-transparent shadow-2xs",
     hover: "hover:bg-[#8E161F]",
     active: "active:bg-[#700F17]",
-    focus: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A61A24] focus-visible:ring-offset-2",
-    disabled: "disabled:bg-[#E1E8E6] disabled:text-[#9AA7A3] disabled:border-transparent",
+    focus: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2",
+    disabled: "disabled:bg-neutral-200 disabled:text-neutral-400 disabled:border-transparent",
   },
 };
 
-// Static simulated state overrides for design system matrix presentation
 const forcedStateStyles: Record<ButtonVariant, Partial<Record<ButtonState, string>>> = {
   primary: {
-    hover: "bg-[#0E593E] text-white",
-    focus: "bg-[#166B4B] text-white ring-2 ring-[#166B4B] ring-offset-2",
-    pressed: "bg-[#0C4A34] text-white",
-    disabled: "bg-[#E1E8E6] text-[#9AA7A3] border-transparent cursor-not-allowed",
-    loading: "bg-[#166B4B] text-white cursor-wait",
+    hover: "bg-brand-hover text-white",
+    focus: "bg-brand text-white ring-2 ring-brand ring-offset-2",
+    pressed: "bg-brand-active text-white",
+    disabled: "bg-neutral-200 text-neutral-400 border-transparent cursor-not-allowed",
+    loading: "bg-brand text-white cursor-wait",
   },
   secondary: {
-    hover: "bg-[#DCF2E9] text-[#166B4B]",
-    focus: "bg-[#EDF8F3] text-[#166B4B] ring-2 ring-[#166B4B] ring-offset-2",
-    pressed: "bg-[#BCE5D3] text-[#166B4B]",
-    disabled: "bg-[#E1E8E6] text-[#9AA7A3] border-transparent cursor-not-allowed",
-    loading: "bg-[#EDF8F3] text-[#166B4B] cursor-wait",
+    hover: "bg-forest-100 text-brand",
+    focus: "bg-brand-soft text-brand ring-2 ring-brand ring-offset-2",
+    pressed: "bg-forest-200 text-brand",
+    disabled: "bg-neutral-200 text-neutral-400 border-transparent cursor-not-allowed",
+    loading: "bg-brand-soft text-brand cursor-wait",
   },
   outline: {
-    hover: "bg-[#EDF8F3] text-[#166B4B] border-[#166B4B]",
-    focus: "bg-transparent text-[#166B4B] border-[#166B4B] ring-2 ring-[#166B4B] ring-offset-2",
-    pressed: "bg-[#DCF2E9] text-[#166B4B] border-[#166B4B]",
-    disabled: "bg-transparent text-[#9AA7A3] border-[#E1E8E6] cursor-not-allowed",
-    loading: "bg-transparent text-[#166B4B] border-[#166B4B] cursor-wait",
+    hover: "bg-neutral-50 text-primary border-neutral-400",
+    focus: "bg-white text-primary border-brand ring-2 ring-brand ring-offset-2",
+    pressed: "bg-neutral-100 text-primary border-brand",
+    disabled: "bg-transparent text-neutral-400 border-default cursor-not-allowed",
+    loading: "bg-white text-primary border-default cursor-wait",
   },
   ghost: {
-    hover: "bg-[#EDF8F3] text-[#166B4B]",
-    focus: "bg-transparent text-[#166B4B] ring-2 ring-[#166B4B] ring-offset-2",
-    pressed: "bg-[#DCF2E9] text-[#166B4B]",
-    disabled: "bg-transparent text-[#9AA7A3] cursor-not-allowed",
-    loading: "bg-transparent text-[#166B4B] cursor-wait",
+    hover: "bg-neutral-50 text-primary",
+    focus: "bg-transparent text-primary ring-2 ring-brand ring-offset-2",
+    pressed: "bg-neutral-100 text-primary",
+    disabled: "bg-transparent text-neutral-400 cursor-not-allowed",
+    loading: "bg-transparent text-primary cursor-wait",
   },
   destructive: {
     hover: "bg-[#8E161F] text-white",
-    focus: "bg-[#A61A24] text-white ring-2 ring-[#A61A24] ring-offset-2",
+    focus: "bg-danger text-white ring-2 ring-danger ring-offset-2",
     pressed: "bg-[#700F17] text-white",
-    disabled: "bg-[#E1E8E6] text-[#9AA7A3] border-transparent cursor-not-allowed",
-    loading: "bg-[#A61A24] text-white cursor-wait",
+    disabled: "bg-neutral-200 text-neutral-400 border-transparent cursor-not-allowed",
+    loading: "bg-danger text-white cursor-wait",
   },
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  xs: "h-7 px-2.5 text-xs leading-[16px]",            /* XS: 28px compact height */
-  sm: "h-9 px-3 text-[13px] leading-[18px]",           /* S: 36px visual height */
-  md: "h-11 px-4 text-sm leading-[20px]",             /* M: 44px default */
-  lg: "h-[52px] px-6 text-base leading-[24px]",       /* L: 52px */
+  xs: "h-7 min-h-7 px-2.5 text-xs leading-[16px]",
+  sm: "h-9 min-h-9 px-3.5 text-[13px] leading-[18px]",
+  md: "h-11 min-h-11 px-4 text-sm leading-[20px]",
+  lg: "h-[52px] min-h-[52px] px-6 text-base leading-[24px]",
 };
 
 const iconOnlySizeStyles: Record<ButtonSize, string> = {
-  xs: "w-7 h-7 p-0",
-  sm: "w-9 h-9 p-0",
-  md: "w-11 h-11 p-0",
-  lg: "w-[52px] h-[52px] p-0",
+  xs: "w-7 h-7 min-w-7 min-h-7 p-0",
+  sm: "w-9 h-9 min-w-9 min-h-9 p-0",
+  md: "w-11 h-11 min-w-11 min-h-11 p-0",
+  lg: "w-[52px] h-[52px] min-w-[52px] min-h-[52px] p-0",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
@@ -152,7 +151,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
       disabled={isActuallyDisabled}
       className={cn(
         // Base structure & animation footprint
-        "inline-flex items-center justify-center font-medium rounded-[8px] border transition-colors select-none shrink-0 cursor-pointer",
+        "inline-flex items-center justify-center font-semibold rounded-control border transition-colors select-none shrink-0 cursor-pointer",
         // Default styling
         currentVariant.default,
         // Dynamic interaction states (only when no forcedState)

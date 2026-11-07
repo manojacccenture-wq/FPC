@@ -19,6 +19,7 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   options?: SelectOption[];
   placeholder?: string;
   containerClassName?: string;
+  trailingIcon?: React.ReactNode;
 }
 
 const sizeClasses: Record<SelectSize, {
@@ -26,15 +27,15 @@ const sizeClasses: Record<SelectSize, {
   icon: string;
 }> = {
   sm: {
-    select: "h-9 text-[13px] pl-3 pr-8",
+    select: "h-9 min-h-9 text-[13px] pl-3 pr-8",
     icon: "w-3.5 h-3.5 right-2.5",
   },
   md: {
-    select: "h-11 text-sm pl-3.5 pr-10",
+    select: "h-11 min-h-11 text-sm pl-3.5 pr-10",
     icon: "w-4 h-4 right-3.5",
   },
   lg: {
-    select: "h-[52px] text-base pl-4 pr-12",
+    select: "h-[52px] min-h-[52px] text-base pl-4 pr-12",
     icon: "w-5 h-5 right-4",
   },
 };
@@ -52,6 +53,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
   placeholder,
   disabled,
   children,
+  trailingIcon,
   ...props
 }, ref) => {
   const generatedId = useId();
@@ -69,15 +71,16 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
         aria-describedby={error ? `${id}-error` : helperText ? `${id}-desc` : undefined}
         className={cn(
           // Base select styling
-          "w-full rounded-[8px] border bg-white text-[#0E1B16] font-normal appearance-none transition-colors cursor-pointer select-none",
+          "w-full rounded-control border bg-white text-primary font-normal appearance-none transition-colors cursor-pointer select-none",
+          "outline-none",
           currentSize.select,
           // Border & focus
-          "border-[#CDD7D4] hover:border-[#9AA7A3]",
-          "focus:outline-none focus:ring-2 focus:ring-[#166B4B] focus:ring-offset-2 focus:border-transparent",
+          "border-neutral-200 hover:border-neutral-400",
+          "focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:border-transparent",
           // Error tokens
-          error && "border-[#A61A24] focus:ring-[#A61A24] text-[#A61A24]",
+          error && "border-danger focus:ring-danger text-danger",
           // Disabled tokens
-          disabled && "bg-[#F5F8F7] text-[#9AA7A3] border-[#E1E8E6] cursor-not-allowed",
+          disabled && "bg-neutral-50 text-neutral-400 border-default cursor-not-allowed",
           className
         )}
         {...props}
@@ -95,8 +98,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
         {children}
       </select>
 
-      <span className={cn("absolute text-[#5B6B65] pointer-events-none flex items-center justify-center shrink-0", currentSize.icon)}>
-        <ChevronDown className="w-full h-full stroke-[2]" />
+      <span className={cn("absolute text-secondary pointer-events-none flex items-center justify-center shrink-0", currentSize.icon)}>
+        {trailingIcon || <ChevronDown className="w-full h-full stroke-[2]" />}
       </span>
     </div>
   );
@@ -120,4 +123,3 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
 });
 
 Select.displayName = "Select";
-

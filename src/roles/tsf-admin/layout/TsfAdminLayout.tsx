@@ -35,8 +35,8 @@ export const TsfAdminLayout: React.FC<TsfAdminLayoutProps> = ({ children }) => {
           onToggleMobileMenu={() => setMobileMenuOpen(true)}
         />
 
-        {/* 3. Dynamic Center Content Area */}
-        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+        {/* 3. Dynamic Center Content Area: Centralized Page Padding & Viewport-Adaptive Max-Width */}
+        <main className="flex-1 page-container max-w-[1440px] w-full mx-auto overflow-y-auto">
           {children || <Outlet />}
         </main>
       </div>

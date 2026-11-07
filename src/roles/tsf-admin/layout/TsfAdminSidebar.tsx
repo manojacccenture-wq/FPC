@@ -161,14 +161,16 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
 
           {/* FPC Management Accordion: Reusing Shared Button */}
           <div className="pt-0.5">
-              <Button
-                type="button"
+            <Button
+              type="button"
               variant="ghost"
               onClick={() => setFpcManagementOpen(!fpcManagementOpen)}
-                      ? 'text-white hover:bg-sidebar-surface/50'
-                      : 'text-sidebar-icon hover:text-white hover:bg-sidebar-surface/50'
-                }`}
-              >
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-control font-medium transition-colors ${
+                isFpcManagementActive || fpcManagementOpen
+                  ? 'text-white hover:bg-sidebar-surface/50'
+                  : 'text-sidebar-icon hover:text-white hover:bg-sidebar-surface/50'
+              }`}
+            >
                 <div className="flex items-center gap-2.5">
                   <Users className="w-4 h-4 shrink-0 stroke-[2]" />
                   <span>FPC Management</span>
@@ -223,16 +225,16 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
           </NavLink>
         );
       })}
-    </nav >
-        </div >
+          </nav>
+        </div>
 
-  {/* Bottom Section: Controls & User Profile */ }
-  < div className = "p-3.5 border-t border-sidebar-surface/60 space-y-2.5 bg-sidebar-bg" >
-    {/* Status Switch 1: One group at a time */ }
-    < div
-onClick = {() => setOneGroupActive(!oneGroupActive)}
-className = "bg-white rounded-xl px-2.5 py-2 flex items-center justify-between cursor-pointer shadow-2xs select-none hover:bg-neutral-50 transition-colors"
-  >
+        {/* Bottom Section: Controls & User Profile */}
+        <div className="p-3.5 border-t border-sidebar-surface/60 space-y-2.5 bg-sidebar-bg">
+          {/* Status Switch 1: One group at a time */}
+          <div
+            onClick={() => setOneGroupActive(!oneGroupActive)}
+            className="bg-white rounded-xl px-2.5 py-2 flex items-center justify-between cursor-pointer shadow-2xs select-none hover:bg-neutral-50 transition-colors"
+          >
             <div className={`w-7 h-4 rounded-full p-0.5 transition-colors flex items-center ${
               oneGroupActive ? 'bg-brand justify-end' : 'bg-neutral-300 justify-start'
             }`}>
@@ -241,13 +243,13 @@ className = "bg-white rounded-xl px-2.5 py-2 flex items-center justify-between c
             <span className="text-[11px] font-medium text-primary ml-2 flex-1 text-left">
               One group at a time
             </span>
-          </div >
+          </div>
 
-  {/* Status Switch 2: Connected / All changes synced */ }
-  < div
-onClick = {() => setAllSyncedActive(!allSyncedActive)}
-className = "bg-white rounded-xl px-2.5 py-2 flex items-center justify-between cursor-pointer shadow-2xs select-none hover:bg-neutral-50 transition-colors"
-  >
+          {/* Status Switch 2: Connected / All changes synced */}
+          <div
+            onClick={() => setAllSyncedActive(!allSyncedActive)}
+            className="bg-white rounded-xl px-2.5 py-2 flex items-center justify-between cursor-pointer shadow-2xs select-none hover:bg-neutral-50 transition-colors"
+          >
             <div className={`w-7 h-4 rounded-full p-0.5 transition-colors flex items-center ${
               allSyncedActive ? 'bg-brand justify-end' : 'bg-neutral-300 justify-start'
             }`}>
@@ -256,36 +258,34 @@ className = "bg-white rounded-xl px-2.5 py-2 flex items-center justify-between c
             <span className="text-[11px] font-medium text-primary ml-2 flex-1 text-left leading-tight">
               Connected / All changes synced
             </span>
-          </div >
+          </div>
 
-  {/* User Account / Session Profile */ }
-  < div className = "pt-1 flex items-center justify-between" >
-    <div className="text-left">
-      <p className="text-xs font-semibold text-white leading-tight">
-        Neha Sharma
-      </p>
-      <p className="text-[10px] text-sidebar-muted font-medium">
-        TSF Central Admin &lt;
-      </p>
-    </div>
-{
-  onSignOut && (
-      <Button
+          {/* User Account / Session Profile */}
+          <div className="pt-1 flex items-center justify-between">
+            <div className="text-left">
+              <p className="text-xs font-semibold text-white leading-tight">
+                Neha Sharma
+              </p>
+              <p className="text-[10px] text-sidebar-muted font-medium">
+                TSF Central Admin &lt;
+              </p>
+            </div>
+            {onSignOut && (
+              <Button
                 type="button"
-      variant="ghost"
-      size="xs"
-      iconOnly
-      onClick={onSignOut}
-      title="Sign out"
-      className="p-1.5 rounded-md text-sidebar-muted hover:text-white hover:bg-sidebar-surface cursor-pointer transition-colors w-7 h-7"
-    >
-      <LogOut className="w-3.5 h-3.5" />
-              </Button >
-            )
-}
-          </div >
-        </div >
-      </aside >
+                variant="ghost"
+                size="xs"
+                iconOnly
+                onClick={onSignOut}
+                title="Sign out"
+                className="p-1.5 rounded-md text-sidebar-muted hover:text-white hover:bg-sidebar-surface cursor-pointer transition-colors w-7 h-7"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </aside>
     </>
   );
 };

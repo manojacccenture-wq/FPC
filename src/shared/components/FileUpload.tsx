@@ -83,85 +83,129 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={cn(
-        "relative w-full rounded-[12px] border p-4 sm:p-5 transition-all duration-150 flex flex-col justify-center min-h-[96px]",
+        "relative w-full rounded-card border p-4 sm:p-5 transition-all duration-150 flex flex-col justify-center min-h-[96px]",
         // Default border & bg
-        !isFailed && !highlightMint && !isDisabled && "bg-white border-[#E1E8E6] hover:border-[#166B4B]",
+        !isFailed && !highlightMint && !isDisabled && "bg-white border-default hover:border-brand",
         // Highlighted / Mint state
-        highlightMint && !isFailed && !isDisabled && "bg-[#EDF8F3] border-[#BCE5D3] hover:border-[#166B4B]",
+        highlightMint && !isFailed && !isDisabled && "bg-brand-soft border-forest-200 hover:border-brand",
         // Drag over / Focus
-        isDragOver && "border-[#166B4B] bg-[#EDF8F3]",
+        isDragOver && "border-brand bg-brand-soft",
         // Failed state
-        isFailed && "bg-white border-[#A61A24]",
+        isFailed && "bg-white border-danger",
         // Disabled state
-        isDisabled && "bg-[#F5F8F7] border-[#E1E8E6] opacity-70 cursor-not-allowed",
+        isDisabled && "bg-neutral-50 border-default opacity-70 cursor-not-allowed",
         !isDisabled && "cursor-pointer",
         className
       )}
     >
       <input
-        type="file"
         id={inputId}
         ref={(el) => {
           localInputRef.current = el;
           if (typeof ref === 'function') ref(el);
-          else if (ref) ref.current = el;
+          else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = el;
         }}
+        type="file"
+        disabled={isDisabled || isUploading}
         onChange={handleChange}
-        disabled={isDisabled}
-        className="sr-only"
+        className="hidden"
+        aria-label="Upload document"
       />
 
-      <div className="flex items-start gap-3">
-        {/* Upload Icon */}
-        <div className="shrink-0 mt-0.5">
-          <Upload
-            className={cn(
-              "w-4 h-4 stroke-[2.2]",
-              isFailed ? "text-[#A61A24]" : isDisabled ? "text-[#9AA7A3]" : "text-[#166B4B]"
-            )}
-          />
-        </div>
-
-        {/* Content Area */}
-        <div className="flex-1 min-w-0">
-          {/* Title Row */}
-          <div className="text-sm font-semibold mb-1">
-            {isFailed ? (
-              <span className="text-[#A61A24]">Upload failed · Try again</span>
-            ) : isReady && fileName ? (
-              <span className="text-[#0E1B16]">{fileName} · Ready to upload</span>
-            ) : isUploading ? (
-              <span className="text-[#0E1B16]">Uploading... {progress}%</span>
-            ) : isDisabled ? (
-              <span className="text-[#9AA7A3]">Uploads are unavailable</span>
-            ) : (
-              <span className="text-[#0E1B16]">Drop files here or browse</span>
-            )}
+      {/* 1. Idle State: Upload Icon, Drag prompt, spec label */}
+      {state === 'idle' && (
+        <div className="flex items-center gap-3.5 select-none">
+          <div className="w-9 h-9 rounded-full bg-brand-soft flex items-center justify-center shrink-0 text-brand">
+            <Upload className="w-4 h-4 stroke-[2.2]" />
           </div>
-
-          {/* Progress Bar (when uploading) */}
-          {isUploading && (
-            <div className="w-full h-1.5 bg-[#E1E8E6] rounded-full overflow-hidden my-2">
-              <div
-                className="h-full bg-[#166B4B] transition-all duration-300 rounded-full"
-                style={{ width: `${progress}%` }}
-              />
+          <div className="text-left flex-1 min-w-0">
+            <div className="text-xs sm:text-[13px] font-semibold text-primary truncate">
+              Drag file here or <span className="text-brand underline font-semibold">browse</span>
             </div>
-          )}
-
-          {/* Subtitle / Policy / Error Description */}
-          <div className="text-xs text-[#5B6B65] leading-normal">
-            {isFailed ? (
-              <span className="text-[#A61A24]">{errorMessage}</span>
-            ) : (
-              <span>{accept} · Maximum {maxSizeMB} MB to assured privacy</span>
-            )}
+            <div className="text-[11px] text-secondary mt-0.5">
+              {accept} up to {maxSizeMB}MB
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* 2. Ready to upload state */}
+      {isReady && (
+        <div className="flex items-center justify-between gap-3 text-left">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-brand-soft flex items-center justify-center text-brand shrink-0">
+              <Upload className="w-4 h-4 stroke-[2]" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs sm:text-[13px] font-semibold text-primary truncate">
+                {fileName || "Document_Verified.pdf"}
+              </div>
+              <div className="text-[11px] text-secondary mt-0.5">
+                Ready to upload
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Uploading state with progress bar */}
+      {isUploading && (
+        <div className="space-y-2 select-none text-left">
+          <div className="flex items-center justify-between text-xs font-semibold text-primary">
+            <span className="truncate">{fileName || "Uploading..."}</span>
+            <span className="text-brand tabular-nums">{progress}%</span>
+          </div>
+          <div className="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden">
+            <div
+              className="bg-brand h-full transition-all duration-200 rounded-full"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 4. Failed state with error and retry action */}
+      {isFailed && (
+        <div className="flex items-center justify-between gap-3 text-left">
+          <div className="min-w-0">
+            <div className="text-xs sm:text-[13px] font-semibold text-danger">
+              Upload failed
+            </div>
+            <div className="text-[11px] text-secondary mt-0.5">
+              {errorMessage}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRetry?.();
+            }}
+            className="text-xs font-semibold text-brand hover:underline shrink-0"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* 5. Disabled state */}
+      {isDisabled && (
+        <div className="flex items-center gap-3.5 select-none opacity-60">
+          <div className="w-9 h-9 rounded-full bg-neutral-200 flex items-center justify-center shrink-0 text-neutral-400">
+            <Upload className="w-4 h-4" />
+          </div>
+          <div className="text-left">
+            <div className="text-xs font-semibold text-neutral-400">
+              Upload disabled
+            </div>
+            <div className="text-[11px] text-neutral-400 mt-0.5">
+              Action currently unavailable
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
 
 FileUpload.displayName = "FileUpload";
-

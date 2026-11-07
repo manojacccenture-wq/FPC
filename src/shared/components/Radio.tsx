@@ -26,7 +26,7 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(({
   const hasError = Boolean(error);
 
   const radioCircle = (
-    <div className="relative flex items-center justify-center shrink-0 w-5 h-5">
+    <div className="relative flex items-center justify-center shrink-0 w-5 h-5 min-w-5 min-h-5">
       <input
         type="radio"
         id={inputId}
@@ -43,22 +43,22 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(({
           "w-5 h-5 rounded-full border transition-all duration-150 flex items-center justify-center",
           className,
           // Default unselected state
-          !checked && !disabled && !hasError && "border-[#B9C6C0] bg-white hover:border-[#166B4B]",
+          !checked && !disabled && !hasError && "border-neutral-300 bg-white hover:border-brand",
           // Selected state
-          checked && !disabled && !hasError && "border-[#166B4B] bg-white",
+          checked && !disabled && !hasError && "border-brand bg-white",
           // Disabled state
-          disabled && "border-[#E1E8E6] bg-[#F5F8F7] text-[#9AA7A3] cursor-not-allowed",
+          disabled && "border-default bg-neutral-50 text-neutral-400 cursor-not-allowed",
           // Error state
-          hasError && !disabled && "border-[#A61A24] bg-white",
+          hasError && !disabled && "border-danger bg-white",
           // Focus state
-          "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[#166B4B] peer-focus-visible:ring-offset-2"
+          "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-brand peer-focus-visible:ring-offset-2"
         )}
       >
         {checked && (
           <span
             className={cn(
               "w-2.5 h-2.5 rounded-full",
-              hasError ? "bg-[#A61A24]" : disabled ? "bg-[#9AA7A3]" : "bg-[#166B4B]"
+              hasError ? "bg-danger" : disabled ? "bg-neutral-400" : "bg-brand"
             )}
           />
         )}
@@ -72,12 +72,12 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(({
       <label
         htmlFor={inputId}
         className={cn(
-          "min-h-[44px] px-4 py-2.5 rounded-[12px] border transition-all duration-150 flex items-center gap-3 select-none cursor-pointer w-full",
+          "min-h-11 px-4 py-2.5 rounded-card border transition-all duration-150 flex items-center gap-3 select-none cursor-pointer w-full",
           // Background & border states
-          !checked && !hasError && !disabled && "bg-white border-[#E1E8E6] hover:bg-[#F5F8F7] hover:border-[#B9C6C0]",
-          checked && !hasError && !disabled && "bg-[#EDF8F3] border-[#166B4B]",
-          hasError && !disabled && "bg-white border-[#A61A24]",
-          disabled && "bg-[#F5F8F7] border-[#E1E8E6] opacity-60 cursor-not-allowed",
+          !checked && !hasError && !disabled && "bg-white border-default hover:bg-neutral-50 hover:border-neutral-400",
+          checked && !hasError && !disabled && "bg-brand-soft border-brand",
+          hasError && !disabled && "bg-white border-danger",
+          disabled && "bg-neutral-50 border-default opacity-60 cursor-not-allowed",
           containerClassName
         )}
       >
@@ -85,7 +85,7 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(({
         {label && (
           <span className={cn(
             "text-sm font-medium",
-            disabled ? "text-[#9AA7A3]" : "text-[#0E1B16]"
+            disabled ? "text-neutral-400" : "text-primary"
           )}>
             {label}
           </span>
@@ -99,7 +99,7 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(({
     <label
       htmlFor={inputId}
       className={cn(
-        "min-h-[44px] inline-flex items-center gap-3 select-none cursor-pointer py-1.5",
+        "min-h-11 inline-flex items-center gap-3 select-none cursor-pointer py-1.5",
         disabled && "cursor-not-allowed opacity-60",
         containerClassName
       )}
@@ -108,7 +108,7 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(({
       {label && (
         <span className={cn(
           "text-sm font-normal",
-          disabled ? "text-[#9AA7A3]" : "text-[#0E1B16]"
+          disabled ? "text-neutral-400" : "text-primary"
         )}>
           {label}
         </span>
@@ -118,4 +118,3 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(({
 });
 
 Radio.displayName = "Radio";
-

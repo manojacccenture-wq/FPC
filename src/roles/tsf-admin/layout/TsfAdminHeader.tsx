@@ -67,11 +67,11 @@ export const TsfAdminHeader: React.FC<TsfAdminHeaderProps> = ({
   const { eyebrow, breadcrumb } = getBreadcrumbInfo(location.pathname);
 
   return (
-    <header className="h-14 sm:h-16 bg-white border-b border-default px-4 sm:px-6 md:px-8 flex items-center justify-between sticky top-0 z-30 shrink-0">
+    <header className="h-16 bg-white border-b border-default page-header-spacing flex items-center justify-between sticky top-0 z-30 shrink-0">
       {/* Left: Mobile Toggle + Breadcrumb Info */}
-      <div className="flex items-center gap-3 text-left">
+      <div className="flex items-center gap-3.5 text-left">
         {onToggleMobileMenu && (
-            <Button
+          <Button
             type="button"
             variant="ghost"
             size="xs"
@@ -84,45 +84,45 @@ export const TsfAdminHeader: React.FC<TsfAdminHeaderProps> = ({
           </Button>
         )}
 
-      <div>
-        <div className="text-[10px] sm:text-[11px] font-bold text-brand uppercase tracking-wider leading-none mb-1">
-          {eyebrow}
-        </div>
-        <div className="text-xs sm:text-[13px] font-medium text-primary">
-          {breadcrumb}
+        <div className="flex flex-col justify-center">
+          <div className="text-[10px] sm:text-[11px] font-bold text-brand uppercase tracking-wider leading-none mb-1">
+            {eyebrow}
+          </div>
+          <div className="text-xs sm:text-[13px] font-medium text-primary leading-tight">
+            {breadcrumb}
+          </div>
         </div>
       </div>
-    </div>
 
-  {/* Right: Actions (English Pill + Notification Bell) Reusing Shared Button */ }
-  <div className="flex items-center gap-3 sm:gap-4">
-    {/* English Pill Button */}
-      <Button
+      {/* Right: Actions (English Pill + Notification Bell) Reusing Shared Button */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        {/* English Pill Button */}
+        <Button
           type="button"
-      variant="secondary"
-      size="sm"
-      className="h-8 px-4 sm:px-5 bg-brand-soft hover:bg-forest-100 text-brand text-xs font-semibold rounded-control transition-colors shadow-2xs border-transparent"
-    >
-      English
-  </Button>
+          variant="secondary"
+          size="sm"
+          className="h-8 px-4 sm:px-5 bg-brand-soft hover:bg-forest-100 text-brand text-xs font-semibold rounded-control transition-colors shadow-2xs border-transparent"
+        >
+          English
+        </Button>
 
-  {/* Notification Bell with red badge */ }
-    <Button
+        {/* Notification Bell with red badge */}
+        <Button
           type="button"
-    variant="ghost"
-    size="xs"
-    iconOnly
-    aria-label="Notifications"
-    className="relative p-2 rounded-full text-secondary hover:text-primary hover:bg-neutral-50 transition-colors w-8 h-8"
-  >
-    <Bell className="w-4 h-4 stroke-[2]" />
-    <span
-      className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger ring-2 ring-white"
-      aria-hidden="true"
-    />
-        </Button >
-      </div >
-    </header >
+          variant="ghost"
+          size="xs"
+          iconOnly
+          aria-label="Notifications"
+          className="relative p-2 rounded-full text-secondary hover:text-primary hover:bg-neutral-50 transition-colors w-8 h-8"
+        >
+          <Bell className="w-4 h-4 stroke-[2]" />
+          <span
+            className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger ring-2 ring-white"
+            aria-hidden="true"
+          />
+        </Button>
+      </div>
+    </header>
   );
 };
 

@@ -23,19 +23,19 @@ const sizeClasses: Record<InputSize, {
   trailingPadding: string;
 }> = {
   sm: {
-    input: "h-9 text-[13px] px-3",
+    input: "h-9 min-h-9 text-[13px] px-3",
     icon: "w-3.5 h-3.5",
     leadingPadding: "pl-9",
     trailingPadding: "pr-9",
   },
   md: {
-    input: "h-11 text-sm px-3.5",
+    input: "h-11 min-h-11 text-sm px-3.5",
     icon: "w-4 h-4",
     leadingPadding: "pl-10",
     trailingPadding: "pr-10",
   },
   lg: {
-    input: "h-[52px] text-base px-4",
+    input: "h-[52px] min-h-[52px] text-base px-4",
     icon: "w-5 h-5",
     leadingPadding: "pl-12",
     trailingPadding: "pr-12",
@@ -68,63 +68,64 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
 
   const inputElement = (
     <div className="relative w-full flex items-center">
-          {effectiveLeading && (
-            <span className="absolute left-3.5 text-secondary pointer-events-none flex items-center justify-center shrink-0">
-              {effectiveLeading}
-            </span>
-          )}
+      {effectiveLeading && (
+        <span className="absolute left-3.5 text-secondary pointer-events-none flex items-center justify-center shrink-0">
+          {effectiveLeading}
+        </span>
+      )}
 
-          <input
-            ref={ref}
-            id={id}
-            type={type}
-            disabled={disabled}
-            required={required}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${id}-error` : helperText ? `${id}-desc` : undefined}
-            className={cn(
-              // Base input architecture
-              "w-full rounded-control border bg-white text-primary font-normal placeholder:text-neutral-400 transition-colors",
-              currentSize.input,
-              effectiveLeading && currentSize.leadingPadding,
-              effectiveTrailing && currentSize.trailingPadding,
-              // Border & focus tokens
-              "border-neutral-200 hover:border-neutral-400",
-              "focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:border-transparent",
-              // Error tokens
-              error && "border-danger focus:ring-danger text-danger",
-              // Disabled tokens
-              disabled && "bg-neutral-50 text-neutral-400 border-default cursor-not-allowed",
-              className
-            )}
-            {...props}
-          />
+      <input
+        ref={ref}
+        id={id}
+        type={type}
+        disabled={disabled}
+        required={required}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : helperText ? `${id}-desc` : undefined}
+        className={cn(
+          // Base input architecture
+          "w-full rounded-control border bg-white text-primary font-normal placeholder:text-neutral-400 transition-colors",
+          "outline-none appearance-none",
+          currentSize.input,
+          effectiveLeading && currentSize.leadingPadding,
+          effectiveTrailing && currentSize.trailingPadding,
+          // Border & focus tokens
+          "border-neutral-200 hover:border-neutral-400",
+          "focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:border-transparent",
+          // Error tokens
+          error && "border-danger focus:ring-danger text-danger",
+          // Disabled & Read-only tokens
+          disabled && "bg-neutral-50 text-neutral-400 border-default cursor-not-allowed",
+          props.readOnly && "bg-neutral-50 text-primary border-neutral-200 cursor-default focus:ring-0",
+          className
+        )}
+        {...props}
+      />
 
-              {effectiveTrailing && (
-                <span className="absolute right-3.5 text-secondary flex items-center justify-center shrink-0">
-                  {effectiveTrailing}
-                </span>
-              )}
-            </div>
-          );
+      {effectiveTrailing && (
+        <span className="absolute right-3.5 text-secondary flex items-center justify-center shrink-0">
+          {effectiveTrailing}
+        </span>
+      )}
+    </div>
+  );
 
-          if (label || error || helperText) {
+  if (label || error || helperText) {
     return (
-          <FormField
-            id={id}
-            label={label}
-            required={required}
-            error={error}
-            helperText={helperText}
-            className={containerClassName}
-          >
-            {inputElement}
-          </FormField>
-          );
+      <FormField
+        id={id}
+        label={label}
+        required={required}
+        error={error}
+        helperText={helperText}
+        className={containerClassName}
+      >
+        {inputElement}
+      </FormField>
+    );
   }
 
-          return inputElement;
+  return inputElement;
 });
 
-          Input.displayName = "Input";
-
+Input.displayName = "Input";

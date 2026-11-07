@@ -1,19 +1,8 @@
-@theme {
-  --spacing-2: 2px;
-  --spacing-4: 4px;
-  --spacing-8: 8px;
-  --spacing-12: 12px;
-  --spacing-16: 16px;
-  --spacing-20: 20px;
-  --spacing-24: 24px;
-  --spacing-32: 32px;
-  --spacing-40: 40px;
-  --spacing-48: 48px;
-  --spacing-64: 64px;
-}
-
 :root {
-  /* 03 / Foundations - Space Tokens */
+  /* ==============================================================
+     03 / FOUNDATIONS - PRIMITIVE SPACE TOKENS
+     Raw spatial scale (2px to 64px)
+     ============================================================== */
   --space-2: 2px;
   --space-4: 4px;
   --space-8: 8px;
@@ -25,4 +14,65 @@
   --space-40: 40px;
   --space-48: 48px;
   --space-64: 64px;
+
+  /* ==============================================================
+     SEMANTIC SPACING TOKENS
+     Purpose-based spatial architecture mapped across viewports
+     ============================================================== */
+
+  /* 1. Page Shell Spacing */
+  --spacing-page-x-mobile: 1.25rem;       /* 20px (px-5) */
+  --spacing-page-x-tablet: 2rem;          /* 32px (sm:px-8) */
+  --spacing-page-x-desktop: 2.5rem;       /* 40px (lg:px-10) */
+  --spacing-page-y-mobile: 1.5rem;        /* 24px (py-6) */
+  --spacing-page-y-desktop: 2rem;         /* 32px (sm:py-8) */
+
+  /* 2. Section & Content Flow Spacing */
+  --spacing-section-gap: 1.75rem;         /* 28px (space-y-7) */
+  --spacing-section-gap-sm: 1.5rem;       /* 24px (space-y-6) */
+  --spacing-header-gap: 1rem;             /* 16px (gap-4) */
+
+  /* 3. Card Spacing */
+  --spacing-card-p-mobile: 1.5rem;        /* 24px (p-6) */
+  --spacing-card-p-desktop: 1.75rem;      /* 28px (sm:p-7) */
+  --spacing-card-compact-p: 1.25rem;      /* 20px (p-5) */
+  --spacing-card-gap: 1.5rem;             /* 24px (space-y-6) */
+
+  /* 4. Modal Spacing */
+  --spacing-modal-x-mobile: 1.5rem;       /* 24px (px-6) */
+  --spacing-modal-x-desktop: 2.5rem;      /* 40px (sm:px-10) */
+  --spacing-modal-header-pt-mobile: 1.5rem; /* 24px (pt-6) */
+  --spacing-modal-header-pt-desktop: 2rem;  /* 32px (sm:pt-8) */
+  --spacing-modal-header-pb: 0.875rem;    /* 14px (pb-3.5) */
+  --spacing-modal-body-py: 1rem;          /* 16px (py-4) */
+  --spacing-modal-footer-pb-mobile: 1.5rem; /* 24px (pb-6) */
+  --spacing-modal-footer-pb-desktop: 2rem;  /* 32px (sm:pb-8) */
+  --spacing-modal-footer-pt: 1rem;        /* 16px (pt-4) */
+  --spacing-modal-footer-gap: 0.875rem;   /* 14px (gap-3.5) */
+
+  /* 5. Form & Field Spacing */
+  --spacing-form-flow-mobile: 1.25rem;    /* 20px (space-y-5) */
+  --spacing-form-flow-desktop: 1.5rem;    /* 24px (space-y-6) */
+  --spacing-form-grid-mobile: 1.25rem;    /* 20px (gap-5) */
+  --spacing-form-grid-desktop: 1.75rem;   /* 28px (gap-7) */
+  --spacing-form-field-gap: 0.5rem;       /* 8px (gap-2) */
+  --spacing-input-x: 1rem;                /* 16px (px-4) */
+  --spacing-input-y: 0.75rem;             /* 12px (py-3) */
+
+  /* 6. Button Padding */
+  --spacing-btn-x-xs: 0.625rem;           /* 10px (px-2.5) */
+  --spacing-btn-x-sm: 0.875rem;           /* 14px (px-3.5) */
+  --spacing-btn-x-md: 1.25rem;            /* 20px (px-5) */
+  --spacing-btn-x-lg: 1.75rem;            /* 28px (px-7) */
+
+  /* 7. Table Cell & Row Spacing */
+  --spacing-table-header-px: 1.25rem;     /* 20px (px-5) */
+  --spacing-table-header-py: 0.875rem;    /* 14px (py-3.5) */
+  --spacing-table-body-px: 1.25rem;       /* 20px (px-5) */
+  --spacing-table-body-py: 1rem;          /* 16px (py-4) */
+  --spacing-table-action-gap: 0.75rem;    /* 12px (gap-3) */
+
+  /* 8. Shell & Header Dimensions */
+  --spacing-topbar-h: 4rem;               /* 64px (h-16) */
+  --spacing-sidebar-w: 14.375rem;         /* 230px */
 }
