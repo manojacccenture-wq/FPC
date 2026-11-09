@@ -61,9 +61,9 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
       />
 
       {showCount && maxLength && (
-        <div className="text-right text-[11px] text-secondary mt-1">
+        <small className="block text-right text-secondary mt-1">
           {currentLength} / {maxLength}
-        </div>
+        </small>
       )}
     </div>
   );

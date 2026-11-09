@@ -1,11 +1,11 @@
 import React from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useFieldArray } from 'react-hook-form';
 import { ChevronRight, Plus } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
 import { Select } from '../../../shared/components/Select';
 import { Button } from '../../../shared/components/Button';
+import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import {
   legalRegistrationSchema,
   type LegalRegistrationFormValues,
@@ -16,7 +16,6 @@ export interface FpcLegalRegistrationFormProps {
   initialData?: Partial<FpcLegalRegistrationFormData> | null;
   onSubmit: (values: LegalRegistrationFormValues) => Promise<void> | void;
   onPreviousStep: () => void;
-  isSubmitting?: boolean;
 }
 
 const LICENSE_TYPE_OPTIONS = [
@@ -34,16 +33,16 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
   initialData,
   onSubmit,
   onPreviousStep,
-  isSubmitting = false,
 }) => {
   // ZERO useEffect: initial values populated directly during component mount
   const {
     register,
     control,
     handleSubmit,
-    formState: { errors },
-  } = useForm<LegalRegistrationFormValues>({
-    resolver: zodResolver(legalRegistrationSchema),
+    setError,
+    formState: { errors, isSubmitting },
+  } = useFpcForm<LegalRegistrationFormValues>({
+    schema: legalRegistrationSchema,
     defaultValues: {
       companyPan: initialData?.companyPan || '',
       companyTan: initialData?.companyTan || '',
@@ -62,12 +61,19 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
             },
           ],
     },
-    mode: 'onBlur',
   });
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'additionalLicenses',
+  });
+
+  const submit = handleSubmit(async (values) => {
+    try {
+      await onSubmit(values);
+    } catch (err: unknown) {
+      applyServerErrors(err, setError);
+    }
   });
 
   const handleAddLicense = () => {
@@ -80,7 +86,9 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={submit} className="space-y-6" noValidate>
+      <FormServerError errors={errors} />
+
       {/* Main Card */}
       <Card
         variant="default"
@@ -93,10 +101,10 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
             02
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-primary">
+            <h3 className="text-primary">
               Legal & registration
-            </h2>
-            <p className="text-xs text-secondary mt-0.5">
+            </h3>
+            <p className="text-secondary mt-0.5">
               Use the details on your official company documents.
             </p>
           </div>
@@ -175,15 +183,15 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
               >
                 {/* Header with Title & Delete button */}
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm sm:text-base font-semibold text-primary">
+                  <h4 className="font-semibold text-primary">
                     Additional Operating Licenses
-                  </h3>
+                  </h4>
                   <Button
                     type="button"
                     variant="destructive"
                     size="sm"
                     onClick={() => remove(index)}
-                    className="h-8 px-5 rounded-lg text-xs font-semibold bg-[#8B2323] hover:bg-[#721C1C] text-white shadow-2xs"
+                    className="h-8 px-5 rounded-lg bg-[#8B2323] hover:bg-[#721C1C] text-white shadow-2xs"
                   >
                     Delete
                   </Button>

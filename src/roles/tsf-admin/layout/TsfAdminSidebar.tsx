@@ -15,6 +15,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { Button, Input } from '../../../shared/components';
+import { useAppSelector } from '../../../app/store/hooks';
 
 export interface TsfAdminSidebarProps {
   isMobileOpen?: boolean;
@@ -32,6 +33,13 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
   const [oneGroupActive, setOneGroupActive] = useState(true);
   const [allSyncedActive, setAllSyncedActive] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const currentUser = useAppSelector((state) => state.auth.currentUser);
+
+  const displayName = currentUser?.fullName || 'TSF Central Admin';
+  const displayRole = currentUser?.activeRoleCode === 'TsfAdmin'
+    ? 'TSF Central Admin'
+    : (currentUser?.activeRoleCode || 'Administrator');
+  const activeFpcDisplayName = currentUser?.activeFpcName || 'TSF Programme';
 
   // Primary navigation links configuration
   const navItems = [
@@ -76,6 +84,21 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
     },
   ];
 
+  const query = searchQuery.trim().toLowerCase();
+  const filteredNavItems = query
+    ? navItems.filter((i) => i.name.toLowerCase().includes(query))
+    : navItems;
+  const filteredFpcSubItems = query
+    ? fpcSubItems.filter((i) => i.name.toLowerCase().includes(query))
+    : fpcSubItems;
+  const filteredSecondaryNavItems = query
+    ? secondaryNavItems.filter((i) => i.name.toLowerCase().includes(query))
+    : secondaryNavItems;
+
+  const showFpcSection =
+    !query || 'fpc management'.includes(query) || filteredFpcSubItems.length > 0;
+  const isAccordionOpen = fpcManagementOpen || Boolean(query);
+
   const isFpcManagementActive = fpcSubItems.some(sub => location.pathname === sub.path);
 
   return (
@@ -100,12 +123,12 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
           {/* Header Branding */}
           <div className="flex items-center justify-between pb-1">
             <div>
-              <h1 className="text-base font-bold text-white tracking-tight leading-tight">
+              <h1 className="brand-title font-bold text-white tracking-tight leading-tight">
                 FPC Desk
               </h1>
-              <p className="text-[11px] text-sidebar-muted font-medium">
-                Green Valley FPC
-              </p>
+              <small className="text-sidebar-muted font-medium truncate max-w-[140px] block" title={activeFpcDisplayName}>
+                {activeFpcDisplayName}
+              </small>
             </div>
               {/* Mobile Close Button: Reusing Shared Button */}
             <Button
@@ -131,15 +154,15 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-9 bg-sidebar-surface border-brand/40 text-xs text-white placeholder:text-sidebar-muted rounded-xl hover:border-brand/60 focus:ring-brand"
           />
-          <p className="text-[10px] text-sidebar-muted font-normal px-1">
+          <small className="text-sidebar-muted font-normal px-1 block">
             Search pages Ctrl K
-          </p>
+          </small>
         </div>
 
         {/* Navigation Links */}
         <nav className="space-y-1 pt-1 text-xs">
           {/* Top items */}
-          {navItems.map((item) => {
+          {filteredNavItems.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
@@ -160,71 +183,73 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
           })}
 
           {/* FPC Management Accordion: Reusing Shared Button */}
-          <div className="pt-0.5">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setFpcManagementOpen(!fpcManagementOpen)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-control font-medium transition-colors ${
-                isFpcManagementActive || fpcManagementOpen
-                  ? 'text-white hover:bg-sidebar-surface/50'
-                  : 'text-sidebar-icon hover:text-white hover:bg-sidebar-surface/50'
-              }`}
-            >
+          {showFpcSection && (
+            <div className="pt-0.5">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setFpcManagementOpen(!fpcManagementOpen)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-control font-medium transition-colors ${
+                  isFpcManagementActive || isAccordionOpen
+                    ? 'text-white hover:bg-sidebar-surface/50'
+                    : 'text-sidebar-icon hover:text-white hover:bg-sidebar-surface/50'
+                }`}
+              >
                 <div className="flex items-center gap-2.5">
                   <Users className="w-4 h-4 shrink-0 stroke-[2]" />
                   <span>FPC Management</span>
                 </div>
-                {fpcManagementOpen ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-sidebar-muted" />
-                ) : (
+                {isAccordionOpen ? (
                   <ChevronUp className="w-3.5 h-3.5 text-sidebar-muted" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 text-sidebar-muted" />
                 )}
               </Button>
 
               {/* Sub-menu items */}
-              {fpcManagementOpen && (
+              {isAccordionOpen && (
                 <div className="mt-1 space-y-1">
-                  {fpcSubItems.map((sub) => (
+                  {filteredFpcSubItems.map((sub) => (
                     <NavLink
                       key={sub.path}
                       to={sub.path}
                       onClick={() => onCloseMobile && onCloseMobile()}
                       className={({ isActive }) =>
-                        `block pl-9 pr-3 py-1.5 rounded-control text-[11px] font-medium transition-colors cursor-pointer ${
-              isActive
-                ? 'bg-brand text-white shadow-xs'
-                : 'text-sidebar-icon hover:text-white hover:bg-sidebar-surface/40'
-            }`
+                        `block pl-9 pr-3 py-1.5 rounded-control font-medium transition-colors cursor-pointer ${
+                          isActive
+                            ? 'bg-brand text-white shadow-xs'
+                            : 'text-sidebar-icon hover:text-white hover:bg-sidebar-surface/40'
+                        }`
                       }
                     >
-            {sub.name}
-          </NavLink>
+                      {sub.name}
+                    </NavLink>
                   ))}
-        </div>
+                </div>
               )}
-      </div>
+            </div>
+          )}
 
-      {/* Secondary items */}
-      {secondaryNavItems.map((item) => {
-        const Icon = item.icon;
-        return (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            onClick={() => onCloseMobile && onCloseMobile()}
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2 rounded-control font-medium transition-colors cursor-pointer ${isActive
-                ? 'bg-brand text-white shadow-xs'
-                : 'text-sidebar-icon hover:text-white hover:bg-sidebar-surface/50'
-              }`
-            }
-          >
-            <Icon className="w-4 h-4 shrink-0 stroke-[2]" />
-            <span>{item.name}</span>
-          </NavLink>
-        );
-      })}
+          {/* Secondary items */}
+          {filteredSecondaryNavItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => onCloseMobile && onCloseMobile()}
+                className={({ isActive }) =>
+                  `flex items-center gap-2.5 px-3 py-2 rounded-control font-medium transition-colors cursor-pointer ${isActive
+                    ? 'bg-brand text-white shadow-xs'
+                    : 'text-sidebar-icon hover:text-white hover:bg-sidebar-surface/50'
+                  }`
+                }
+              >
+                <Icon className="w-4 h-4 shrink-0 stroke-[2]" />
+                <span>{item.name}</span>
+              </NavLink>
+            );
+          })}
           </nav>
         </div>
 
@@ -240,9 +265,9 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
             }`}>
               <div className="w-3 h-3 rounded-full bg-white shadow-xs" />
             </div>
-            <span className="text-[11px] font-medium text-primary ml-2 flex-1 text-left">
+            <small className="font-medium text-primary ml-2 flex-1 text-left">
               One group at a time
-            </span>
+            </small>
           </div>
 
           {/* Status Switch 2: Connected / All changes synced */}
@@ -255,20 +280,20 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
             }`}>
               <div className="w-3 h-3 rounded-full bg-white shadow-xs" />
             </div>
-            <span className="text-[11px] font-medium text-primary ml-2 flex-1 text-left leading-tight">
+            <small className="font-medium text-primary ml-2 flex-1 text-left leading-tight">
               Connected / All changes synced
-            </span>
+            </small>
           </div>
 
           {/* User Account / Session Profile */}
           <div className="pt-1 flex items-center justify-between">
             <div className="text-left">
-              <p className="text-xs font-semibold text-white leading-tight">
-                Neha Sharma
+              <p className="text-xs font-semibold text-white leading-tight truncate max-w-[130px]" title={displayName}>
+                {displayName}
               </p>
-              <p className="text-[10px] text-sidebar-muted font-medium">
-                TSF Central Admin &lt;
-              </p>
+              <small className="text-sidebar-muted font-medium truncate max-w-[130px] block">
+                {displayRole} &lt;
+              </small>
             </div>
             {onSignOut && (
               <Button

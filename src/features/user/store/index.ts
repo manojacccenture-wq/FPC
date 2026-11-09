@@ -1,20 +1,13 @@
-import type { AuthUser } from '../../auth/api/auth.api';
+import type { CurrentUserProfile } from '../../auth/slices/authSlice';
 
 export interface UserState {
-  currentUser: AuthUser | null;
+  currentUser: Partial<CurrentUserProfile> | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
 
 export const initialUserState: UserState = {
-  currentUser: {
-    id: 'usr_tsf_admin_001',
-    name: 'TSF Central Administrator',
-    email: 'admin@tsf.org',
-    role: 'TSF Admin',
-    organization: 'Tata Steel Foundation',
-  },
-  isAuthenticated: true,
+  currentUser: null,
+  isAuthenticated: false,
   isLoading: false,
 };
-

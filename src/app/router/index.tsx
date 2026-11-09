@@ -1,22 +1,51 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { TsfAdminLoginPage } from '../../pages/TsfAdminLoginPage';
+import { TwoFactorVerificationPage } from '../../pages/TwoFactorVerificationPage';
 import { tsfAdminRoutes } from '../../roles/tsf-admin/routing';
 import { AuthGuard } from '../../shared/guards/AuthGuard';
 import { FpcRegistrationPage } from '../../features/onboarding/pages/FpcRegistrationPage';
+import { useAppSelector } from '../store/hooks';
 
 /**
  * LoginRoute: Renders the TSF Admin Login page,
- * or redirects directly to the dashboard if a valid session already exists.
+ * or redirects directly to the authenticated admin section if already authenticated.
  */
 const LoginRoute = () => {
-  const hasSession = Boolean(
-    localStorage.getItem('fpc_auth_user') || sessionStorage.getItem('fpc_auth_user')
-  );
-  if (hasSession) {
+  const { isAuthenticated, isInitialized } = useAppSelector((state) => state.auth);
+
+  if (!isInitialized) {
+    return null;
+  }
+
+  if (isAuthenticated) {
     return <Navigate to="/admin/onboard" replace />;
   }
+
   return <TsfAdminLoginPage />;
+};
+
+/**
+ * TwoFactorRoute: Renders the 2FA verification page if a challenge is pending,
+ * or redirects to the dashboard if already authenticated,
+ * or redirects back to login if no challenge is pending.
+ */
+const TwoFactorRoute = () => {
+  const { isAuthenticated, pendingTwoFactor, isInitialized } = useAppSelector((state) => state.auth);
+
+  if (!isInitialized) {
+    return null;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/admin/onboard" replace />;
+  }
+
+  if (!pendingTwoFactor) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <TwoFactorVerificationPage />;
 };
 
 export const router = createBrowserRouter([
@@ -29,6 +58,14 @@ export const router = createBrowserRouter([
     element: <LoginRoute />,
   },
   {
+    path: '/verify-2fa',
+    element: <TwoFactorRoute />,
+  },
+  {
+    path: '/login/2fa',
+    element: <TwoFactorRoute />,
+  },
+  {
     path: '/onboard/register',
     element: <FpcRegistrationPage />,
   },
@@ -38,7 +75,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: <AuthGuard redirectPath="/" />,
+    element: <AuthGuard redirectPath="/login" />,
     children: [
       tsfAdminRoutes,
     ],

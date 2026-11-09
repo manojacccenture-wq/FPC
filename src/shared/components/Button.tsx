@@ -103,10 +103,10 @@ const forcedStateStyles: Record<ButtonVariant, Partial<Record<ButtonState, strin
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  xs: "h-7 min-h-7 px-2.5 text-xs leading-[16px]",
-  sm: "h-9 min-h-9 px-3.5 text-[13px] leading-[18px]",
-  md: "h-11 min-h-11 px-4 text-sm leading-[20px]",
-  lg: "h-[52px] min-h-[52px] px-6 text-base leading-[24px]",
+  xs: "h-7 min-h-7 px-2.5 btn-sm",
+  sm: "h-9 min-h-9 px-3.5 btn-sm",
+  md: "h-11 min-h-11 px-4 btn-md",
+  lg: "h-[52px] min-h-[52px] px-6 btn-lg",
 };
 
 const iconOnlySizeStyles: Record<ButtonSize, string> = {

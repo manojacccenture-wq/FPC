@@ -1,24 +1,21 @@
-import type { AuthUser } from '../../auth/api/auth.api';
+import type { CurrentUserProfile } from '../../auth/slices/authSlice';
 
 export const userApi = {
-  getProfile: async (userId: string): Promise<AuthUser> => {
+  getProfile: async (userId: string): Promise<Partial<CurrentUserProfile>> => {
     return {
-      id: userId,
-      name: 'TSF Central Administrator',
+      userId,
+      fullName: 'TSF Central Administrator',
       email: 'admin@tsf.org',
-      role: 'TSF Admin',
-      organization: 'Tata Steel Foundation',
+      activeRoleCode: 'TsfAdmin',
     };
   },
 
-  updateProfile: async (userId: string, data: Partial<AuthUser>): Promise<AuthUser> => {
+  updateProfile: async (userId: string, data: Partial<CurrentUserProfile>): Promise<Partial<CurrentUserProfile>> => {
     return {
-      id: userId,
-      name: data.name || 'TSF Central Administrator',
+      userId,
+      fullName: data.fullName || 'TSF Central Administrator',
       email: data.email || 'admin@tsf.org',
-      role: data.role || 'TSF Admin',
-      organization: 'Tata Steel Foundation',
+      activeRoleCode: data.activeRoleCode || 'TsfAdmin',
     };
   },
 };
-

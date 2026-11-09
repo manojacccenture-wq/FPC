@@ -1,52 +1,11 @@
+/* ===========================================
+   FPC TYPOGRAPHY TOKENS
+   Standardized based on Vendor Helpdesk Management
+   =========================================== */
+
 @theme {
   --font-sans: "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans Oriya", "Noto Sans Tamil", system-ui, -apple-system, sans-serif;
   --font-mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-
-  /* 02 / Foundations - Typography Scale: Name Size/LineHeight */
-  --text-display: 40px;
-  --text-display--line-height: 48px;
-
-  --text-h1: 32px;
-  --text-h1--line-height: 40px;
-
-  --text-h2: 24px;
-  --text-h2--line-height: 32px;
-
-  --text-h3: 20px;
-  --text-h3--line-height: 28px;
-
-  --text-h4: 16px;
-  --text-h4--line-height: 24px;
-
-  --text-body-l: 16px;
-  --text-body-l--line-height: 24px;
-
-  --text-body-m: 14px;
-  --text-body-m--line-height: 20px;
-
-  --text-body-s: 13px;
-  --text-body-s--line-height: 18px;
-
-  --text-caption: 12px;
-  --text-caption--line-height: 16px;
-
-  --text-eyebrow: 12px;
-  --text-eyebrow--line-height: 16px;
-
-  --text-label: 14px;
-  --text-label--line-height: 20px;
-
-  --text-numeric: 32px;
-  --text-numeric--line-height: 36px;
-
-  --text-button-l: 16px;
-  --text-button-l--line-height: 24px;
-
-  --text-button-m: 14px;
-  --text-button-m--line-height: 20px;
-
-  --text-button-s: 13px;
-  --text-button-s--line-height: 18px;
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -55,57 +14,63 @@
 }
 
 :root {
+  /* Font Families — preserving FPC brand font & multilingual agrarian script fallbacks */
   --font-family-sans: "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans Oriya", "Noto Sans Tamil", system-ui, sans-serif;
-  --font-family-mono: "DM Mono", ui-monospace, monospace;
+  --font-family-mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Font Sizes */
-  --font-size-display: 40px;
-  --font-size-h1: 32px;
-  --font-size-h2: 24px;
-  --font-size-h3: 20px;
-  --font-size-h4: 16px;
-  --font-size-body-l: 16px;
-  --font-size-body-m: 14px;
-  --font-size-body-s: 13px;
-  --font-size-caption: 12px;
-  --font-size-eyebrow: 12px;
-  --font-size-label: 14px;
-  --font-size-numeric: 32px;
-  --font-size-button-l: 16px;
-  --font-size-button-m: 14px;
-  --font-size-button-s: 13px;
-
-  /* Line Heights */
-  --line-height-display: 48px;
-  --line-height-h1: 40px;
-  --line-height-h2: 32px;
-  --line-height-h3: 28px;
-  --line-height-h4: 24px;
-  --line-height-body-l: 24px;
-  --line-height-body-m: 20px;
-  --line-height-body-s: 18px;
-  --line-height-caption: 16px;
-  --line-height-eyebrow: 16px;
-  --line-height-label: 20px;
-  --line-height-numeric: 36px;
-  --line-height-button-l: 24px;
-  --line-height-button-m: 20px;
-  --line-height-button-s: 18px;
+  /* Font Sizes — Responsive Fluid Scales via clamp() */
+  --font-size-page-title: clamp(1.125rem, 0.944rem + 0.391vw, 1.375rem);     /* 18px → 22px */
+  --font-size-card-title: clamp(1rem, 0.889rem + 0.278vw, 1.25rem);           /* 16px → 20px */
+  --font-size-table-header: clamp(0.8125rem, 0.793rem + 0.049vw, 0.875rem);   /* 13px → 14px */
+  --font-size-section-label: clamp(0.8125rem, 0.793rem + 0.049vw, 0.875rem);  /* 13px → 14px */
+  --font-size-body: clamp(0.875rem, 0.852rem + 0.065vw, 0.9375rem);           /* 14px → 15px */
+  --font-size-caption: clamp(0.75rem, 0.734rem + 0.039vw, 0.8125rem);         /* 12px → 13px */
+  --font-size-code: 0.75rem;                                                   /* 12px fixed — mono */
+  --font-size-badge: clamp(0.75rem, 0.734rem + 0.039vw, 0.8125rem);           /* 12px → 13px */
+  --font-size-metric-value: clamp(2rem, 1.375rem + 1.563vw, 3.5rem);          /* 32px → 56px */
+  --font-size-modal-title: clamp(1.25rem, 1.016rem + 0.586vw, 1.75rem);       /* 20px → 28px */
+  --font-size-page-heading: clamp(1.5rem, 1.15rem + 1.5vw, 2rem);             /* 24px → 32px */
+  --font-size-highlight: clamp(1.75rem, 1.172rem + 1.484vw, 3.25rem);         /* 28px → 52px */
+  --font-size-brand: clamp(0.9375rem, 0.859rem + 0.195vw, 1.125rem);          /* 15px → 18px */
+  --font-size-floating-label: 0.625rem;                                        /* 10px fixed */
 
   /* Font Weights */
-  --font-weight-display: 700;
-  --font-weight-h1: 700;
-  --font-weight-h2: 600;
-  --font-weight-h3: 600;
-  --font-weight-h4: 600;
-  --font-weight-body-l: 400;
-  --font-weight-body-m: 400;
-  --font-weight-body-s: 400;
+  --font-weight-page-title: 600;
+  --font-weight-card-title: 600;
+  --font-weight-table-header: 600;
+  --font-weight-section-label: 500;
+  --font-weight-body: 400;
   --font-weight-caption: 400;
-  --font-weight-eyebrow: 600;
-  --font-weight-label: 500;
-  --font-weight-numeric: 700;
-  --font-weight-button-l: 500;
-  --font-weight-button-m: 500;
-  --font-weight-button-s: 500;
+  --font-weight-code: 400;
+  --font-weight-badge: 500;
+  --font-weight-metric-value: 600;
+  --font-weight-modal-title: 600;
+  --font-weight-page-heading: 700;
+  --font-weight-highlight: 700;
+  --font-weight-brand: 600;
+  --font-weight-floating-label: 600;
+
+  /* Line Heights */
+  --line-height-page-title: 1.25;
+  --line-height-section-label: 1.5;
+  --line-height-body: 1.5;
+  --line-height-caption: 1.5;
+  --line-height-code: normal;
+  --line-height-modal-title: 1.3;
+  --line-height-page-heading: 1.18;
+  --line-height-highlight: 1.1;
+  --line-height-brand: 1.2;
+  --line-height-floating-label: normal;
+
+  /* Letter Spacing */
+  --letter-spacing-page-title: -0.015em;
+  --letter-spacing-section-label: normal;
+  --letter-spacing-body: normal;
+  --letter-spacing-caption: normal;
+  --letter-spacing-code: normal;
+  --letter-spacing-modal-title: -0.015em;
+  --letter-spacing-page-heading: -0.025em;
+  --letter-spacing-highlight: -0.02em;
+  --letter-spacing-brand: normal;
+  --letter-spacing-floating-label: 0.05em;
 }

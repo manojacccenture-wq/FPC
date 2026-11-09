@@ -23,19 +23,19 @@ const sizeClasses: Record<InputSize, {
   trailingPadding: string;
 }> = {
   sm: {
-    input: "h-9 min-h-9 text-[13px] px-3",
+    input: "h-9 min-h-9 px-3",
     icon: "w-3.5 h-3.5",
     leadingPadding: "pl-9",
     trailingPadding: "pr-9",
   },
   md: {
-    input: "h-11 min-h-11 text-sm px-3.5",
+    input: "h-11 min-h-11 px-3.5",
     icon: "w-4 h-4",
     leadingPadding: "pl-10",
     trailingPadding: "pr-10",
   },
   lg: {
-    input: "h-[52px] min-h-[52px] text-base px-4",
+    input: "h-[52px] min-h-[52px] px-4",
     icon: "w-5 h-5",
     leadingPadding: "pl-12",
     trailingPadding: "pr-12",

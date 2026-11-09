@@ -85,10 +85,10 @@ export const TsfAdminHeader: React.FC<TsfAdminHeaderProps> = ({
         )}
 
         <div className="flex flex-col justify-center">
-          <div className="text-[10px] sm:text-[11px] font-bold text-brand uppercase tracking-wider leading-none mb-1">
+          <div className="floating-label font-bold text-brand leading-none mb-1">
             {eyebrow}
           </div>
-          <div className="text-xs sm:text-[13px] font-medium text-primary leading-tight">
+          <div className="font-medium text-primary leading-tight">
             {breadcrumb}
           </div>
         </div>
@@ -101,7 +101,7 @@ export const TsfAdminHeader: React.FC<TsfAdminHeaderProps> = ({
           type="button"
           variant="secondary"
           size="sm"
-          className="h-8 px-4 sm:px-5 bg-brand-soft hover:bg-forest-100 text-brand text-xs font-semibold rounded-control transition-colors shadow-2xs border-transparent"
+          className="h-8 px-4 sm:px-5 bg-brand-soft hover:bg-forest-100 text-brand rounded-control transition-colors shadow-2xs border-transparent"
         >
           English
         </Button>

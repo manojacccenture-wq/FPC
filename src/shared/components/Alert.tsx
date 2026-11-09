@@ -69,22 +69,22 @@ const toneStyles: Record<AlertTone, {
 const sizeStyles: Record<AlertSize, {
   container: string;
   iconSize: string;
-  textSize: string;
+  fontSize: string;
 }> = {
   sm: {
     container: "min-h-[34px] py-1.5 px-3",
     iconSize: "w-3.5 h-3.5",
-    textSize: "text-[12px] leading-[18px]",
+    fontSize: "var(--font-size-caption)",
   },
   md: {
     container: "min-h-[38px] py-2 px-3.5",
     iconSize: "w-4 h-4",
-    textSize: "text-[12.5px] leading-[18px]",
+    fontSize: "var(--font-size-caption)",
   },
   lg: {
     container: "min-h-[48px] py-3 px-4",
     iconSize: "w-5 h-5",
-    textSize: "text-[13px] leading-[20px]",
+    fontSize: "var(--font-size-body)",
   },
 };
 
@@ -127,9 +127,12 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(({
         </span>
       )}
 
-      <div className={cn("flex-1 min-w-0 font-normal", currentTone.text, currentSize.textSize)}>
+      <div
+        style={{ fontSize: currentSize.fontSize, lineHeight: 1.5 }}
+        className={cn("flex-1 min-w-0 font-normal", currentTone.text)}
+      >
         {title && (
-          <div className="font-semibold text-xs mb-0.5">
+          <div className="font-semibold mb-0.5">
             {title}
           </div>
         )}

@@ -1,11 +1,10 @@
 import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronRight } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
 import { Select } from '../../../shared/components/Select';
 import { Button } from '../../../shared/components/Button';
+import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import { basicDetailsSchema, type BasicDetailsFormValues } from '../schemas/basicDetails.schema';
 import type { FpcInvitation } from '../types';
 
@@ -13,7 +12,6 @@ export interface FpcBasicDetailsFormProps {
   invitation: FpcInvitation;
   onSubmit: (values: BasicDetailsFormValues) => Promise<void> | void;
   onBackToLogin: () => void;
-  isSubmitting?: boolean;
 }
 
 const ROC_OFFICES = [
@@ -47,15 +45,15 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
   invitation,
   onSubmit,
   onBackToLogin,
-  isSubmitting = false,
 }) => {
   // ZERO useEffect: Initial values populated synchronously from invitation record
   const {
     register,
     handleSubmit,
-    formState: { errors },
-  } = useForm<BasicDetailsFormValues>({
-    resolver: zodResolver(basicDetailsSchema),
+    setError,
+    formState: { errors, isSubmitting },
+  } = useFpcForm<BasicDetailsFormValues>({
+    schema: basicDetailsSchema,
     defaultValues: {
       legalName: invitation.companyName || '',
       cin: '',
@@ -67,11 +65,20 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
       contactMobile: invitation.phoneNumber || '',
       website: '',
     },
-    mode: 'onBlur',
+  });
+
+  const submit = handleSubmit(async (values) => {
+    try {
+      await onSubmit(values);
+    } catch (err: unknown) {
+      applyServerErrors(err, setError);
+    }
   });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={submit} className="space-y-6" noValidate>
+      <FormServerError errors={errors} />
+
       {/* Form Card */}
       <Card
         variant="default"
@@ -84,10 +91,10 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             01
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-primary">
+            <h3 className="text-primary">
               Basic company details
-            </h2>
-            <p className="text-xs text-secondary mt-0.5">
+            </h3>
+            <p className="text-secondary mt-0.5">
               Use the details on your official company documents.
             </p>
           </div>

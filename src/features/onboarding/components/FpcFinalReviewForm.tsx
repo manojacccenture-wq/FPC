@@ -102,10 +102,10 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
             08
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-primary">
+            <h3 className="text-primary">
               Final review & submission
-            </h2>
-            <p className="text-xs text-secondary mt-0.5">
+            </h3>
+            <p className="text-secondary mt-0.5">
               Use the details on your official company documents.
             </p>
           </div>
@@ -123,19 +123,19 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
                   {section.badge}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-xs sm:text-sm font-bold text-primary truncate">
+                  <h4 className="font-semibold text-primary truncate">
                     {section.title}
-                  </h3>
-                  <p className="text-xs text-secondary mt-0.5 truncate">
+                  </h4>
+                  <small className="text-secondary mt-0.5 truncate block">
                     {section.summary}
-                  </p>
+                  </small>
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={() => onEditStep(section.step)}
-                className="rounded-full bg-[#E8F5E9] hover:bg-[#D7EEDF] text-[#0F4C36] px-4 py-1.5 text-xs font-semibold select-none flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                className="rounded-full bg-[#E8F5E9] hover:bg-[#D7EEDF] text-[#0F4C36] px-4 py-1.5 font-semibold select-none flex items-center gap-1 cursor-pointer transition-colors shrink-0"
               >
                 <span>Edit</span>
                 <span>→</span>
@@ -146,15 +146,15 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
 
         {/* Onboarding Readiness Warm Banner */}
         <div className="bg-[#FEF9EE] border border-[#FDE68A]/60 rounded-2xl p-5 sm:p-6 space-y-3 shadow-2xs">
-          <h4 className="text-sm sm:text-base font-bold text-primary">
+          <h4 className="font-bold text-primary">
             Onboarding Readiness • 92%
           </h4>
           <div className="w-full h-2 bg-neutral-200/80 rounded-full overflow-hidden">
             <div className="h-full bg-[#0F4C36] rounded-full w-[92%] transition-all duration-500" />
           </div>
-          <p className="text-xs text-secondary font-medium">
+          <small className="text-secondary font-medium block">
             2 of 8 sections verified
-          </p>
+          </small>
         </div>
       </Card>
 

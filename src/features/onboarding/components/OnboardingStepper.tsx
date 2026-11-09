@@ -53,7 +53,7 @@ export const OnboardingStepper: React.FC<OnboardingStepperProps> = ({
     >
       {/* Top step progress info */}
       <div className="text-center mb-4">
-        <p className="text-[11px] sm:text-xs font-semibold tracking-wider text-secondary uppercase">
+        <p className="floating-label font-semibold text-secondary">
           STEP {currentStep} OF {ONBOARDING_STEPS.length} • BASIC COMPANY DETAILS • {percentComplete}% COMPLETE
         </p>
       </div>
@@ -81,7 +81,7 @@ export const OnboardingStepper: React.FC<OnboardingStepperProps> = ({
                   )}
                 >
                   {isActive && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/20 text-white leading-none">
+                    <span className="px-1.5 py-0.5 rounded floating-label font-bold bg-white/20 text-white leading-none">
                       {String(step.number).padStart(2, '0')}
                     </span>
                   )}

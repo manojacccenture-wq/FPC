@@ -14,6 +14,9 @@ import { FpcAddressLocationForm } from '../components/FpcAddressLocationForm';
 import { FpcBusinessActivitiesForm } from '../components/FpcBusinessActivitiesForm';
 import { FpcFinalReviewForm } from '../components/FpcFinalReviewForm';
 import { invitationApi } from '../api/invitation.api';
+import { resolveErrorMessage } from '../../../shared/forms';
+import { useValidateFpcInvitationQuery, useCompleteFpcInvitationMutation } from '../api/fpcInvitationApi';
+import type { FpcInvitation } from '../types';
 import type { BasicDetailsFormValues } from '../schemas/basicDetails.schema';
 import type { LegalRegistrationFormValues } from '../schemas/legalRegistration.schema';
 import type { FinancialInformationFormValues } from '../schemas/financialInformation.schema';
@@ -25,19 +28,23 @@ import type { BusinessActivitiesFormValues } from '../schemas/businessActivities
 export const FpcRegistrationPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = searchParams.get('token');
+  const rawToken = searchParams.get('token') || '';
   const stepParam = Number(searchParams.get('step'));
 
-  // Synchronous validation: ZERO useEffect
-  const validationResult = invitationApi.validateTokenSync(token);
-  const activeToken = token || 'demo-invite-token';
+  // Live token validation from PostgreSQL backend
+  const { data: validationResult, isLoading: isValidating } = useValidateFpcInvitationQuery(rawToken, {
+    skip: !rawToken,
+  });
+  const [completeInvitation] = useCompleteFpcInvitationMutation();
+  const activeToken = rawToken;
 
   const [currentStep, setCurrentStep] = useState<number>(
     stepParam >= 1 && stepParam <= 8 ? stepParam : 1
   );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFinalSubmitting, setIsFinalSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [stepSuccessMessage, setStepSuccessMessage] = useState<string | null>(null);
+  const [finalErrorMessage, setFinalErrorMessage] = useState<string | null>(null);
 
   // Synchronous pre-read of stored step data for zero useEffect render
   const storedStep1Data = invitationApi.getStepOneData(activeToken);
@@ -58,130 +65,67 @@ export const FpcRegistrationPage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleStepOneSubmit = async (values: BasicDetailsFormValues) => {
-    setIsSubmitting(true);
+  /**
+   * Saves one onboarding step and advances the wizard.
+   * Throws on failure so the step form's `handleSubmit` can surface the message
+   * through its own error handling instead of silently staying on the page.
+   */
+  const runStep = async (
+    stepNumber: number,
+    action: () => Promise<{ success: boolean; message: string }>
+  ) => {
     setStepSuccessMessage(null);
-    try {
-      const result = await invitationApi.submitStepOne(activeToken, values);
-      if (result.success) {
-        setStepSuccessMessage(result.message);
-        goToStep(2);
-      }
-    } catch {
-      // Graceful error handling
-    } finally {
-      setIsSubmitting(false);
+
+    const result = await action();
+    if (!result.success) {
+      throw new Error(result.message || 'We could not save this step. Please try again.');
     }
+
+    setStepSuccessMessage(result.message);
+    goToStep(stepNumber + 1);
   };
 
-  const handleStepTwoSubmit = async (values: LegalRegistrationFormValues) => {
-    setIsSubmitting(true);
-    setStepSuccessMessage(null);
-    try {
-      const result = await invitationApi.submitStepTwo(activeToken, values);
-      if (result.success) {
-        setStepSuccessMessage(result.message);
-        goToStep(3);
-      }
-    } catch {
-      // Graceful error handling
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleStepOneSubmit = (values: BasicDetailsFormValues) =>
+    runStep(1, () => invitationApi.submitStepOne(activeToken, values));
 
-  const handleStepThreeSubmit = async (values: FinancialInformationFormValues) => {
-    setIsSubmitting(true);
-    setStepSuccessMessage(null);
-    try {
-      const result = await invitationApi.submitStepThree(activeToken, values);
-      if (result.success) {
-        setStepSuccessMessage(result.message);
-        goToStep(4);
-      }
-    } catch {
-      // Graceful error handling
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleStepTwoSubmit = (values: LegalRegistrationFormValues) =>
+    runStep(2, () => invitationApi.submitStepTwo(activeToken, values));
 
-  const handleStepFourSubmit = async (values: BoardOfDirectorsFormValues) => {
-    setIsSubmitting(true);
-    setStepSuccessMessage(null);
-    try {
-      const result = await invitationApi.submitStepFour(activeToken, values);
-      if (result.success) {
-        setStepSuccessMessage(result.message);
-        goToStep(5);
-      }
-    } catch {
-      // Graceful error handling
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleStepThreeSubmit = (values: FinancialInformationFormValues) =>
+    runStep(3, () => invitationApi.submitStepThree(activeToken, values));
 
-  const handleStepFiveSubmit = async (values: LogoDocumentsFormValues) => {
-    setIsSubmitting(true);
-    setStepSuccessMessage(null);
-    try {
-      const result = await invitationApi.submitStepFive(activeToken, values);
-      if (result.success) {
-        setStepSuccessMessage(result.message);
-        goToStep(6);
-      }
-    } catch {
-      // Graceful error handling
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleStepFourSubmit = (values: BoardOfDirectorsFormValues) =>
+    runStep(4, () => invitationApi.submitStepFour(activeToken, values));
 
-  const handleStepSixSubmit = async (values: AddressLocationFormValues) => {
-    setIsSubmitting(true);
-    setStepSuccessMessage(null);
-    try {
-      const result = await invitationApi.submitStepSix(activeToken, values);
-      if (result.success) {
-        setStepSuccessMessage(result.message);
-        goToStep(7);
-      }
-    } catch {
-      // Graceful error handling
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleStepFiveSubmit = (values: LogoDocumentsFormValues) =>
+    runStep(5, () => invitationApi.submitStepFive(activeToken, values));
 
-  const handleStepSevenSubmit = async (values: BusinessActivitiesFormValues) => {
-    setIsSubmitting(true);
-    setStepSuccessMessage(null);
-    try {
-      const result = await invitationApi.submitStepSeven(activeToken, values);
-      if (result.success) {
-        setStepSuccessMessage(result.message);
-        goToStep(8);
-      }
-    } catch {
-      // Graceful error handling
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleStepSixSubmit = (values: AddressLocationFormValues) =>
+    runStep(6, () => invitationApi.submitStepSix(activeToken, values));
+
+  const handleStepSevenSubmit = (values: BusinessActivitiesFormValues) =>
+    runStep(7, () => invitationApi.submitStepSeven(activeToken, values));
 
   const handleFinalSubmit = async () => {
-    setIsSubmitting(true);
+    if (isFinalSubmitting) return;
+
+    setIsFinalSubmitting(true);
     setStepSuccessMessage(null);
+    setFinalErrorMessage(null);
+
     try {
-      const result = await invitationApi.submitFinalReview(activeToken);
-      if (result.success) {
-        setIsSubmitted(true);
+      if (activeToken) {
+        await completeInvitation({ token: activeToken }).unwrap();
       }
-    } catch {
-      // Graceful error handling
+      await invitationApi.submitFinalReview(activeToken);
+      setIsSubmitted(true);
+    } catch (err: unknown) {
+      // Stay on the review step and explain the failure instead of showing a false success screen.
+      setFinalErrorMessage(
+        resolveErrorMessage(err, 'We could not submit your onboarding application. Please try again.')
+      );
     } finally {
-      setIsSubmitting(false);
+      setIsFinalSubmitting(false);
     }
   };
 
@@ -189,8 +133,20 @@ export const FpcRegistrationPage: React.FC = () => {
     navigate('/login');
   };
 
+  // Loading validation state
+  if (isValidating) {
+    return (
+      <div className="min-h-screen bg-[#F8FAF9] flex flex-col justify-center items-center p-8">
+        <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-xs font-semibold text-secondary uppercase tracking-wider">
+          Validating Invitation Security Credentials...
+        </p>
+      </div>
+    );
+  }
+
   // Invalid or expired invitation link screen
-  if (!validationResult.valid || !validationResult.invitation) {
+  if (!rawToken || !validationResult?.isValid) {
     return (
       <div className="min-h-screen bg-[#F8FAF9] flex flex-col justify-between p-4 sm:p-6 lg:p-8">
         <header className="max-w-5xl w-full mx-auto flex items-center justify-between">
@@ -219,19 +175,21 @@ export const FpcRegistrationPage: React.FC = () => {
             <div className="w-14 h-14 rounded-full bg-danger-soft text-danger mx-auto flex items-center justify-center mb-4">
               <AlertCircle className="w-8 h-8 stroke-[1.5]" />
             </div>
-            <h1 className="text-xl font-bold text-primary mb-2">
+            <h1 className="modal-title text-primary mb-2">
               Invalid or Expired Invitation
             </h1>
-            <p className="text-sm text-secondary mb-6 leading-relaxed">
-              {validationResult.error ||
-                'This invitation link is not valid or has expired. Please contact your Tata Steel Foundation (TSF) Administrator to issue a new onboarding invitation.'}
+            <p className="text-secondary mb-6 leading-relaxed">
+              {validationResult?.errorMessage ||
+                (!rawToken
+                  ? 'No invitation token was supplied in the registration link. Please use the complete link provided in your invitation email.'
+                  : 'This invitation link is not valid or has expired. Please contact your Tata Steel Foundation (TSF) Administrator to issue a new onboarding invitation.')}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button
                 type="button"
                 variant="primary"
                 onClick={handleBackToLogin}
-                className="w-full sm:w-auto rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-6 py-2.5 text-xs font-semibold"
+                className="w-full sm:w-auto rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-6 py-2.5 font-semibold"
               >
                 Return to Login
               </Button>
@@ -239,14 +197,25 @@ export const FpcRegistrationPage: React.FC = () => {
           </Card>
         </main>
 
-        <footer className="max-w-5xl w-full mx-auto text-center text-xs text-neutral-400">
-          © {new Date().getFullYear()} Tata Steel Foundation • FPC Management System
+        <footer className="max-w-5xl w-full mx-auto text-center text-neutral-400">
+          <small>© {new Date().getFullYear()} Tata Steel Foundation • FPC Management System</small>
         </footer>
       </div>
     );
   }
 
-  const { invitation } = validationResult;
+  const invitation: FpcInvitation = {
+    token: rawToken,
+    companyName: validationResult.companyName || '',
+    nominatedAdmin: validationResult.nominatedAdmin || '',
+    email: validationResult.email || '',
+    phoneNumber: validationResult.phoneNumber || '',
+    state: validationResult.state || '',
+    district: validationResult.district || '',
+    createdAt: '',
+    expiresAt: validationResult.expiresAtUtc || '',
+    status: 'pending',
+  };
 
   return (
     <div className="min-h-screen bg-[#F8FAF9] flex flex-col justify-between py-6 px-4 sm:px-6 lg:px-8">
@@ -272,13 +241,13 @@ export const FpcRegistrationPage: React.FC = () => {
 
         {/* Title block */}
         <div className="pt-2">
-          <p className="text-[11px] sm:text-xs font-bold tracking-wider text-[#1E5E45] uppercase">
+          <p className="floating-label font-bold text-brand">
             TATA STEEL FOUNDATION • FPC COMPANY ONBOARDING
           </p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-primary tracking-tight mt-1">
+          <h1 className="page-heading text-primary mt-1">
             Onboard New Producer Company
           </h1>
-          <p className="text-xs sm:text-sm text-secondary mt-1">
+          <p className="text-secondary mt-1">
             8-Step structured onboarding wizard. Complete company legal, financial, governance, and operational records.
           </p>
         </div>
@@ -308,7 +277,6 @@ export const FpcRegistrationPage: React.FC = () => {
             invitation={invitation}
             onSubmit={handleStepOneSubmit}
             onBackToLogin={handleBackToLogin}
-            isSubmitting={isSubmitting}
           />
         )}
 
@@ -318,7 +286,6 @@ export const FpcRegistrationPage: React.FC = () => {
             initialData={storedStep2Data}
             onSubmit={handleStepTwoSubmit}
             onPreviousStep={() => goToStep(1)}
-            isSubmitting={isSubmitting}
           />
         )}
 
@@ -328,7 +295,6 @@ export const FpcRegistrationPage: React.FC = () => {
             initialData={storedStep3Data}
             onSubmit={handleStepThreeSubmit}
             onPreviousStep={() => goToStep(2)}
-            isSubmitting={isSubmitting}
           />
         )}
 
@@ -338,7 +304,6 @@ export const FpcRegistrationPage: React.FC = () => {
             initialData={storedStep4Data}
             onSubmit={handleStepFourSubmit}
             onPreviousStep={() => goToStep(3)}
-            isSubmitting={isSubmitting}
           />
         )}
 
@@ -348,7 +313,6 @@ export const FpcRegistrationPage: React.FC = () => {
             initialData={storedStep5Data}
             onSubmit={handleStepFiveSubmit}
             onPreviousStep={() => goToStep(4)}
-            isSubmitting={isSubmitting}
           />
         )}
 
@@ -358,7 +322,6 @@ export const FpcRegistrationPage: React.FC = () => {
             initialData={storedStep6Data}
             onSubmit={handleStepSixSubmit}
             onPreviousStep={() => goToStep(5)}
-            isSubmitting={isSubmitting}
           />
         )}
 
@@ -368,25 +331,37 @@ export const FpcRegistrationPage: React.FC = () => {
             initialData={storedStep7Data}
             onSubmit={handleStepSevenSubmit}
             onPreviousStep={() => goToStep(6)}
-            isSubmitting={isSubmitting}
           />
         )}
 
         {/* Step 8: Final Review & Submission */}
         {currentStep === 8 && !isSubmitted && (
-          <FpcFinalReviewForm
-            step1Data={storedStep1Data}
-            step2Data={storedStep2Data}
-            step3Data={storedStep3Data}
-            step4Data={storedStep4Data}
-            step5Data={storedStep5Data}
-            step6Data={storedStep6Data}
-            step7Data={storedStep7Data}
-            onEditStep={(step) => goToStep(step)}
-            onPreviousStep={() => goToStep(7)}
-            onSubmit={handleFinalSubmit}
-            isSubmitting={isSubmitting}
-          />
+          <>
+            {finalErrorMessage && (
+              <Alert
+                tone="danger"
+                variant="card"
+                title="Submission failed"
+                onClose={() => setFinalErrorMessage(null)}
+              >
+                {finalErrorMessage}
+              </Alert>
+            )}
+
+            <FpcFinalReviewForm
+              step1Data={storedStep1Data}
+              step2Data={storedStep2Data}
+              step3Data={storedStep3Data}
+              step4Data={storedStep4Data}
+              step5Data={storedStep5Data}
+              step6Data={storedStep6Data}
+              step7Data={storedStep7Data}
+              onEditStep={(step) => goToStep(step)}
+              onPreviousStep={() => goToStep(7)}
+              onSubmit={handleFinalSubmit}
+              isSubmitting={isFinalSubmitting}
+            />
+          </>
         )}
 
         {/* Final Submission Success Confirmation */}
@@ -399,13 +374,13 @@ export const FpcRegistrationPage: React.FC = () => {
               <CheckCircle2 className="w-9 h-9 stroke-[2]" />
             </div>
             <div className="space-y-2">
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-[#0F4C36]">
-                Registration Complete
+              <span className="inline-block px-3 py-1 rounded-full font-semibold bg-emerald-50 text-[#0F4C36]">
+                <small className="font-semibold">Registration Complete</small>
               </span>
-              <h2 className="text-xl sm:text-2xl font-bold text-primary">
+              <h2 className="modal-title text-primary">
                 Application Submitted Successfully
               </h2>
-              <p className="text-sm text-secondary max-w-md mx-auto leading-relaxed">
+              <p className="text-secondary max-w-md mx-auto leading-relaxed">
                 Your onboarding records for{' '}
                 <strong className="text-primary font-semibold">
                   {invitation.companyName}

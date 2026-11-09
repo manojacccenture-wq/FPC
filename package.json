@@ -11,15 +11,20 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.3",
+    "@reduxjs/toolkit": "^2.14.0",
     "@tailwindcss/vite": "^4.3.4",
     "clsx": "^2.1.1",
+    "dexie": "^4.4.7",
+    "dexie-react-hooks": "^4.4.0",
     "lucide-react": "^1.70.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-hook-form": "^7.91.0",
+    "react-redux": "^9.3.1",
     "react-router-dom": "^7.18.5",
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.4",
+    "uuid": "^14.0.3",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -27,6 +32,7 @@
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^6.1.2",
     "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",

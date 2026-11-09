@@ -1,30 +1,39 @@
-import React, { useState, type FormEvent } from 'react';
-import { ChevronRight } from 'lucide-react';
+import React from 'react';
+import { ChevronDown } from 'lucide-react';
 import { Modal, Input, Select, Button } from '../../../../../shared/components';
+import { useFpcForm, applyServerErrors, FormServerError } from '../../../../../shared/forms';
+import {
+  inviteFpcSchema,
+  type InviteFpcFormValues,
+} from '../../../../../features/onboarding/schemas/invitation.schema';
 
-export interface InviteFpcFormData {
-  companyName: string;
-  nominatedAdmin: string;
-  email: string;
-  phoneNumber: string;
-  state: string;
-  district: string;
-}
+/** Kept as an alias so existing consumers keep importing the same type name. */
+export type InviteFpcFormData = InviteFpcFormValues;
 
 export interface InviteFpcModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmitInvite?: (data: InviteFpcFormData) => void;
+  onSubmitInvite?: (data: InviteFpcFormData) => Promise<void> | void;
 }
 
-const DEFAULT_FORM: InviteFpcFormData = {
-  companyName: 'Kalinganagar Farmer Producer Company Ltd.',
-  nominatedAdmin: 'Subhashree Jena',
-  email: 'admin@kalinganagarfpc.in',
-  phoneNumber: '+91 9437890123',
+const INITIAL_FORM: InviteFpcFormValues = {
+  companyName: '',
+  nominatedAdmin: '',
+  email: '',
+  phoneNumber: '',
   state: 'Odisha',
   district: 'Jajpur',
 };
+
+/** Fields rendered by this form; used to resolve backend PascalCase error keys. */
+const INVITE_FIELDS = [
+  'companyName',
+  'nominatedAdmin',
+  'email',
+  'phoneNumber',
+  'state',
+  'district',
+] as const;
 
 const STATE_OPTIONS = [
   { value: 'Odisha', label: 'Odisha' },
@@ -45,27 +54,36 @@ export const InviteFpcModal: React.FC<InviteFpcModalProps> = ({
   onClose,
   onSubmitInvite,
 }) => {
-  const [formData, setFormData] = useState<InviteFpcFormData>(DEFAULT_FORM);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useFpcForm<InviteFpcFormValues>({
+    schema: inviteFpcSchema,
+    defaultValues: INITIAL_FORM,
+  });
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!formData.companyName || !formData.email) return;
-
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      if (onSubmitInvite) {
-        onSubmitInvite(formData);
-      }
-      onClose();
-    }, 400);
+  const handleClose = () => {
+    reset(INITIAL_FORM);
+    onClose();
   };
+
+  const submit = handleSubmit(async (values) => {
+    try {
+      await onSubmitInvite?.(values);
+      reset(INITIAL_FORM);
+      onClose();
+    } catch (err: unknown) {
+      applyServerErrors(err, setError, { knownFields: INVITE_FIELDS });
+    }
+  });
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Registration invitation"
       description="Company and administrator details"
       size="xl"
@@ -77,9 +95,9 @@ export const InviteFpcModal: React.FC<InviteFpcModalProps> = ({
             type="button"
             variant="secondary"
             size="md"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isSubmitting}
-            className="h-11 sm:h-12 min-h-11 sm:min-h-12 px-7 rounded-xl bg-brand-soft hover:bg-forest-100 text-brand text-sm font-semibold border-none shadow-2xs"
+            className="h-11 sm:h-12 min-h-11 sm:min-h-12 px-7 rounded-xl bg-brand-soft hover:bg-forest-100 text-brand border-none shadow-2xs"
           >
             Cancel
           </Button>
@@ -92,34 +110,37 @@ export const InviteFpcModal: React.FC<InviteFpcModalProps> = ({
             size="md"
             loading={isSubmitting}
             loadingText="Sending..."
-            className="h-11 sm:h-12 min-h-11 sm:min-h-12 px-7 rounded-xl bg-brand hover:bg-brand-hover text-white text-sm font-semibold shadow-xs"
+            className="h-11 sm:h-12 min-h-11 sm:min-h-12 px-7 rounded-xl bg-brand hover:bg-brand-hover text-white shadow-xs"
           >
             Send invitation
           </Button>
         </div>
       }
     >
-      <form id="invite-fpc-form" onSubmit={handleSubmit} className="form-flow-spacing text-left py-1">
+      <form id="invite-fpc-form" onSubmit={submit} className="form-flow-spacing text-left py-1" noValidate>
+        {/* Form-level errors: Zod object-level failures and unattributable API failures */}
+        <FormServerError errors={errors} className="mb-4" />
+
         {/* Row 1: Company name & Nominated admin reusing shared Input */}
         <div className="grid grid-cols-1 sm:grid-cols-2 form-grid-spacing">
           <Input
             id="modal-company-name"
             label="Company name"
             required
-            value={formData.companyName}
-            onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
             placeholder="e.g. Kalinganagar Farmer Producer Company Ltd."
-            className="h-12 min-h-12 px-4 rounded-xl text-sm"
+            error={errors.companyName?.message}
+            className="h-12 min-h-12 px-4 rounded-xl"
+            {...register('companyName')}
           />
 
           <Input
             id="modal-nominated-admin"
             label="Nominated admin"
             required
-            value={formData.nominatedAdmin}
-            onChange={(e) => setFormData({ ...formData, nominatedAdmin: e.target.value })}
             placeholder="e.g. Subhashree Jena"
-            className="h-12 min-h-12 px-4 rounded-xl text-sm"
+            error={errors.nominatedAdmin?.message}
+            className="h-12 min-h-12 px-4 rounded-xl"
+            {...register('nominatedAdmin')}
           />
         </div>
 
@@ -130,10 +151,10 @@ export const InviteFpcModal: React.FC<InviteFpcModalProps> = ({
             type="email"
             label="Email address"
             required
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             placeholder="admin@kalinganagarfpc.in"
-            className="h-12 min-h-12 px-4 rounded-xl text-sm"
+            error={errors.email?.message}
+            className="h-12 min-h-12 px-4 rounded-xl"
+            {...register('email')}
           />
 
           <Input
@@ -141,10 +162,10 @@ export const InviteFpcModal: React.FC<InviteFpcModalProps> = ({
             type="tel"
             label="Phone number"
             required
-            value={formData.phoneNumber}
-            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
             placeholder="+91 9437890123"
-            className="h-12 min-h-12 px-4 rounded-xl text-sm"
+            error={errors.phoneNumber?.message}
+            className="h-12 min-h-12 px-4 rounded-xl"
+            {...register('phoneNumber')}
           />
         </div>
 
@@ -154,22 +175,22 @@ export const InviteFpcModal: React.FC<InviteFpcModalProps> = ({
             id="modal-state"
             label="State"
             required
-            value={formData.state}
-            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
             options={STATE_OPTIONS}
-            trailingIcon={<ChevronRight className="w-4 h-4 stroke-[2]" />}
-            className="h-12 min-h-12 px-4 rounded-xl text-sm"
+            trailingIcon={<ChevronDown className="w-4 h-4 stroke-[2]" />}
+            error={errors.state?.message}
+            className="h-12 min-h-12 px-4 rounded-xl"
+            {...register('state')}
           />
 
           <Select
             id="modal-district"
             label="District"
             required
-            value={formData.district}
-            onChange={(e) => setFormData({ ...formData, district: e.target.value })}
             options={DISTRICT_OPTIONS}
-            trailingIcon={<ChevronRight className="w-4 h-4 stroke-[2]" />}
-            className="h-12 min-h-12 px-4 rounded-xl text-sm"
+            trailingIcon={<ChevronDown className="w-4 h-4 stroke-[2]" />}
+            error={errors.district?.message}
+            className="h-12 min-h-12 px-4 rounded-xl"
+            {...register('district')}
           />
         </div>
       </form>

@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { TsfAdminSidebar } from './TsfAdminSidebar';
 import { TsfAdminHeader } from './TsfAdminHeader';
-import { authApi } from '../../../features/auth/api/auth.api';
+import { useLogoutMutation } from '../../../features/auth/api/authApi';
+import { useAppDispatch } from '../../../app/store/hooks';
+import { loggedOut } from '../../../features/auth/slices/authSlice';
+import { baseApi } from '../../../app/api/baseApi';
 
 export interface TsfAdminLayoutProps {
   children?: React.ReactNode;
@@ -11,12 +14,19 @@ export interface TsfAdminLayoutProps {
 export const TsfAdminLayout: React.FC<TsfAdminLayoutProps> = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const [logout] = useLogoutMutation();
 
   const handleSignOut = async () => {
-    await authApi.logout();
-    localStorage.removeItem('fpc_auth_user');
-    sessionStorage.removeItem('fpc_auth_user');
-    navigate('/', { replace: true });
+    try {
+      await logout().unwrap();
+    } catch {
+      // Even if network call fails or token expired, client session must be purged
+    } finally {
+      dispatch(loggedOut());
+      dispatch(baseApi.util.resetApiState());
+      navigate('/login', { replace: true });
+    }
   };
 
   return (

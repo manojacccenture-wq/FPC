@@ -1,5 +1,4 @@
 import type {
-  FpcInvitation,
   FpcBasicDetailsFormData,
   FpcLegalRegistrationFormData,
   FpcFinancialInformationFormData,
@@ -9,108 +8,7 @@ import type {
   FpcBusinessActivitiesFormData,
 } from '../types';
 
-const STORAGE_KEY = 'fpc_invitations_store';
-
-const DEFAULT_DEMO_INVITATION: FpcInvitation = {
-  token: 'demo-invite-token',
-  companyName: 'Kalinganagar Farmer Producer Company Ltd.',
-  nominatedAdmin: 'Subhashree Jena',
-  email: 'admin@kalinganagarfpc.in',
-  phoneNumber: '+91 9437890123',
-  state: 'Odisha',
-  district: 'Jajpur',
-  createdAt: new Date().toISOString(),
-  expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-  status: 'pending',
-};
-
 class InvitationApi {
-  private getStoredInvitations(): Record<string, FpcInvitation> {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const parsed: Record<string, FpcInvitation> = raw ? JSON.parse(raw) : {};
-      if (!parsed['demo-invite-token']) {
-        parsed['demo-invite-token'] = DEFAULT_DEMO_INVITATION;
-      }
-      return parsed;
-    } catch {
-      return { 'demo-invite-token': DEFAULT_DEMO_INVITATION };
-    }
-  }
-
-  private saveStoredInvitations(data: Record<string, FpcInvitation>): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch {
-      // Storage unavailable or disabled
-    }
-  }
-
-  /**
-   * Synchronously validates the invitation token.
-   * Useful for immediate component render without triggering useEffect.
-   */
-  public validateTokenSync(token?: string | null): {
-    valid: boolean;
-    invitation?: FpcInvitation;
-    error?: string;
-  } {
-    if (!token) {
-      // Default to active demo invitation if none provided in query param
-      return { valid: true, invitation: DEFAULT_DEMO_INVITATION };
-    }
-
-    const store = this.getStoredInvitations();
-    const invitation = store[token];
-
-    if (!invitation) {
-      return {
-        valid: false,
-        error: 'Invitation link is invalid or has expired. Please request a new invitation from your TSF Administrator.',
-      };
-    }
-
-    const isExpired = new Date(invitation.expiresAt).getTime() < Date.now();
-    if (isExpired) {
-      return {
-        valid: false,
-        error: 'This invitation link has expired. Invitations are valid for 30 days from dispatch.',
-      };
-    }
-
-    return { valid: true, invitation };
-  }
-
-  /**
-   * Generates a new invitation token from the TSF Admin modal.
-   */
-  public createInvitation(data: {
-    companyName: string;
-    nominatedAdmin: string;
-    email: string;
-    phoneNumber: string;
-    state: string;
-    district: string;
-  }): { token: string; link: string; invitation: FpcInvitation } {
-    const token = `inv_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-    const invitation: FpcInvitation = {
-      token,
-      ...data,
-      createdAt: new Date().toISOString(),
-      expiresAt,
-      status: 'pending',
-    };
-
-    const store = this.getStoredInvitations();
-    store[token] = invitation;
-    this.saveStoredInvitations(store);
-
-    const link = `/onboard/register?token=${token}`;
-    return { token, link, invitation };
-  }
-
   /**
    * Reads stored Step 1 details synchronously for zero useEffect render.
    */
@@ -131,12 +29,6 @@ class InvitationApi {
     details: FpcBasicDetailsFormData
   ): Promise<{ success: boolean; nextStep: number; message: string }> {
     await new Promise((resolve) => setTimeout(resolve, 350));
-
-    const store = this.getStoredInvitations();
-    if (store[token]) {
-      store[token].status = 'in_progress';
-      this.saveStoredInvitations(store);
-    }
 
     try {
       localStorage.setItem(`fpc_step1_${token}`, JSON.stringify(details));
@@ -362,12 +254,6 @@ class InvitationApi {
     token: string
   ): Promise<{ success: boolean; message: string }> {
     await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const store = this.getStoredInvitations();
-    if (store[token]) {
-      store[token].status = 'completed';
-      this.saveStoredInvitations(store);
-    }
 
     try {
       localStorage.setItem(`fpc_completed_${token}`, 'true');

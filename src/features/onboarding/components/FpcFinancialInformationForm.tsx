@@ -1,11 +1,11 @@
 import React from 'react';
-import { useForm, useFieldArray, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useFieldArray, useWatch } from 'react-hook-form';
 import { ChevronRight, Plus } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
 import { Select } from '../../../shared/components/Select';
 import { Button } from '../../../shared/components/Button';
+import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import {
   financialInformationSchema,
   type FinancialInformationFormValues,
@@ -16,7 +16,6 @@ export interface FpcFinancialInformationFormProps {
   initialData?: Partial<FpcFinancialInformationFormData> | null;
   onSubmit: (values: FinancialInformationFormValues) => Promise<void> | void;
   onPreviousStep: () => void;
-  isSubmitting?: boolean;
 }
 
 const FINANCIAL_YEAR_OPTIONS = [
@@ -51,16 +50,16 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
   initialData,
   onSubmit,
   onPreviousStep,
-  isSubmitting = false,
 }) => {
   // ZERO useEffect: initial values populated directly during component mount
   const {
     register,
     control,
     handleSubmit,
-    formState: { errors },
-  } = useForm<FinancialInformationFormValues>({
-    resolver: zodResolver(financialInformationSchema),
+    setError,
+    formState: { errors, isSubmitting },
+  } = useFpcForm<FinancialInformationFormValues>({
+    schema: financialInformationSchema,
     defaultValues: {
       authorizedCapital: initialData?.authorizedCapital || '₹10,00,000',
       paidUpCapital: initialData?.paidUpCapital || '₹6,00,000',
@@ -83,12 +82,19 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
             },
           ],
     },
-    mode: 'onBlur',
   });
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'bankAccounts',
+  });
+
+  const submit = handleSubmit(async (values) => {
+    try {
+      await onSubmit(values);
+    } catch (err: unknown) {
+      applyServerErrors(err, setError);
+    }
   });
 
   const handleAddBankAccount = () => {
@@ -110,7 +116,9 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
   const calculatedShares = faceValueNum > 0 ? Math.floor(paidUpNum / faceValueNum) : 6000;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={submit} className="space-y-6" noValidate>
+      <FormServerError errors={errors} />
+
       {/* Main Card */}
       <Card
         variant="default"
@@ -123,10 +131,10 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
             03
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-primary">
+            <h3 className="text-primary">
               Financial information
-            </h2>
-            <p className="text-xs text-secondary mt-0.5">
+            </h3>
+            <p className="text-secondary mt-0.5">
               Use the details on your official company documents.
             </p>
           </div>
@@ -223,9 +231,9 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
 
         {/* Primary bank account details section */}
         <div className="space-y-4 pt-2">
-          <h3 className="text-base font-bold text-primary">
+          <h4 className="font-semibold text-primary">
             Primary bank account details
-          </h3>
+          </h4>
 
           {fields.map((field, index) => {
             const accountErrors = errors.bankAccounts?.[index];

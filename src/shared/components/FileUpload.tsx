@@ -119,12 +119,12 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
             <Upload className="w-4 h-4 stroke-[2.2]" />
           </div>
           <div className="text-left flex-1 min-w-0">
-            <div className="text-xs sm:text-[13px] font-semibold text-primary truncate">
+            <p className="font-semibold text-primary truncate">
               Drag file here or <span className="text-brand underline font-semibold">browse</span>
-            </div>
-            <div className="text-[11px] text-secondary mt-0.5">
+            </p>
+            <small className="text-secondary mt-0.5 block">
               {accept} up to {maxSizeMB}MB
-            </div>
+            </small>
           </div>
         </div>
       )}
@@ -137,12 +137,12 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
               <Upload className="w-4 h-4 stroke-[2]" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs sm:text-[13px] font-semibold text-primary truncate">
+              <p className="font-semibold text-primary truncate">
                 {fileName || "Document_Verified.pdf"}
-              </div>
-              <div className="text-[11px] text-secondary mt-0.5">
+              </p>
+              <small className="text-secondary mt-0.5 block">
                 Ready to upload
-              </div>
+              </small>
             </div>
           </div>
         </div>
@@ -151,7 +151,7 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
       {/* 3. Uploading state with progress bar */}
       {isUploading && (
         <div className="space-y-2 select-none text-left">
-          <div className="flex items-center justify-between text-xs font-semibold text-primary">
+          <div className="flex items-center justify-between font-semibold text-primary">
             <span className="truncate">{fileName || "Uploading..."}</span>
             <span className="text-brand tabular-nums">{progress}%</span>
           </div>
@@ -168,12 +168,12 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
       {isFailed && (
         <div className="flex items-center justify-between gap-3 text-left">
           <div className="min-w-0">
-            <div className="text-xs sm:text-[13px] font-semibold text-danger">
+            <p className="font-semibold text-danger">
               Upload failed
-            </div>
-            <div className="text-[11px] text-secondary mt-0.5">
+            </p>
+            <small className="text-secondary mt-0.5 block">
               {errorMessage}
-            </div>
+            </small>
           </div>
           <button
             type="button"
@@ -181,7 +181,7 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
               e.stopPropagation();
               onRetry?.();
             }}
-            className="text-xs font-semibold text-brand hover:underline shrink-0"
+            className="font-semibold text-brand hover:underline shrink-0"
           >
             Retry
           </button>
@@ -195,12 +195,12 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
             <Upload className="w-4 h-4" />
           </div>
           <div className="text-left">
-            <div className="text-xs font-semibold text-neutral-400">
+            <p className="font-semibold text-neutral-400">
               Upload disabled
-            </div>
-            <div className="text-[11px] text-neutral-400 mt-0.5">
+            </p>
+            <small className="text-neutral-400 mt-0.5 block">
               Action currently unavailable
-            </div>
+            </small>
           </div>
         </div>
       )}

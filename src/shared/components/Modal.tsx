@@ -87,12 +87,12 @@ export const Modal: React.FC<ModalProps> = ({
           <div className={twMerge(clsx("modal-header-padding shrink-0 flex items-start justify-between", headerClassName))}>
             <div>
               {title && (
-                <h2 className="text-xl sm:text-2xl font-bold text-primary tracking-tight leading-tight">
+                <h2 className="modal-title text-primary">
                   {title}
                 </h2>
               )}
               {description && (
-                <p className="text-xs sm:text-[13px] text-secondary mt-1 font-normal">
+                <p className="text-secondary mt-1">
                   {description}
                 </p>
               )}

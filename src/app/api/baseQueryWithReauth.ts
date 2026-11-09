@@ -1,0 +1,84 @@
+import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
+
+/**
+ * Utility to extract cookie value by name (used for non-HttpOnly XSRF-TOKEN)
+ */
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+  return match && match[3] ? decodeURIComponent(match[3]) : null;
+}
+
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: (import.meta.env.VITE_API_BASE_URL as string) || '/api/v1',
+  credentials: 'include', // Automatically sends HttpOnly cookies (__Host-fpc-access, __Secure-fpc-refresh)
+  prepareHeaders: (headers, { getState, endpoint }) => {
+    // 1. Attach CSRF token on mutating requests if present in document.cookie
+    const xsrfToken = getCookie('XSRF-TOKEN');
+    if (xsrfToken) {
+      headers.set('X-XSRF-TOKEN', xsrfToken);
+    }
+
+    // 2. Attach active FpcId tenant header if resolved in Redux state
+    const state = getState() as { auth?: { activeFpcId?: string | null } };
+    const activeFpcId = state.auth?.activeFpcId;
+    if (activeFpcId) {
+      headers.set('X-Active-Fpc-Id', activeFpcId);
+    }
+
+    // 3. Mark request as JSON
+    if (!headers.has('Accept')) {
+      headers.set('Accept', 'application/json');
+    }
+
+    // Prevent overriding Content-Type for FormData uploads
+    if (endpoint !== 'uploadDocument' && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    return headers;
+  },
+});
+
+/**
+ * Custom baseQuery that handles automatic token refresh on 401 Unauthorized
+ */
+export const baseQueryWithReauth: BaseQueryFn<
+  string | FetchArgs,
+  unknown,
+  FetchBaseQueryError
+> = async (args, api, extraOptions) => {
+  let result = await rawBaseQuery(args, api, extraOptions);
+
+  // If 401 Unauthorized occurs and not already on the refresh/login endpoint, attempt token refresh
+  if (result.error && result.error.status === 401) {
+    const isAuthEndpoint =
+      typeof args === 'string'
+        ? args.includes('/auth/login') || args.includes('/auth/refresh')
+        : args.url.includes('/auth/login') || args.url.includes('/auth/refresh');
+
+    if (!isAuthEndpoint) {
+      // Attempt to refresh the access token via HttpOnly refresh cookie
+      const refreshResult = await rawBaseQuery(
+        {
+          url: '/auth/refresh',
+          method: 'POST',
+        },
+        api,
+        extraOptions
+      );
+
+      if (refreshResult.data) {
+        // Retry the original query now that cookies are refreshed
+        result = await rawBaseQuery(args, api, extraOptions);
+      } else {
+        // Refresh token expired or revoked - trigger client-side logout
+        api.dispatch({ type: 'auth/loggedOut' });
+      }
+    }
+  }
+
+  return result;
+};
+

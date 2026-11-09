@@ -27,15 +27,15 @@ const sizeClasses: Record<SelectSize, {
   icon: string;
 }> = {
   sm: {
-    select: "h-9 min-h-9 text-[13px] pl-3 pr-8",
+    select: "h-9 min-h-9 pl-3 pr-8",
     icon: "w-3.5 h-3.5 right-2.5",
   },
   md: {
-    select: "h-11 min-h-11 text-sm pl-3.5 pr-10",
+    select: "h-11 min-h-11 pl-3.5 pr-10",
     icon: "w-4 h-4 right-3.5",
   },
   lg: {
-    select: "h-[52px] min-h-[52px] text-base pl-4 pr-12",
+    select: "h-[52px] min-h-[52px] pl-4 pr-12",
     icon: "w-5 h-5 right-4",
   },
 };

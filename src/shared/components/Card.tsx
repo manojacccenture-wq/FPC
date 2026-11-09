@@ -66,7 +66,7 @@ export const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
     return (
       <Component
         ref={ref}
-        className={twMerge(clsx('text-base font-semibold text-primary tracking-tight', className))}
+        className={twMerge(clsx('text-primary', className))}
         {...props}
       >
         {children}
@@ -81,7 +81,7 @@ export const CardDescription = forwardRef<HTMLParagraphElement, React.HTMLAttrib
     return (
       <p
         ref={ref}
-        className={twMerge(clsx('text-xs text-secondary font-normal mt-0.5', className))}
+        className={twMerge(clsx('text-secondary mt-0.5', className))}
         {...props}
       >
         {children}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import { useAppSelector } from '../../app/store/hooks';
 
 export interface AuthGuardProps {
   isAuthenticated?: boolean;
@@ -10,22 +11,24 @@ export interface AuthGuardProps {
 
 /**
  * Ensures a user is authenticated before rendering protected children or child routes.
- * Supports both standalone child wrapping and React Router <Outlet /> route protection.
+ * Relies strictly on verified Redux authentication state populated from backend cookies.
  */
 export const AuthGuard: React.FC<AuthGuardProps> = ({
-  isAuthenticated,
-  redirectPath = '/',
+  isAuthenticated: propIsAuthenticated,
+  redirectPath = '/login',
   fallback = null,
   children,
 }) => {
-  // Check explicit prop or persisted session
-  const hasSession = 
-    isAuthenticated !== undefined 
-      ? isAuthenticated 
-      : Boolean(localStorage.getItem('fpc_auth_user') || sessionStorage.getItem('fpc_auth_user'));
+  const { isAuthenticated, isInitialized } = useAppSelector((state) => state.auth);
 
-  if (!hasSession) {
-    if (fallback) return <>{fallback}</>;
+  const effectiveAuth = propIsAuthenticated !== undefined ? propIsAuthenticated : isAuthenticated;
+
+  // If session is still verifying on initial application mount, wait for gate completion
+  if (!isInitialized) {
+    return <>{fallback}</>;
+  }
+
+  if (!effectiveAuth) {
     return <Navigate to={redirectPath} replace />;
   }
 

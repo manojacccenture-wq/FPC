@@ -47,9 +47,9 @@ const variantStyles: Record<BadgeVariant, {
 };
 
 const sizeStyles: Record<BadgeSize, string> = {
-  sm: "text-[11px] px-2 py-0.5 leading-[14px]",
-  md: "text-[12px] px-2.5 py-1 leading-[16px]",
-  lg: "text-[13px] px-3 py-1.5 leading-[18px]",
+  sm: "px-2 py-0.5",
+  md: "px-2.5 py-1",
+  lg: "px-3 py-1.5",
 };
 
 export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(({
@@ -60,6 +60,7 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(({
   dot = false,
   uppercase = false,
   children,
+  style,
   ...props
 }, ref) => {
   const currentVariant = variantStyles[variant];
@@ -67,11 +68,16 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(({
   return (
     <span
       ref={ref}
+      style={{
+        fontSize: uppercase ? 'var(--font-size-floating-label)' : 'var(--font-size-badge)',
+        lineHeight: 1.3,
+        ...style,
+      }}
       className={cn(
         "inline-flex items-center gap-1.5 font-medium whitespace-nowrap select-none border transition-colors",
         pill ? "rounded-full" : "rounded-[6px]",
         variant === 'count' ? currentVariant.container : cn(currentVariant.container, sizeStyles[size]),
-        uppercase && "uppercase tracking-wider font-semibold text-[11px]",
+        uppercase && "uppercase tracking-wider font-semibold",
         className
       )}
       {...props}

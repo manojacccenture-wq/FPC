@@ -5,23 +5,23 @@ export const AdministrationPage: React.FC = () => {
   return (
     <div className="section-flow text-left">
       <div>
-        <div className="page-eyebrow mb-1">
+        <div className="floating-label font-bold text-brand mb-1">
           SYSTEM SETTINGS
         </div>
-        <h1 className="page-title">
+        <h1 className="page-heading text-primary">
           System Administration
         </h1>
-        <p className="page-subtitle mt-1">
+        <p className="text-secondary mt-1">
           Role-based access controls, security audits, and centralized configuration parameters.
         </p>
       </div>
 
       <Card className="card-padding">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-primary">Platform Governance</h2>
+          <h3 className="font-semibold text-primary">Platform Governance</h3>
           <Badge variant="success">Secured</Badge>
         </div>
-        <p className="text-xs text-secondary leading-relaxed">
+        <p className="text-secondary leading-relaxed">
           Session timeouts, authentication policies, audit logs, and external API webhook configurations.
         </p>
       </Card>

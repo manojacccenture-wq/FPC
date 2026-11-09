@@ -1,11 +1,10 @@
 import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronRight } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
 import { Select } from '../../../shared/components/Select';
 import { Button } from '../../../shared/components/Button';
+import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import {
   addressLocationSchema,
   type AddressLocationFormValues,
@@ -16,7 +15,6 @@ export interface FpcAddressLocationFormProps {
   initialData?: Partial<FpcAddressLocationFormData> | null;
   onSubmit: (values: AddressLocationFormValues) => Promise<void> | void;
   onPreviousStep: () => void;
-  isSubmitting?: boolean;
 }
 
 const STATE_OPTIONS = [
@@ -60,15 +58,15 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
   initialData,
   onSubmit,
   onPreviousStep,
-  isSubmitting = false,
 }) => {
   // ZERO useEffect: initial values populated directly during component mount
   const {
     register,
     handleSubmit,
-    formState: { errors },
-  } = useForm<AddressLocationFormValues>({
-    resolver: zodResolver(addressLocationSchema),
+    setError,
+    formState: { errors, isSubmitting },
+  } = useFpcForm<AddressLocationFormValues>({
+    schema: addressLocationSchema,
     defaultValues: {
       streetAddress: initialData?.streetAddress || '',
       state: initialData?.state || 'Odisha',
@@ -82,11 +80,20 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
       latitude: initialData?.latitude || '',
       longitude: initialData?.longitude || '',
     },
-    mode: 'onBlur',
+  });
+
+  const submit = handleSubmit(async (values) => {
+    try {
+      await onSubmit(values);
+    } catch (err: unknown) {
+      applyServerErrors(err, setError);
+    }
   });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={submit} className="space-y-6" noValidate>
+      <FormServerError errors={errors} />
+
       {/* Main Card */}
       <Card
         variant="default"
@@ -100,19 +107,19 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
               06
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-primary">
+              <h3 className="text-primary">
                 Address & location
-              </h2>
-              <p className="text-xs text-secondary mt-0.5">
+              </h3>
+              <p className="text-secondary mt-0.5">
                 Use the details on your official company documents.
               </p>
             </div>
           </div>
 
           {/* Location Hierarchy Trail */}
-          <p className="text-xs text-secondary font-medium mt-3">
+          <small className="text-secondary font-medium mt-3 block">
             State → District → Block → Gram Panchayat → Village
-          </p>
+          </small>
         </div>
 
         {/* Inputs Grid */}

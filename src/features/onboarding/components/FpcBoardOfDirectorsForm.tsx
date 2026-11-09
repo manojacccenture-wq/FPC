@@ -1,12 +1,12 @@
 import React from 'react';
-import { useForm, useFieldArray, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { ChevronRight, Plus, Upload } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
 import { Select } from '../../../shared/components/Select';
 import { Button } from '../../../shared/components/Button';
 import { FormField } from '../../../shared/components/FormField';
+import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import {
   boardOfDirectorsSchema,
   type BoardOfDirectorsFormValues,
@@ -17,7 +17,6 @@ export interface FpcBoardOfDirectorsFormProps {
   initialData?: Partial<FpcBoardOfDirectorsFormData> | null;
   onSubmit: (values: BoardOfDirectorsFormValues) => Promise<void> | void;
   onPreviousStep: () => void;
-  isSubmitting?: boolean;
 }
 
 const DESIGNATION_OPTIONS = [
@@ -52,17 +51,16 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
   initialData,
   onSubmit,
   onPreviousStep,
-  isSubmitting = false,
 }) => {
   // ZERO useEffect: initial values populated directly during component mount
   const {
     register,
     control,
     handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<BoardOfDirectorsFormValues>({
-    resolver: zodResolver(boardOfDirectorsSchema),
+    setError,
+    formState: { errors, isSubmitting },
+  } = useFpcForm<BoardOfDirectorsFormValues>({
+    schema: boardOfDirectorsSchema,
     defaultValues: {
       directors: initialData?.directors && initialData.directors.length > 0
         ? initialData.directors
@@ -95,12 +93,19 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
             },
           ],
     },
-    mode: 'onBlur',
   });
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'directors',
+  });
+
+  const submit = handleSubmit(async (values) => {
+    try {
+      await onSubmit(values);
+    } catch (err: unknown) {
+      applyServerErrors(err, setError);
+    }
   });
 
   const watchedDirectors = useWatch({ control, name: 'directors' });
@@ -133,7 +138,9 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={submit} className="space-y-6" noValidate>
+      <FormServerError errors={errors} />
+
       {/* Main Card */}
       <Card
         variant="default"
@@ -146,10 +153,10 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
             04
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-primary">
+            <h3 className="text-primary">
               Board of directors
-            </h2>
-            <p className="text-xs text-secondary mt-0.5">
+            </h3>
+            <p className="text-secondary mt-0.5">
               Board of directors • Total entered: {fields.length}
             </p>
           </div>
@@ -312,49 +319,53 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
 
                   {/* Row 6: Uploads (Photograph & Identity Document) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-1">
-                    <FormField label="Photograph">
-                      <label className="w-full rounded-2xl border border-dashed border-neutral-300 hover:border-neutral-400 p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-neutral-50/50 transition-colors">
-                        <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              setValue(`directors.${index}.photographName`, e.target.files[0].name);
-                            }
-                          }}
-                        />
-                        <Upload className="w-4 h-4 text-secondary mb-1" />
-                        <span className="text-xs sm:text-[13px] font-semibold text-primary">
-                          {liveDirector.photographName || 'Upload photograph'}
-                        </span>
-                        <span className="text-[11px] text-secondary mt-0.5">
-                          PDF, PNG or JPG • Maximum 5 MB (or password-protected)
-                        </span>
-                      </label>
-                    </FormField>
+                    <Controller
+                      control={control}
+                      name={`directors.${index}.photographName`}
+                      render={({ field }) => (
+                        <FormField label="Photograph">
+                          <label className="w-full rounded-2xl border border-dashed border-neutral-300 hover:border-neutral-400 p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-neutral-50/50 transition-colors">
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              className="hidden"
+                              onChange={(e) => field.onChange(e.target.files?.[0]?.name ?? '')}
+                            />
+                            <Upload className="w-4 h-4 text-secondary mb-1" />
+                            <span className="font-semibold text-primary">
+                              {field.value || 'Upload photograph'}
+                            </span>
+                            <small className="text-secondary mt-0.5 block">
+                              PDF, PNG or JPG • Maximum 5 MB (or password-protected)
+                            </small>
+                          </label>
+                        </FormField>
+                      )}
+                    />
 
-                    <FormField label="Identity document • Aadhaar / PAN">
-                      <label className="w-full rounded-2xl border border-dashed border-neutral-300 hover:border-neutral-400 p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-neutral-50/50 transition-colors">
-                        <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              setValue(`directors.${index}.identityDocName`, e.target.files[0].name);
-                            }
-                          }}
-                        />
-                        <Upload className="w-4 h-4 text-secondary mb-1" />
-                        <span className="text-xs sm:text-[13px] font-semibold text-primary">
-                          {liveDirector.identityDocName || 'Attach identity document'}
-                        </span>
-                        <span className="text-[11px] text-secondary mt-0.5">
-                          PDF, PNG or JPG • Maximum 5 MB (or password-protected)
-                        </span>
-                      </label>
-                    </FormField>
+                    <Controller
+                      control={control}
+                      name={`directors.${index}.identityDocName`}
+                      render={({ field }) => (
+                        <FormField label="Identity document • Aadhaar / PAN">
+                          <label className="w-full rounded-2xl border border-dashed border-neutral-300 hover:border-neutral-400 p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-neutral-50/50 transition-colors">
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              className="hidden"
+                              onChange={(e) => field.onChange(e.target.files?.[0]?.name ?? '')}
+                            />
+                            <Upload className="w-4 h-4 text-secondary mb-1" />
+                            <span className="font-semibold text-primary">
+                              {field.value || 'Attach identity document'}
+                            </span>
+                            <small className="text-secondary mt-0.5 block">
+                              PDF, PNG or JPG • Maximum 5 MB (or password-protected)
+                            </small>
+                          </label>
+                        </FormField>
+                      )}
+                    />
                   </div>
                 </div>
               </div>

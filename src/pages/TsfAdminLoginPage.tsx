@@ -1,8 +1,13 @@
-import { useState, type FC, type FormEvent } from 'react';
+import { useState, type FC } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, CheckCircle2 } from 'lucide-react';
-import { authApi } from '../features/auth/api/auth.api';
-import { Button, Input, Checkbox, Card, Alert, Modal } from '../shared/components';
+import { useLoginMutation } from '../features/auth/api/authApi';
+import { useAppDispatch } from '../app/store/hooks';
+import { setCredentials, setPendingTwoFactor, type CurrentUserProfile } from '../features/auth/slices/authSlice';
+import { loginSchema, type LoginFormValues } from '../features/auth/schemas/login.schema';
+import { Button, Input, Checkbox, Card, Alert, Modal, LoginHeader } from '../shared/components';
 
 interface TsfAdminLoginPageProps {
   isEmbedPreview?: boolean;
@@ -13,61 +18,104 @@ interface TsfAdminLoginPageProps {
 export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
   isEmbedPreview = false,
   onSuccessLogin,
-  showDemoCredentials = false
+  showDemoCredentials = true,
 }) => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const [login, { isLoading }] = useLoginMutation();
 
-  // Pure local React state - strictly ZERO useEffect used
-  const [email, setEmail] = useState('admin@tsf.org');
-  const [password, setPassword] = useState('tsfAdmin@2026');
+  // React Hook Form with Zod validation
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: 'admin@tsf.org',
+      password: 'TsfAdmin@2026!',
+      rememberMe: false,
+    },
+    mode: 'onBlur',
+  });
+
+  const rememberMe = watch('rememberMe');
+
+  // Retained non-form UI state
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
 
-  const handleSignIn = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSignIn = async (values: LoginFormValues) => {
     setErrorMessage('');
-    if (!email.trim() || !password) {
-      setErrorMessage('Please enter both email and password.');
-      return;
-    }
 
-    setIsLoading(true);
     try {
-      // Execute authentication service API
-      const user = await authApi.login({ email, password, rememberMe });
+      const response = await login({
+        email: values.email.trim(),
+        password: values.password,
+      }).unwrap();
 
-      // Store session securely based on remember me selection
-      const serialized = JSON.stringify(user);
-      if (rememberMe) {
-        localStorage.setItem('fpc_auth_user', serialized);
-      } else {
-        sessionStorage.setItem('fpc_auth_user', serialized);
-      }
+      if (response.success && response.data) {
+        // Detect 2FA challenge response
+        if ('challengeId' in response.data && response.data.challengeId) {
+          dispatch(
+            setPendingTwoFactor({
+              challengeId: response.data.challengeId,
+              email: values.email.trim(),
+              message: response.data.message || response.message,
+            })
+          );
 
-      setIsLoading(false);
-      setLoginSuccess(true);
+          // Do NOT mark authenticated; navigate to the 2FA verification page
+          navigate('/verify-2fa');
+          return;
+        }
 
-      if (onSuccessLogin) {
-        onSuccessLogin('TSF Admin');
-      }
+        // Direct authentication without 2FA
+        const userProfile = response.data as CurrentUserProfile;
+        dispatch(
+          setCredentials({
+            user: userProfile,
+            activeFpcId: userProfile.activeFpcId ?? undefined,
+            activeRole: userProfile.activeRoleCode ?? undefined,
+            memberships: userProfile.memberships,
+          })
+        );
 
-      // Automatically navigate to the persistent TSF Admin Dashboard
-      if (navigate) {
+        setLoginSuccess(true);
+
+        if (onSuccessLogin) {
+          onSuccessLogin(userProfile.activeRoleCode || 'TSF Admin');
+        }
+
+        // Navigate directly to the TSF Admin onboard page
         navigate('/admin/onboard');
+      } else {
+        setErrorMessage(response.message || 'Authentication failed. Please verify your credentials.');
       }
-    } catch {
-      setIsLoading(false);
-      setErrorMessage('Authentication failed. Please verify your credentials.');
+    } catch (err: unknown) {
+      const errorObj = err as { data?: { detail?: string; message?: string } | string };
+      let detail = 'Authentication failed. Please verify your credentials.';
+
+      if (typeof errorObj?.data === 'string') {
+        detail = errorObj.data;
+      } else if (errorObj?.data?.detail) {
+        detail = errorObj.data.detail;
+      } else if (errorObj?.data?.message) {
+        detail = errorObj.data.message;
+      }
+
+      setErrorMessage(detail);
     }
   };
 
-  const handleFillDemo = () => {
-    setEmail('admin@tsf.org');
-    setPassword('tsfAdmin@2026');
+  const handleFillDemo = (demoEmail: string, demoPass: string) => {
+    setValue('email', demoEmail, { shouldValidate: true, shouldDirty: true });
+    setValue('password', demoPass, { shouldValidate: true, shouldDirty: true });
+    setErrorMessage('');
   };
 
   return (
@@ -76,47 +124,25 @@ export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
       {/* =========================================================================
           1. Top Navigation Bar: White Background & English Pill Button (Right)
           ========================================================================= */}
-      <header className="w-full bg-white page-header-spacing h-16 flex items-center justify-between shrink-0">
-        {/* Left Brand Identity */}
-        <div className="text-[11px] sm:text-xs font-bold tracking-wider text-brand uppercase">
-          <span className="hidden sm:inline">
-            TATA STEEL FOUNDATION <span className="text-neutral-400 font-normal mx-0.5">/</span> FPC MANAGEMENT
-          </span>
-          <span className="inline sm:hidden">
-            TSF <span className="text-neutral-400 font-normal">/</span> FPC
-          </span>
-        </div>
-
-        {/* Right: English Pill Button Reusing Shared Button */}
-        <div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="h-8 min-w-[100px] sm:min-w-[125px] px-5 bg-brand-soft hover:bg-forest-100 text-brand text-xs sm:text-[13px] font-semibold rounded-control transition-colors shadow-2xs border-transparent"
-          >
-            English
-          </Button>
-        </div>
-      </header>
+      <LoginHeader />
 
       {/* =========================================================================
-          2. Hero Section: Anchored Upper-Left (Exactly Matching Image 1 & Mobile)
+          2. Hero Section: Anchored Upper-Left
           ========================================================================= */}
       <div className="w-full page-header-spacing pt-2 sm:pt-4 text-left">
         <div className="max-w-[480px]">
           {/* Eyebrow */}
-          <div className="page-eyebrow mb-2">
+          <div className="floating-label font-bold text-brand mb-2">
             CENTRAL ADMINISTRATION
           </div>
 
           {/* Heading */}
-          <h1 className="text-[24px] sm:text-[28px] md:text-[32px] font-bold text-primary tracking-tight leading-[1.18] mb-1.5">
+          <h1 className="page-heading text-primary mb-1.5">
             Supporting the people<br className="hidden sm:inline" /> behind stronger FPCs.
           </h1>
 
           {/* Subtitle */}
-          <p className="text-xs sm:text-[13px] text-secondary font-normal">
+          <p className="text-secondary">
             A secure workspace for TSF programme administrators.
           </p>
         </div>
@@ -128,169 +154,200 @@ export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
       <main className="w-full flex items-center justify-center px-4 py-4 sm:py-6 flex-1 my-auto">
         <Card className="w-full max-w-[360px] rounded-login-card card-padding shadow-xs">
 
-        {/* Title & Subtitle */}
-        <div className="text-left mb-5">
-          <h2 className="text-xl font-bold text-primary tracking-tight leading-tight mb-1">
-            Welcome back
-          </h2>
-          <p className="text-xs text-secondary">
-            Sign in to TSF Central Admin
-          </p>
-        </div>
+          {/* Title & Subtitle */}
+          <div className="text-left mb-5">
+            <h2 className="modal-title text-primary mb-1">
+              Welcome back
+            </h2>
+            <p className="text-secondary">
+              Sign in to TSF Central Admin
+            </p>
+          </div>
 
-        {/* Success Notification: Reusing Shared Alert */}
-        {loginSuccess && (
-            <Alert tone="success" variant="card" className="mb-4 text-xs">
+          {/* Success Notification: Reusing Shared Alert */}
+          {loginSuccess && (
+            <Alert tone="success" variant="card" className="mb-4">
               Authentication successful! Navigating to dashboard...
             </Alert>
-        )}
+          )}
 
-        {/* Error Notification: Reusing Shared Alert */}
-        {errorMessage && (
-            <Alert tone="danger" variant="card" className="mb-4 text-xs">
+          {/* Error Notification: Reusing Shared Alert */}
+          {errorMessage && (
+            <Alert tone="danger" variant="card" className="mb-4">
               {errorMessage}
             </Alert>
-        )}
+          )}
 
-        {/* Login Form Reusing Shared Input, Checkbox, and Button */}
-        <form onSubmit={handleSignIn} className="space-y-0 text-left">
+          {/* Login Form Reusing Shared Input, Checkbox, and Button */}
+          <form onSubmit={handleSubmit(handleSignIn)} className="space-y-0 text-left" noValidate>
 
-          {/* Email address field: Reusing Shared Input */}
-          <div className="mb-3.5">
+            {/* Email address field: Reusing Shared Input */}
+            <div className="mb-3.5">
               <Input
                 id="login-email"
-              type="email"
-              label="Email address *"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@tsf.org"
-              size="sm"
-              className="h-10 text-xs sm:text-[13px] text-primary bg-white border border-neutral-200 rounded-control hover:border-neutral-400 focus:ring-2 focus:ring-brand"
-            />
-          </div>
+                type="email"
+                label="Email address *"
+                placeholder="admin@tsf.org"
+                size="sm"
+                error={errors.email?.message}
+                className="h-10 text-primary bg-white border border-neutral-200 rounded-control hover:border-neutral-400 focus:ring-2 focus:ring-brand"
+                {...register('email')}
+              />
+            </div>
 
-          {/* Password field: Reusing Shared Input with trailingIcon password reveal */}
-          <div className="mb-3">
-            <Input
-              id="login-password"
-              type={showPassword ? 'text' : 'password'}
-              label="Password *"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••••"
-              size="sm"
-              className="h-10 text-xs sm:text-[13px] text-primary bg-white border border-neutral-200 rounded-control hover:border-neutral-400 focus:ring-2 focus:ring-brand"
-              trailingIcon={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="xs"
-                  iconOnly
-                  tabIndex={-1}
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="text-brand hover:text-brand-hover hover:bg-transparent p-0 w-5 h-5 min-w-0"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4 stroke-[2]" />
-                  ) : (
-                    <Eye className="w-4 h-4 stroke-[2]" />
-                  )}
-                </Button>
-              }
-            />
-          </div>
+            {/* Password field: Reusing Shared Input with trailingIcon password reveal */}
+            <div className="mb-3">
+              <Input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                label="Password *"
+                placeholder="••••••••••••"
+                size="sm"
+                error={errors.password?.message}
+                className="h-10 text-primary bg-white border border-neutral-200 rounded-control hover:border-neutral-400 focus:ring-2 focus:ring-brand"
+                trailingIcon={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    iconOnly
+                    tabIndex={-1}
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="text-brand hover:text-brand-hover hover:bg-transparent p-0 w-5 h-5 min-w-0"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4 stroke-[2]" />
+                    ) : (
+                      <Eye className="w-4 h-4 stroke-[2]" />
+                    )}
+                  </Button>
+                }
+                {...register('password')}
+              />
+            </div>
 
-          {/* Remember me & Forgot password row: Reusing Shared Checkbox & Button */}
-          <div className="flex items-center justify-between text-xs pt-1.5 pb-4 select-none">
-            <Checkbox
-              id="login-remember-me"
-              size="sm"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              label="REMEMBER ME"
-              labelClassName="text-[11px] font-semibold tracking-wider text-brand uppercase"
-            />
+            {/* Remember me & Forgot password row */}
+            <div className="flex items-center justify-between text-xs pt-1.5 pb-4 select-none">
+              <Checkbox
+                id="login-remember-me"
+                size="sm"
+                checked={rememberMe}
+                label="REMEMBER ME"
+                labelClassName="floating-label font-semibold text-brand"
+                {...register('rememberMe')}
+              />
 
               <Button
                 type="button"
-              variant="ghost"
-              size="xs"
-              onClick={() => setForgotModalOpen(true)}
-              className="p-0 h-auto text-[11px] font-semibold tracking-wider text-brand uppercase hover:underline hover:bg-transparent min-w-0"
-            >
-              FORGOT PASSWORD?
-          </Button>
-        </div>
+                variant="ghost"
+                size="xs"
+                onClick={() => setForgotModalOpen(true)}
+                className="p-0 h-auto floating-label font-semibold text-brand hover:underline hover:bg-transparent min-w-0"
+              >
+                FORGOT PASSWORD?
+              </Button>
+            </div>
 
-          {/* Sign in Button: Reusing Shared Button */}
+            {/* Sign in Button: Reusing Shared Button */}
             <Button
-          type="submit"
-          variant="primary"
-          size="md"
-          loading={isLoading}
-          loadingText="Signing in..."
-          className="w-full h-10 bg-brand text-white text-xs sm:text-[13px] font-semibold rounded-control hover:bg-brand-hover active:bg-brand-active shadow-xs"
-        >
-        Sign in
-      </Button>
-    </form>
+              type="submit"
+              variant="primary"
+              size="md"
+              loading={isLoading}
+              loadingText="Signing in..."
+              className="w-full h-10 bg-brand text-white font-semibold rounded-control hover:bg-brand-hover active:bg-brand-active shadow-xs"
+            >
+              Sign in
+            </Button>
+          </form>
 
-{/* Optional Demo mode information box */ }
-{
-  showDemoCredentials && (
-    <div
-      onClick={handleFillDemo}
-      className="mt-4 p-2.5 rounded-control bg-brand-soft border border-forest-200 flex items-center gap-2 text-xs text-brand cursor-pointer hover:bg-forest-100 transition-colors select-none"
-      title="Click to load demo credentials"
-    >
-      <CheckCircle2 className="w-4 h-4 text-brand shrink-0 stroke-[2.2]" />
-      <span className="font-normal text-[12px]">
-        Demo mode · Use your demo credentials.
-      </span>
-    </div>
-  )
-}
+          {/* Test Credentials Helper Pill */}
+          {showDemoCredentials && (
+            <div className="mt-4 pt-3 border-t border-neutral-100 text-left space-y-2">
+              <div className="floating-label font-semibold text-neutral-500">
+                Test Credentials (Click to fill)
+              </div>
+              <div
+                onClick={() => handleFillDemo('manojkr@lhsindia.com', 'TsfAdmin@2026!')}
+                className="p-2 rounded-control bg-amber-50 border border-amber-200 flex items-center justify-between text-xs text-amber-800 cursor-pointer hover:bg-amber-100 transition-colors select-none"
+                title="Click to load manojkr@lhsindia.com credentials (2FA Enforced)"
+              >
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <small className="font-medium">manojkr@lhsindia.com</small>
+                  <span className="text-[10px] bg-amber-200/80 text-amber-900 px-1 py-0.5 rounded font-semibold uppercase">2FA</span>
+                </div>
+                <code className="floating-label bg-white/80 px-1.5 py-0.5 rounded text-neutral-600">
+                  TsfAdmin@2026!
+                </code>
+              </div>
+              <div
+                onClick={() => handleFillDemo('admin@tsf.org', 'TsfAdmin@2026!')}
+                className="p-2 rounded-control bg-brand-soft border border-forest-200 flex items-center justify-between text-xs text-brand cursor-pointer hover:bg-forest-100 transition-colors select-none"
+                title="Click to load admin@tsf.org credentials"
+              >
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-brand shrink-0" />
+                  <small className="font-medium">admin@tsf.org</small>
+                </div>
+                <code className="floating-label bg-white/80 px-1.5 py-0.5 rounded text-neutral-600">
+                  TsfAdmin@2026!
+                </code>
+              </div>
+              <div
+                onClick={() => handleFillDemo('admin@fpc.gov.in', 'Admin@2026!')}
+                className="p-2 rounded-control bg-neutral-100 border border-neutral-200 flex items-center justify-between text-xs text-neutral-700 cursor-pointer hover:bg-neutral-200/70 transition-colors select-none"
+                title="Click to load admin@fpc.gov.in credentials"
+              >
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                  <small className="font-medium">admin@fpc.gov.in</small>
+                </div>
+                <code className="floating-label bg-white/80 px-1.5 py-0.5 rounded text-neutral-600">
+                  Admin@2026!
+                </code>
+              </div>
+            </div>
+          )}
 
         </Card>
       </main>
 
       {/* =========================================================================
-          4. Footer: Edge-to-Edge Left Anchored (Exactly Matching Image 1 & Mobile)
+          4. Footer: Edge-to-Edge Left Anchored
           ========================================================================= */}
       <footer className="w-full page-header-spacing py-4 text-left">
-        <span className="text-[11px] text-secondary font-normal">
+        <small className="text-secondary font-normal">
           Secure access · TSF FPC Management / v1.0
-        </span>
+        </small>
       </footer>
 
-        {/* Reset Password: Reusing Shared Modal & Button */}
-        <Modal
-          isOpen={forgotModalOpen}
-          onClose={() => setForgotModalOpen(false)}
-          title="Reset Password"
-          size="sm"
-          footer={
-            <div className="flex justify-end w-full">
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={() => setForgotModalOpen(false)}
-                className="px-4 py-1.5 bg-brand text-white text-xs font-semibold rounded-xs hover:bg-brand-hover"
-              >
-                Got it
-              </Button>
-            </div>
+      {/* Reset Password: Reusing Shared Modal & Button */}
+      <Modal
+        isOpen={forgotModalOpen}
+        onClose={() => setForgotModalOpen(false)}
+        title="Reset Password"
+        size="sm"
+        footer={
+          <div className="flex justify-end w-full">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => setForgotModalOpen(false)}
+              className="px-4 py-1.5 bg-brand text-white font-semibold rounded-xs hover:bg-brand-hover"
+            >
+              Got it
+            </Button>
+          </div>
         }
       >
-      <p className="text-xs text-secondary leading-relaxed">
-        For administrative security, password resets must be authorized by the TSF Super Administrator. Please contact <strong>support@tsf.org</strong>.
-      </p>
-    </Modal>
+        <p className="text-secondary leading-relaxed">
+          For administrative security, password resets must be authorized by the TSF Super Administrator. Please contact <strong>support@tsf.org</strong>.
+        </p>
+      </Modal>
 
-    </div >
+    </div>
   );
 };
