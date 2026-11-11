@@ -3,6 +3,8 @@
  * Centralized constants used across the application.
  */
 
+import { API_BASE_URL, APP_ENV } from './env';
+
 export const APP_CONFIG = {
   appName: 'TSF FPC Management',
   appVersion: 'v1.0',
@@ -10,7 +12,8 @@ export const APP_CONFIG = {
   supportEmail: 'admin@tsf.org',
   tollFreeHelpline: '1800-419-0022',
   defaultRole: 'TSF Admin',
-  apiBaseUrl: import.meta.env.VITE_API_URL || '/api/v1',
+  apiBaseUrl: API_BASE_URL,
+  environment: APP_ENV,
 };
 
 export const ROLES = {

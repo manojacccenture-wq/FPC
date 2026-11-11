@@ -1,5 +1,6 @@
 import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import { API_BASE_URL } from '../../shared/config/env';
 
 /**
  * Utility to extract cookie value by name (used for non-HttpOnly XSRF-TOKEN)
@@ -11,7 +12,7 @@ function getCookie(name: string): string | null {
 }
 
 const rawBaseQuery = fetchBaseQuery({
-  baseUrl: (import.meta.env.VITE_API_BASE_URL as string) || '/api/v1',
+  baseUrl: API_BASE_URL,
   credentials: 'include', // Automatically sends HttpOnly cookies (__Host-fpc-access, __Secure-fpc-refresh)
   prepareHeaders: (headers, { getState, endpoint }) => {
     // 1. Attach CSRF token on mutating requests if present in document.cookie

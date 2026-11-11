@@ -11,6 +11,7 @@ export * from './Select';
 export * from './Textarea';
 export * from './Modal';
 export * from './Card';
+export * from './Table';
 export * from './LoginHeader';
 
 

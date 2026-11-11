@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
 import { Search, MoreHorizontal, HelpCircle, ExternalLink, Copy, Check } from 'lucide-react';
-import { Button, Input, Badge, Alert, Card } from '../../../../../shared/components';
+import {
+  Button,
+  Input,
+  Badge,
+  Alert,
+  Card,
+  Table,
+  type TableColumn,
+} from '../../../../../shared/components';
 import { InviteFpcModal, type InviteFpcFormData } from '../components/InviteFpcModal';
+import { FpcStatusBadge, type FpcStatus } from '../components/FpcStatusBadge';
 import {
   useCreateFpcInvitationMutation,
   useGetFpcInvitationsQuery,
@@ -18,9 +27,17 @@ interface FpcRecord {
   location: string;
   farmers: number;
   shareholders: string | number;
-  status: 'Active' | 'Onboarding' | 'Overdue' | 'Inactive' | 'Compliance';
+  status: FpcStatus;
   statusLabel: string;
 }
+
+/**
+ * Exact destructive action styling carried over from the legacy table markup.
+ * These two colors are intentional brand values that are not part of the token
+ * palette, so they are kept verbatim to preserve the existing appearance.
+ */
+const DESTRUCTIVE_ACTION_CLASSES =
+  'h-7 px-3.5 py-0 rounded-full text-xs font-semibold bg-[#8B2323] hover:bg-[#721C1C] min-w-0 shadow-2xs';
 
 const INITIAL_RECORDS: FpcRecord[] = [
   {
@@ -161,23 +178,137 @@ export const OnboardNewFpcPage: React.FC = () => {
     setInvitationSuccess(`Invitation dispatched to ${result.nominatedAdmin} (${result.email})`);
   };
 
-  // Reusing shared Badge component for all status representations
-  const renderStatusBadge = (status: FpcRecord['status'], label: string) => {
-    switch (status) {
-      case 'Active':
-        return <Badge variant="brand" dot className="px-2.5 py-1 text-xs font-medium">{label}</Badge>;
-      case 'Onboarding':
-        return <Badge variant="info" dot className="px-2.5 py-1 text-xs font-medium">{label}</Badge>;
-      case 'Overdue':
-        return <Badge variant="warning" dot className="px-2.5 py-1 text-xs font-medium">{label}</Badge>;
-      case 'Inactive':
-        return <Badge variant="neutral" dot className="px-2.5 py-1 text-xs font-medium">{label}</Badge>;
-      case 'Compliance':
-        return <Badge variant="danger" dot className="px-2.5 py-1 text-xs font-medium">{label}</Badge>;
-      default:
-        return <span>{label}</span>;
-    }
-  };
+  // Shared Table empty-state content (presentation only; filtering stays on this page)
+  const emptyState = (
+    <>
+      <p className="font-medium">No FPC records found</p>
+      <small className="text-secondary mt-1 block">
+        {searchQuery ? `No results matching "${searchQuery}"` : 'No records match the current filter.'}
+      </small>
+      {(searchQuery || selectedFilter !== 'All') && (
+        <Button
+          variant="outline"
+          size="xs"
+          onClick={() => {
+            setSearchQuery('');
+            setSelectedFilter('All');
+          }}
+          className="mt-3 text-xs"
+        >
+          Reset Filters
+        </Button>
+      )}
+    </>
+  );
+
+  // Column definitions: data presentation config only, no table markup.
+  const fpcColumns: TableColumn<FpcRecord>[] = [
+    {
+      id: 'id',
+      header: 'ID',
+      widthClassName: 'w-[130px]',
+      tone: 'medium',
+      cell: (item) => item.id,
+    },
+    {
+      id: 'name',
+      header: 'Name',
+      widthClassName: 'min-w-[260px]',
+      tone: 'strong',
+      cell: (item) => item.name,
+    },
+    {
+      id: 'location',
+      header: 'Location',
+      widthClassName: 'min-w-[190px]',
+      tone: 'secondary',
+      cell: (item) => item.location,
+    },
+    {
+      id: 'farmers',
+      header: 'Farmers',
+      widthClassName: 'w-[100px]',
+      cell: (item) => item.farmers,
+    },
+    {
+      id: 'shareholders',
+      header: 'Shareholders',
+      widthClassName: 'w-[110px]',
+      tone: 'secondary',
+      cell: (item) => item.shareholders,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      widthClassName: 'w-[160px]',
+      cell: (item) => <FpcStatusBadge status={item.status} label={item.statusLabel} />,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      widthClassName: 'w-[160px]',
+      align: 'center',
+      cell: (item) => (
+        <div className="flex items-center justify-center table-actions-gap">
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            className="p-0 h-auto text-xs text-brand hover:underline hover:bg-transparent min-w-0"
+          >
+            Edit
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => handleDelete(item.id, item.invitationId)}
+            className={DESTRUCTIVE_ACTION_CLASSES}
+          >
+            {item.invitationId ? 'Revoke' : 'Delete'}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            iconOnly
+            className="p-1 rounded-full"
+            title="More options"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const paginationFooter = (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-secondary pt-2 px-1">
+      <div>
+        Showing 1-{filteredRecords.length} of {allRecords.length} records
+      </div>
+      <div className="flex items-center gap-2 select-none">
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="font-medium h-auto p-1"
+        >
+          &larr; Previous
+        </Button>
+        <span className="w-7 h-7 rounded-lg bg-brand-soft text-brand font-bold flex items-center justify-center">
+          1
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="font-medium h-auto p-1"
+        >
+          Next &rarr;
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="section-flow text-left">
@@ -205,7 +336,7 @@ export const OnboardNewFpcPage: React.FC = () => {
             variant="outline"
             size="sm"
             leadingIcon={<HelpCircle className="w-3.5 h-3.5 text-secondary" />}
-            className="h-8 px-4 bg-white border-default hover:bg-neutral-50 text-primary text-xs font-medium shadow-2xs"
+            className="h-8 px-4 text-xs font-medium"
           >
             Help
           </Button>
@@ -236,7 +367,7 @@ export const OnboardNewFpcPage: React.FC = () => {
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                   }}
-                  className="h-7 px-2.5 text-xs bg-white flex items-center gap-1 shadow-2xs"
+                  className="text-xs flex items-center gap-1"
                 >
                   {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
                   {copied ? 'Copied' : 'Copy Link'}
@@ -277,7 +408,7 @@ export const OnboardNewFpcPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               leadingIcon={<Search className="w-4 h-4 text-secondary" />}
-              className="h-10 border-default bg-white"
+              className="h-10"
             />
           </div>
 
@@ -289,8 +420,8 @@ export const OnboardNewFpcPage: React.FC = () => {
               onClick={() => setSelectedFilter('All')}
               className={`h-10 px-5 font-semibold rounded-control transition-colors ${
                 selectedFilter === 'All'
-                  ? 'bg-brand-soft text-brand border-forest-200'
-                  : 'bg-white text-secondary border-default hover:bg-neutral-50'
+                  ? 'border-forest-200'
+                  : 'text-secondary'
               }`}
             >
               All
@@ -300,7 +431,6 @@ export const OnboardNewFpcPage: React.FC = () => {
               variant="primary"
               size="sm"
               onClick={() => setIsInviteModalOpen(true)}
-              className="h-10 px-5 font-semibold rounded-control shadow-xs"
             >
               Invite fpc
             </Button>
@@ -308,134 +438,22 @@ export const OnboardNewFpcPage: React.FC = () => {
             <Button
               variant="secondary"
               size="sm"
-              className="h-10 px-5 font-semibold rounded-control border border-forest-200 shadow-2xs"
+              className="h-10 px-5 border-forest-200"
             >
               Download
             </Button>
           </div>
         </div>
 
-        {/* Responsive Data Table */}
-        <div className="overflow-x-auto rounded-control border border-default">
-          <table className="w-full text-left">
-            <thead className="bg-neutral-50 text-secondary font-semibold border-b border-default">
-              <tr>
-                <th className="table-th-padding uppercase tracking-wider w-[130px]">ID</th>
-                <th className="table-th-padding uppercase tracking-wider min-w-[260px]">Name</th>
-                <th className="table-th-padding uppercase tracking-wider min-w-[190px]">Location</th>
-                <th className="table-th-padding uppercase tracking-wider w-[100px]">Farmers</th>
-                <th className="table-th-padding uppercase tracking-wider w-[110px]">Shareholders</th>
-                <th className="table-th-padding uppercase tracking-wider w-[160px]">Status</th>
-                <th className="table-th-padding uppercase tracking-wider w-[160px] text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-default text-primary">
-              {filteredRecords.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-secondary">
-                    <p className="font-medium">No FPC records found</p>
-                    <small className="text-secondary mt-1 block">
-                      {searchQuery ? `No results matching "${searchQuery}"` : 'No records match the current filter.'}
-                    </small>
-                    {(searchQuery || selectedFilter !== 'All') && (
-                      <Button
-                        variant="outline"
-                        size="xs"
-                        onClick={() => {
-                          setSearchQuery('');
-                          setSelectedFilter('All');
-                        }}
-                        className="mt-3 text-xs"
-                      >
-                        Reset Filters
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                filteredRecords.map((item) => (
-                  <tr key={item.id} className="hover:bg-neutral-50/60 transition-colors">
-                    <td className="table-td-padding font-medium text-secondary whitespace-nowrap">
-                      {item.id}
-                    </td>
-                    <td className="table-td-padding font-semibold text-primary whitespace-nowrap">
-                      {item.name}
-                    </td>
-                    <td className="table-td-padding text-secondary whitespace-nowrap">
-                      {item.location}
-                    </td>
-                    <td className="table-td-padding text-primary whitespace-nowrap">
-                      {item.farmers}
-                    </td>
-                    <td className="table-td-padding text-secondary whitespace-nowrap">
-                      {item.shareholders}
-                    </td>
-                    <td className="table-td-padding whitespace-nowrap">
-                      {renderStatusBadge(item.status, item.statusLabel)}
-                    </td>
-                    <td className="table-td-padding whitespace-nowrap">
-                      <div className="flex items-center justify-center table-actions-gap">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="xs"
-                          className="p-0 h-auto text-xs text-brand font-semibold hover:underline hover:bg-transparent min-w-0"
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(item.id, item.invitationId)}
-                          className="h-7 px-3.5 py-0 rounded-full text-xs font-semibold bg-[#8B2323] hover:bg-[#721C1C] min-w-0 shadow-2xs"
-                        >
-                          {item.invitationId ? 'Revoke' : 'Delete'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                        size="xs"
-                        iconOnly
-                        className="text-secondary hover:text-primary p-1 w-7 h-7 rounded-full"
-                        title="More options"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              )))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Table Pagination Footer Reusing Shared Button */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-secondary pt-2 px-1">
-          <div>
-            Showing 1-{filteredRecords.length} of {allRecords.length} records
-          </div>
-          <div className="flex items-center gap-2 select-none">
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              className="text-secondary hover:text-primary font-medium h-auto p-1"
-            >
-              &larr; Previous
-            </Button>
-            <span className="w-7 h-7 rounded-lg bg-brand-soft text-brand font-bold flex items-center justify-center">
-              1
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              className="text-secondary hover:text-primary font-medium h-auto p-1"
-            >
-              Next &rarr;
-            </Button>
-          </div>
-        </div>
+        {/* Responsive Data Table: Reusing centralized shared Table */}
+        <Table
+          data={filteredRecords}
+          columns={fpcColumns}
+          getRowKey={(item) => item.id}
+          ariaLabel="FPC onboarding records"
+          emptyState={emptyState}
+          footer={paginationFooter}
+        />
       </Card>
 
       {/* Invite FPC Modal: Reusing generic Modal component */}
