@@ -42,16 +42,20 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
   const activeFpcDisplayName = currentUser?.activeFpcName || 'TSF Programme';
 
   // Primary navigation links configuration
+  // NOTE: Items marked hidden: true are temporarily hidden from the visible sidebar.
+  // Set hidden: false (or remove the flag) to restore their visibility at any time.
   const navItems = [
     {
       name: 'Dashboard',
       path: '/admin/dashboard',
       icon: LayoutGrid,
+      hidden: true, // Temporarily hidden
     },
     {
       name: 'Monitoring',
       path: '/admin/monitoring',
       icon: LineChart,
+      hidden: true, // Temporarily hidden
     },
   ];
 
@@ -61,39 +65,48 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
     { name: 'Pending Approvals', path: '/admin/pending-approvals' },
   ];
 
+  // Secondary navigation links configuration
+  // Set hidden: false (or remove the flag) to restore their visibility at any time.
   const secondaryNavItems = [
     {
       name: 'Network Data',
       path: '/admin/network-data',
       icon: Globe,
+      hidden: true, // Temporarily hidden
     },
     {
       name: 'Analytics and MIS',
       path: '/admin/analytics',
       icon: FileText,
+      hidden: true, // Temporarily hidden
     },
     {
       name: 'Gallery',
       path: '/admin/gallery',
       icon: GalleryIcon,
+      hidden: true, // Temporarily hidden
     },
     {
       name: 'Administration',
       path: '/admin/administration',
       icon: SlidersHorizontal,
+      hidden: true, // Temporarily hidden
     },
   ];
 
+  const visibleNavItems = navItems.filter((i) => !i.hidden);
+  const visibleSecondaryNavItems = secondaryNavItems.filter((i) => !i.hidden);
+
   const query = searchQuery.trim().toLowerCase();
   const filteredNavItems = query
-    ? navItems.filter((i) => i.name.toLowerCase().includes(query))
-    : navItems;
+    ? visibleNavItems.filter((i) => i.name.toLowerCase().includes(query))
+    : visibleNavItems;
   const filteredFpcSubItems = query
     ? fpcSubItems.filter((i) => i.name.toLowerCase().includes(query))
     : fpcSubItems;
   const filteredSecondaryNavItems = query
-    ? secondaryNavItems.filter((i) => i.name.toLowerCase().includes(query))
-    : secondaryNavItems;
+    ? visibleSecondaryNavItems.filter((i) => i.name.toLowerCase().includes(query))
+    : visibleSecondaryNavItems;
 
   const showFpcSection =
     !query || 'fpc management'.includes(query) || filteredFpcSubItems.length > 0;
