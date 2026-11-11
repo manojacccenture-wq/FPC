@@ -22,7 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.freebuff/
+
+# Environment files
 .env.development
 .env.production
-.gitignore
 .env.qa
