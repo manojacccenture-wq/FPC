@@ -34,8 +34,8 @@ export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'admin@tsf.org',
-      password: 'TsfAdmin@2026!',
+      email: import.meta.env.DEV ? 'admin@tsf.org' : '',
+      password: import.meta.env.DEV ? 'TsfAdmin@2026!' : '',
       rememberMe: false,
     },
     mode: 'onBlur',
@@ -262,14 +262,14 @@ export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
             </Button>
           </form>
 
-          {/* Test Credentials Helper Pill */}
-          {showDemoCredentials && (
+          {/* Test Credentials Helper Pill - Rendered strictly in Development */}
+          {import.meta.env.DEV && showDemoCredentials && (
             <div className="mt-4 pt-3 border-t border-neutral-100 text-left space-y-2">
               <div className="floating-label font-semibold text-neutral-500">
                 Test Credentials (Click to fill)
               </div>
               <div
-                onClick={() => handleFillDemo('manojkr@lhsindia.com', 'TsfAdmin@2026!')}
+                onClick={() => handleFillDemo('manojkr@lhsindia.com', 'FpcAdmin@2026!')}
                 className="p-2 rounded-control bg-amber-50 border border-amber-200 flex items-center justify-between text-xs text-amber-800 cursor-pointer hover:bg-amber-100 transition-colors select-none"
                 title="Click to load manojkr@lhsindia.com credentials (2FA Enforced)"
               >
@@ -279,7 +279,7 @@ export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
                   <span className="text-[10px] bg-amber-200/80 text-amber-900 px-1 py-0.5 rounded font-semibold uppercase">2FA</span>
                 </div>
                 <code className="floating-label bg-white/80 px-1.5 py-0.5 rounded text-neutral-600">
-                  TsfAdmin@2026!
+                  FpcAdmin@2026!
                 </code>
               </div>
               <div

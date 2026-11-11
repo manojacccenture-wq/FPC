@@ -60,6 +60,17 @@ export const baseQueryWithReauth: BaseQueryFn<
         : args.url.includes('/auth/login') || args.url.includes('/auth/refresh');
 
     if (!isAuthEndpoint) {
+      // If the browser has no session indicator (XSRF-TOKEN cookie) during initial /auth/me check,
+      // skip the doomed refresh request to keep network tab clean for unauthenticated visitors.
+      const hasSessionIndicator = Boolean(getCookie('XSRF-TOKEN'));
+      const isMeEndpoint =
+        typeof args === 'string' ? args.includes('/auth/me') : args.url.includes('/auth/me');
+
+      if (!hasSessionIndicator && isMeEndpoint) {
+        api.dispatch({ type: 'auth/loggedOut' });
+        return result;
+      }
+
       // Attempt to refresh the access token via HttpOnly refresh cookie
       const refreshResult = await rawBaseQuery(
         {
