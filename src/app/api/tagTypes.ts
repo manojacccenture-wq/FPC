@@ -11,6 +11,7 @@ export const TAG_TYPES = {
   Audit: 'Audit',
   Sync: 'Sync',
   FpcInvitation: 'FpcInvitation',
+  Fpc: 'Fpc',
 } as const;
 
 export type TagType = (typeof TAG_TYPES)[keyof typeof TAG_TYPES];

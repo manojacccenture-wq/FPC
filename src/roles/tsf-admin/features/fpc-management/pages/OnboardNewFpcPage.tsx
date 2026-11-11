@@ -16,12 +16,17 @@ import {
   useGetFpcInvitationsQuery,
   useRevokeFpcInvitationMutation,
 } from '../../../../../features/onboarding/api/fpcInvitationApi';
+import {
+  useGetFpcsQuery,
+  useDeleteFpcMutation,
+} from '../../../../../features/fpc/api/fpcApi';
 import { useAppSelector } from '../../../../../app/store/hooks';
 import { useNotification } from '../../../../../shared/notifications';
 import { resolveErrorMessage } from '../../../../../shared/forms';
 
 interface FpcRecord {
   id: string;
+  fpcId?: string;
   invitationId?: string;
   name: string;
   location: string;
@@ -39,83 +44,7 @@ interface FpcRecord {
 const DESTRUCTIVE_ACTION_CLASSES =
   'h-7 px-3.5 py-0 rounded-full text-xs font-semibold bg-[#8B2323] hover:bg-[#721C1C] min-w-0 shadow-2xs';
 
-const INITIAL_RECORDS: FpcRecord[] = [
-  {
-    id: 'FPC-ODI-001',
-    name: 'Green Valley Farmer Producer Company Ltd.',
-    location: 'Keonjhar, Odisha',
-    farmers: 100,
-    shareholders: 62,
-    status: 'Active',
-    statusLabel: 'Active'
-  },
-  {
-    id: 'FPC-ODI-002',
-    name: 'Kalinganagar Agri Producers Co.',
-    location: 'Jajpur, Odisha',
-    farmers: 214,
-    shareholders: '-',
-    status: 'Active',
-    statusLabel: 'Active'
-  },
-  {
-    id: 'FPC-JHK-001',
-    name: 'Noamundi Millet Growers FPC',
-    location: 'West Singhbhum, Jharkhand',
-    farmers: 156,
-    shareholders: '-',
-    status: 'Active',
-    statusLabel: 'Active'
-  },
-  {
-    id: 'FPC-JHK-002',
-    name: 'Seraikela Vegetable Growers FPC',
-    location: 'Seraikela-Kharsawan, Jharkhand',
-    farmers: 88,
-    shareholders: '-',
-    status: 'Onboarding',
-    statusLabel: 'Onboarding'
-  },
-  {
-    id: 'FPC-ODI-003',
-    name: 'Gonda Tribal Farmers FPC',
-    location: 'Keonjhar, Odisha',
-    farmers: 132,
-    shareholders: '-',
-    status: 'Overdue',
-    statusLabel: '12 days overdue'
-  },
-  {
-    id: 'FPC-ODI-004',
-    name: 'Joda Pulse Producers FPC',
-    location: 'Keonjhar, Odisha',
-    farmers: 97,
-    shareholders: '-',
-    status: 'Active',
-    statusLabel: 'Active'
-  },
-  {
-    id: 'FPC-JHK-003',
-    name: 'Chaibasa Organic FPC',
-    location: 'West Singhbhum, Jharkhand',
-    farmers: 71,
-    shareholders: '-',
-    status: 'Inactive',
-    statusLabel: 'Inactive'
-  },
-  {
-    id: 'FPC-ODI-005',
-    name: 'Barbil Oilseed Growers FPC',
-    location: 'Keonjhar, Odisha',
-    farmers: 119,
-    shareholders: '-',
-    status: 'Compliance',
-    statusLabel: 'Compliance overdue...'
-  }
-];
-
 export const OnboardNewFpcPage: React.FC = () => {
-  const [records, setRecords] = useState<FpcRecord[]>(INITIAL_RECORDS);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'All' | 'Active' | 'Onboarding'>('All');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -125,13 +54,36 @@ export const OnboardNewFpcPage: React.FC = () => {
 
   const { notify } = useNotification();
 
-  // RTK Query: Live backend invitation queries and mutations
   const currentUser = useAppSelector((state) => state.auth.currentUser);
-  const { data: liveInvitations = [] } = useGetFpcInvitationsQuery();
+
+  // RTK Query: Live backend registered FPCs & invitations
+  const {
+    data: liveFpcs = [],
+    isLoading: isLoadingFpcs,
+  } = useGetFpcsQuery();
+
+  const {
+    data: liveInvitations = [],
+    isLoading: isLoadingInvitations,
+  } = useGetFpcInvitationsQuery();
+
   const [createFpcInvitation] = useCreateFpcInvitationMutation();
   const [revokeFpcInvitation] = useRevokeFpcInvitationMutation();
+  const [deleteFpc] = useDeleteFpcMutation();
 
-  // Merge live PostgreSQL invitations with records list
+  // Map live registered FPCs from PostgreSQL backend
+  const registeredRecords: FpcRecord[] = liveFpcs.map((fpc) => ({
+    id: fpc.code || fpc.cin,
+    fpcId: fpc.id,
+    name: fpc.name,
+    location: fpc.location,
+    farmers: fpc.farmersCount,
+    shareholders: fpc.shareholdersCount > 0 ? fpc.shareholdersCount : '-',
+    status: fpc.status,
+    statusLabel: fpc.statusLabel,
+  }));
+
+  // Map live dispatched invitations from PostgreSQL backend
   const invitationRecords: FpcRecord[] = liveInvitations.map((inv, idx) => ({
     id: `INV-${(inv.state || 'IND').substring(0, 3).toUpperCase()}-${String(idx + 1).padStart(3, '0')}`,
     invitationId: inv.id,
@@ -139,13 +91,14 @@ export const OnboardNewFpcPage: React.FC = () => {
     location: `${inv.district}, ${inv.state}`,
     farmers: 0,
     shareholders: '-',
-    status: 'Onboarding' as const,
-    statusLabel: `Invited (${inv.status})`
+    status: inv.status === 'Expired' ? ('Overdue' as const) : ('Onboarding' as const),
+    statusLabel: `Invited (${inv.status})`,
   }));
 
-  const allRecords = [...invitationRecords, ...records];
+  // Complete backend-driven records (Single Source of Truth)
+  const allRecords = [...invitationRecords, ...registeredRecords];
 
-  const filteredRecords = allRecords.filter(r => {
+  const filteredRecords = allRecords.filter((r) => {
     const matchesSearch =
       r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -155,11 +108,12 @@ export const OnboardNewFpcPage: React.FC = () => {
     return matchesSearch && r.status === selectedFilter;
   });
 
-  const handleDelete = async (id: string, invitationId?: string) => {
-    if (invitationId) {
+  const handleDelete = async (record: FpcRecord) => {
+    if (record.invitationId) {
       try {
-        await revokeFpcInvitation(invitationId).unwrap();
+        await revokeFpcInvitation(record.invitationId).unwrap();
         setInvitationSuccess('Invitation successfully revoked.');
+        notify('Invitation successfully revoked.', 'success');
       } catch (err: unknown) {
         notify(
           resolveErrorMessage(err, 'We could not revoke this invitation. Please try again.'),
@@ -167,8 +121,17 @@ export const OnboardNewFpcPage: React.FC = () => {
           'Revoke failed'
         );
       }
-    } else {
-      setRecords(prev => prev.filter(r => r.id !== id));
+    } else if (record.fpcId) {
+      try {
+        await deleteFpc(record.fpcId).unwrap();
+        notify('FPC record successfully deleted.', 'success');
+      } catch (err: unknown) {
+        notify(
+          resolveErrorMessage(err, 'We could not delete this FPC. Please try again.'),
+          'danger',
+          'Delete failed'
+        );
+      }
     }
   };
 
@@ -176,6 +139,35 @@ export const OnboardNewFpcPage: React.FC = () => {
     const result = await createFpcInvitation(data).unwrap();
     setInvitationLink(result.registrationUrl);
     setInvitationSuccess(`Invitation dispatched to ${result.nominatedAdmin} (${result.email})`);
+  };
+
+  const handleDownloadCsv = () => {
+    if (filteredRecords.length === 0) {
+      notify('No records available to download.', 'warning');
+      return;
+    }
+
+    const headers = ['ID', 'Name', 'Location', 'Farmers', 'Shareholders', 'Status'];
+    const rows = filteredRecords.map((r) => [
+      `"${r.id.replace(/"/g, '""')}"`,
+      `"${r.name.replace(/"/g, '""')}"`,
+      `"${r.location.replace(/"/g, '""')}"`,
+      r.farmers,
+      r.shareholders === '-' ? '0' : r.shareholders,
+      `"${r.statusLabel.replace(/"/g, '""')}"`,
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `fpc_onboarding_records_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    notify('Records exported successfully.', 'success');
   };
 
   // Shared Table empty-state content (presentation only; filtering stays on this page)
@@ -261,7 +253,7 @@ export const OnboardNewFpcPage: React.FC = () => {
           <Button
             variant="destructive"
             size="sm"
-            onClick={() => handleDelete(item.id, item.invitationId)}
+            onClick={() => handleDelete(item)}
             className={DESTRUCTIVE_ACTION_CLASSES}
           >
             {item.invitationId ? 'Revoke' : 'Delete'}
@@ -284,7 +276,9 @@ export const OnboardNewFpcPage: React.FC = () => {
   const paginationFooter = (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-secondary pt-2 px-1">
       <div>
-        Showing 1-{filteredRecords.length} of {allRecords.length} records
+        {allRecords.length === 0
+          ? 'Showing 0 of 0 records'
+          : `Showing 1-${filteredRecords.length} of ${allRecords.length} records`}
       </div>
       <div className="flex items-center gap-2 select-none">
         <Button
@@ -309,6 +303,8 @@ export const OnboardNewFpcPage: React.FC = () => {
       </div>
     </div>
   );
+
+  const orgName = currentUser?.activeFpcName || 'Tata Steel Foundation';
 
   return (
     <div className="section-flow text-left">
@@ -394,7 +390,7 @@ export const OnboardNewFpcPage: React.FC = () => {
             FPC onboarding
           </h3>
           <p className="text-secondary mt-1">
-            {filteredRecords.length} records · {currentUser?.activeFpcName || 'TSF Programme'}
+            {filteredRecords.length} records · {orgName}
           </p>
         </div>
 
@@ -428,6 +424,32 @@ export const OnboardNewFpcPage: React.FC = () => {
             </Button>
 
             <Button
+              variant={selectedFilter === 'Active' ? 'secondary' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedFilter('Active')}
+              className={`h-10 px-5 font-semibold rounded-control transition-colors ${
+                selectedFilter === 'Active'
+                  ? 'border-forest-200'
+                  : 'text-secondary'
+              }`}
+            >
+              Active
+            </Button>
+
+            <Button
+              variant={selectedFilter === 'Onboarding' ? 'secondary' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedFilter('Onboarding')}
+              className={`h-10 px-5 font-semibold rounded-control transition-colors ${
+                selectedFilter === 'Onboarding'
+                  ? 'border-forest-200'
+                  : 'text-secondary'
+              }`}
+            >
+              Onboarding
+            </Button>
+
+            <Button
               variant="primary"
               size="sm"
               onClick={() => setIsInviteModalOpen(true)}
@@ -438,6 +460,7 @@ export const OnboardNewFpcPage: React.FC = () => {
             <Button
               variant="secondary"
               size="sm"
+              onClick={handleDownloadCsv}
               className="h-10 px-5 border-forest-200"
             >
               Download
@@ -449,8 +472,9 @@ export const OnboardNewFpcPage: React.FC = () => {
         <Table
           data={filteredRecords}
           columns={fpcColumns}
-          getRowKey={(item) => item.id}
+          getRowKey={(item) => item.invitationId || item.fpcId || item.id}
           ariaLabel="FPC onboarding records"
+          isLoading={isLoadingFpcs || isLoadingInvitations}
           emptyState={emptyState}
           footer={paginationFooter}
         />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Search, Building2, MapPin, Users } from 'lucide-react';
+import { Search, Building2, MapPin, Users, CheckCircle2 } from 'lucide-react';
 import { Badge, Card, Input, Button } from '../../../../../shared/components';
+import { useGetFpcsQuery } from '../../../../../features/fpc/api/fpcApi';
 
 interface FpcDirectoryItem {
   id: string;
@@ -13,64 +14,26 @@ interface FpcDirectoryItem {
   status: 'Approved' | 'Review' | 'Audited';
 }
 
-const DEMO_DIRECTORIES: FpcDirectoryItem[] = [
-  {
-    id: 'FPC-MH-001',
-    cin: 'U01100MH2026PTC123456',
-    name: 'Sahyadri Agro Producer Company Limited',
-    state: 'Maharashtra',
-    district: 'Nashik',
-    farmersCount: 1420,
-    incorporationYear: 2026,
-    status: 'Approved',
-  },
-  {
-    id: 'FPC-ODI-001',
-    cin: 'U01111OD2025PTC034567',
-    name: 'Green Valley Farmer Producer Company Ltd.',
-    state: 'Odisha',
-    district: 'Keonjhar',
-    farmersCount: 840,
-    incorporationYear: 2025,
-    status: 'Approved',
-  },
-  {
-    id: 'FPC-ODI-002',
-    cin: 'U01122OD2024PTC045678',
-    name: 'Kalinganagar Agri Producers Co.',
-    state: 'Odisha',
-    district: 'Jajpur',
-    farmersCount: 1120,
-    incorporationYear: 2024,
-    status: 'Approved',
-  },
-  {
-    id: 'FPC-JHK-001',
-    cin: 'U01133JH2025PTC056789',
-    name: 'Noamundi Millet Growers FPC',
-    state: 'Jharkhand',
-    district: 'West Singhbhum',
-    farmersCount: 650,
-    incorporationYear: 2025,
-    status: 'Approved',
-  },
-  {
-    id: 'FPC-JHK-002',
-    cin: 'U01144JH2025PTC067890',
-    name: 'Seraikela Vegetable Growers FPC',
-    state: 'Jharkhand',
-    district: 'Seraikela-Kharsawan',
-    farmersCount: 490,
-    incorporationYear: 2025,
-    status: 'Review',
-  },
-];
-
 export const AllFpcsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedState, setSelectedState] = useState<string>('All');
 
-  const filteredItems = DEMO_DIRECTORIES.filter((fpc) => {
+  const { data: liveFpcs = [], isLoading } = useGetFpcsQuery();
+
+  const directoryItems: FpcDirectoryItem[] = liveFpcs.map((fpc) => ({
+    id: fpc.id,
+    cin: fpc.cin,
+    name: fpc.name,
+    state: fpc.state,
+    district: fpc.district,
+    farmersCount: fpc.farmersCount,
+    incorporationYear: fpc.createdAtUtc ? new Date(fpc.createdAtUtc).getFullYear() : new Date().getFullYear(),
+    status: fpc.status === 'Active' ? 'Approved' : 'Review',
+  }));
+
+  const availableStates = ['All', ...Array.from(new Set(liveFpcs.map((f) => f.state).filter(Boolean)))];
+
+  const filteredItems = directoryItems.filter((fpc) => {
     const matchesSearch =
       fpc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       fpc.cin.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,7 +82,7 @@ export const AllFpcsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-            {['All', 'Odisha', 'Jharkhand', 'Maharashtra'].map((st) => (
+            {availableStates.map((st) => (
               <Button
                 key={st}
                 size="xs"
@@ -136,47 +99,62 @@ export const AllFpcsPage: React.FC = () => {
         </div>
 
         {/* Directory Items Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
-          {filteredItems.map((fpc) => (
-            <div
-              key={fpc.id}
-              className="p-3.5 rounded-xl border border-neutral-200/80 hover:border-brand/40 bg-white transition-all space-y-2 text-left shadow-2xs"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-brand-soft text-brand flex items-center justify-center shrink-0">
-                    <Building2 className="w-4 h-4" />
+        {isLoading ? (
+          <div className="py-12 text-center text-secondary">
+            <div className="w-8 h-8 border-3 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-xs">Loading enterprise directory...</p>
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="py-10 text-center text-secondary">
+            <CheckCircle2 className="w-8 h-8 text-neutral-400 mx-auto mb-2 stroke-[1.5]" />
+            <p className="text-sm font-medium text-primary">No directory entries found</p>
+            <p className="text-xs text-secondary mt-1">
+              {searchQuery ? `No results matching "${searchQuery}"` : 'No enterprises recorded in this region.'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
+            {filteredItems.map((fpc) => (
+              <div
+                key={fpc.id}
+                className="p-3.5 rounded-xl border border-neutral-200/80 hover:border-brand/40 bg-white transition-all space-y-2 text-left shadow-2xs"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-brand-soft text-brand flex items-center justify-center shrink-0">
+                      <Building2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-primary line-clamp-1">
+                        {fpc.name}
+                      </h4>
+                      <code className="text-neutral-400 block">
+                        {fpc.cin}
+                      </code>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-primary line-clamp-1">
-                      {fpc.name}
-                    </h4>
-                    <code className="text-neutral-400 block">
-                      {fpc.cin}
-                    </code>
-                  </div>
+                  <Badge
+                    variant={fpc.status === 'Approved' ? 'success' : 'warning'}
+                    size="sm"
+                  >
+                    {fpc.status}
+                  </Badge>
                 </div>
-                <Badge
-                  variant={fpc.status === 'Approved' ? 'success' : 'warning'}
-                  size="sm"
-                >
-                  {fpc.status}
-                </Badge>
-              </div>
 
-              <div className="flex items-center justify-between text-xs text-secondary pt-1 border-t border-neutral-100">
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-neutral-400" />
-                  <span>{fpc.district}, {fpc.state}</span>
-                </div>
-                <div className="flex items-center gap-1 font-medium text-primary">
-                  <Users className="w-3.5 h-3.5 text-neutral-400" />
-                  <span>{fpc.farmersCount} Farmers</span>
+                <div className="flex items-center justify-between text-xs text-secondary pt-1 border-t border-neutral-100">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-neutral-400" />
+                    <span>{fpc.district}, {fpc.state}</span>
+                  </div>
+                  <div className="flex items-center gap-1 font-medium text-primary">
+                    <Users className="w-3.5 h-3.5 text-neutral-400" />
+                    <span>{fpc.farmersCount} Farmers</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );
