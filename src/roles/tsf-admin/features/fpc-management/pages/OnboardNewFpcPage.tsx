@@ -112,6 +112,7 @@ export const OnboardNewFpcPage: React.FC = () => {
     if (record.invitationId) {
       try {
         await revokeFpcInvitation(record.invitationId).unwrap();
+        setInvitationLink(null);
         setInvitationSuccess('Invitation successfully revoked.');
         notify('Invitation successfully revoked.', 'success');
       } catch (err: unknown) {
@@ -124,6 +125,7 @@ export const OnboardNewFpcPage: React.FC = () => {
     } else if (record.fpcId) {
       try {
         await deleteFpc(record.fpcId).unwrap();
+        setInvitationLink(null);
         notify('FPC record successfully deleted.', 'success');
       } catch (err: unknown) {
         notify(
@@ -135,10 +137,21 @@ export const OnboardNewFpcPage: React.FC = () => {
     }
   };
 
+  const resolveRegistrationUrl = (link: string | null): string => {
+    if (!link) return '';
+    if (link.startsWith('http://') || link.startsWith('https://')) {
+      return link;
+    }
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const cleanPath = link.startsWith('/') ? link : `/${link}`;
+    return `${origin}${cleanPath}`;
+  };
+
   const handleInviteSubmit = async (data: InviteFpcFormData) => {
     const result = await createFpcInvitation(data).unwrap();
     setInvitationLink(result.registrationUrl);
     setInvitationSuccess(`Invitation dispatched to ${result.nominatedAdmin} (${result.email})`);
+    notify(`Invitation dispatched to ${result.nominatedAdmin} (${result.email})`, 'success');
   };
 
   const handleDownloadCsv = () => {
@@ -359,7 +372,8 @@ export const OnboardNewFpcPage: React.FC = () => {
                   variant="outline"
                   size="xs"
                   onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}${invitationLink}`);
+                    const fullUrl = resolveRegistrationUrl(invitationLink);
+                    navigator.clipboard.writeText(fullUrl);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                   }}
@@ -369,7 +383,7 @@ export const OnboardNewFpcPage: React.FC = () => {
                   {copied ? 'Copied' : 'Copy Link'}
                 </Button>
                 <a
-                  href={invitationLink}
+                  href={resolveRegistrationUrl(invitationLink)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"

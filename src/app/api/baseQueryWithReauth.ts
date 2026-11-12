@@ -82,6 +82,12 @@ export const baseQueryWithReauth: BaseQueryFn<
       );
 
       if (refreshResult.data) {
+        if (import.meta.env.DEV) {
+          console.debug(
+            '[Auth] Access token refreshed; successfully retrying request:',
+            typeof args === 'string' ? args : args.url
+          );
+        }
         // Retry the original query now that cookies are refreshed
         result = await rawBaseQuery(args, api, extraOptions);
       } else {
