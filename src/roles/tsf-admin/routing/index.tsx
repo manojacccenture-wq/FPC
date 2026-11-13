@@ -2,6 +2,7 @@ import { Navigate, type RouteObject } from 'react-router-dom';
 import { TsfAdminLayout } from '../layout/TsfAdminLayout';
 import { TsfAdminDashboardPage } from '../features/dashboard/pages/TsfAdminDashboardPage';
 import { OnboardNewFpcPage } from '../features/fpc-management/pages/OnboardNewFpcPage';
+import { FpcInviteDetailsPage } from '../features/fpc-management/pages/FpcInviteDetailsPage';
 import { AllFpcsPage } from '../features/fpc-management/pages/AllFpcsPage';
 import { PendingApprovalsPage } from '../features/fpc-management/pages/PendingApprovalsPage';
 import { MonitoringPage } from '../features/monitoring/pages/MonitoringPage';
@@ -21,6 +22,10 @@ export const tsfAdminRoutes: RouteObject = {
     {
       path: 'onboard',
       element: <OnboardNewFpcPage />
+    },
+    {
+      path: 'onboard/:id',
+      element: <FpcInviteDetailsPage />
     },
     {
       path: 'dashboard',

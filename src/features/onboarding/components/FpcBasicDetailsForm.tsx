@@ -1,15 +1,18 @@
 import React from 'react';
+import { Controller } from 'react-hook-form';
 import { ChevronRight } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
 import { Select } from '../../../shared/components/Select';
+import { DatePicker } from '../../../shared/components/DatePicker';
 import { Button } from '../../../shared/components/Button';
 import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import { basicDetailsSchema, type BasicDetailsFormValues } from '../schemas/basicDetails.schema';
-import type { FpcInvitation } from '../types';
+import type { FpcInvitation, FpcBasicDetailsFormData } from '../types';
 
 export interface FpcBasicDetailsFormProps {
   invitation: FpcInvitation;
+  initialData?: Partial<FpcBasicDetailsFormData> | null;
   onSubmit: (values: BasicDetailsFormValues) => Promise<void> | void;
   onBackToLogin: () => void;
 }
@@ -43,28 +46,35 @@ const COMPANY_CATEGORIES = [
 
 export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
   invitation,
+  initialData,
   onSubmit,
   onBackToLogin,
 }) => {
-  // ZERO useEffect: Initial values populated synchronously from invitation record
+  const defaultRoc = invitation.state === 'Odisha' ? 'ROC Cuttack' : 'ROC Kolkata';
+  const formValues: BasicDetailsFormValues = {
+    legalName: initialData?.legalName || invitation.companyName || '',
+    cin: initialData?.cin || '',
+    registrationNumber: initialData?.registrationNumber || '',
+    rocOffice: initialData?.rocOffice || defaultRoc,
+    dateOfIncorporation: initialData?.dateOfIncorporation || '',
+    companyCategory: initialData?.companyCategory || 'Producer Company under Section 378A of CA 2013',
+    contactEmail: initialData?.contactEmail || invitation.email || '',
+    contactMobile: initialData?.contactMobile || invitation.phoneNumber || '',
+    website: initialData?.website || '',
+  };
+
+  // ZERO useEffect: Initial and restored values populated synchronously
   const {
+    control,
     register,
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
   } = useFpcForm<BasicDetailsFormValues>({
     schema: basicDetailsSchema,
-    defaultValues: {
-      legalName: invitation.companyName || '',
-      cin: '',
-      registrationNumber: '',
-      rocOffice: invitation.state === 'Odisha' ? 'ROC Cuttack' : 'ROC Kolkata',
-      dateOfIncorporation: '',
-      companyCategory: 'Producer Company under Section 378A of CA 2013',
-      contactEmail: invitation.email || '',
-      contactMobile: invitation.phoneNumber || '',
-      website: '',
-    },
+    defaultValues: formValues,
+    values: formValues,
+    resetOptions: { keepDirtyValues: true },
   });
 
   const submit = handleSubmit(async (values) => {
@@ -130,36 +140,59 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             error={errors.registrationNumber?.message}
             {...register('registrationNumber')}
           />
-          <Select
-            id="fpc-roc-office"
-            label="ROC office *"
-            required
-            options={ROC_OFFICES}
-            placeholder="Select ROC office"
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            error={errors.rocOffice?.message}
-            {...register('rocOffice')}
+          <Controller
+            control={control}
+            name="rocOffice"
+            render={({ field }) => (
+              <Select
+                id="fpc-roc-office"
+                label="ROC office *"
+                required
+                options={ROC_OFFICES}
+                placeholder="Select ROC office"
+                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                error={errors.rocOffice?.message}
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+            )}
           />
 
           {/* Row 3: Date of Incorporation & Company Category */}
-          <Input
-            id="fpc-date-incorporation"
-            label="Date of incorporation *"
-            required
-            placeholder="dd-mm-yyyy"
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            error={errors.dateOfIncorporation?.message}
-            {...register('dateOfIncorporation')}
+          <Controller
+            control={control}
+            name="dateOfIncorporation"
+            render={({ field }) => (
+              <DatePicker
+                id="fpc-date-incorporation"
+                label="Date of incorporation *"
+                required
+                placeholder="dd-mm-yyyy"
+                error={errors.dateOfIncorporation?.message}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
           />
-          <Select
-            id="fpc-company-category"
-            label="Company category *"
-            required
-            options={COMPANY_CATEGORIES}
-            helperText="Producer Company under Section 378A of CA 2013"
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            error={errors.companyCategory?.message}
-            {...register('companyCategory')}
+          <Controller
+            control={control}
+            name="companyCategory"
+            render={({ field }) => (
+              <Select
+                id="fpc-company-category"
+                label="Company category *"
+                required
+                options={COMPANY_CATEGORIES}
+                helperText="Producer Company under Section 378A of CA 2013"
+                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                error={errors.companyCategory?.message}
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+            )}
           />
 
           {/* Row 4: Official Email & Mobile (Read-only from invitation) */}

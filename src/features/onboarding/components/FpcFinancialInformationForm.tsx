@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFieldArray, useWatch } from 'react-hook-form';
+import { useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { ChevronRight, Plus } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
@@ -51,6 +51,29 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
   onSubmit,
   onPreviousStep,
 }) => {
+  const formValues: FinancialInformationFormValues = {
+    authorizedCapital: initialData?.authorizedCapital || '₹10,00,000',
+    paidUpCapital: initialData?.paidUpCapital || '₹6,00,000',
+    faceValuePerShare: initialData?.faceValuePerShare || '₹100',
+    annualTurnover: initialData?.annualTurnover || '₹15,00,000',
+    financialYear: initialData?.financialYear || '2025-26',
+    farmers: initialData?.farmers || '120',
+    shareholders: initialData?.shareholders || '60',
+    employees: initialData?.employees || '6',
+    bankAccounts: initialData?.bankAccounts && initialData.bankAccounts.length > 0
+      ? initialData.bankAccounts
+      : [
+          {
+            id: 'bank-1',
+            bankName: '',
+            accountNumber: '',
+            ifscCode: '',
+            branchName: '',
+            accountType: 'Current',
+          },
+        ],
+  };
+
   // ZERO useEffect: initial values populated directly during component mount
   const {
     register,
@@ -60,28 +83,9 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
     formState: { errors, isSubmitting },
   } = useFpcForm<FinancialInformationFormValues>({
     schema: financialInformationSchema,
-    defaultValues: {
-      authorizedCapital: initialData?.authorizedCapital || '₹10,00,000',
-      paidUpCapital: initialData?.paidUpCapital || '₹6,00,000',
-      faceValuePerShare: initialData?.faceValuePerShare || '₹100',
-      annualTurnover: initialData?.annualTurnover || '₹15,00,000',
-      financialYear: initialData?.financialYear || '2025-26',
-      farmers: initialData?.farmers || '120',
-      shareholders: initialData?.shareholders || '60',
-      employees: initialData?.employees || '6',
-      bankAccounts: initialData?.bankAccounts && initialData.bankAccounts.length > 0
-        ? initialData.bankAccounts
-        : [
-            {
-              id: 'bank-1',
-              bankName: '',
-              accountNumber: '',
-              ifscCode: '',
-              branchName: '',
-              accountType: 'Current',
-            },
-          ],
-    },
+    defaultValues: formValues,
+    values: formValues,
+    resetOptions: { keepDirtyValues: true },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -179,14 +183,22 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
           />
 
           {/* Row 3: Financial year & Farmers */}
-          <Select
-            id="fpc-fin-year"
-            label="Financial year *"
-            required
-            options={FINANCIAL_YEAR_OPTIONS}
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            error={errors.financialYear?.message}
-            {...register('financialYear')}
+          <Controller
+            control={control}
+            name="financialYear"
+            render={({ field }) => (
+              <Select
+                id="fpc-fin-year"
+                label="Financial year *"
+                required
+                options={FINANCIAL_YEAR_OPTIONS}
+                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                error={errors.financialYear?.message}
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+            )}
           />
           <Input
             id="fpc-farmers-count"
@@ -262,15 +274,23 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
 
                 {/* Bank Row 1: Bank Name & Account Number */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                  <Select
-                    id={`bank-name-${index}`}
-                    label="Bank name *"
-                    required
-                    options={BANK_NAME_OPTIONS}
-                    placeholder="Select bank"
-                    trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-                    error={accountErrors?.bankName?.message}
-                    {...register(`bankAccounts.${index}.bankName`)}
+                  <Controller
+                    control={control}
+                    name={`bankAccounts.${index}.bankName`}
+                    render={({ field }) => (
+                      <Select
+                        id={`bank-name-${index}`}
+                        label="Bank name *"
+                        required
+                        options={BANK_NAME_OPTIONS}
+                        placeholder="Select bank"
+                        trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                        error={accountErrors?.bankName?.message}
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
+                      />
+                    )}
                   />
                   <Input
                     id={`bank-account-${index}`}
@@ -304,14 +324,22 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
 
                 {/* Bank Row 3: Account type (full-width) */}
                 <div>
-                  <Select
-                    id={`bank-type-${index}`}
-                    label="Account type *"
-                    required
-                    options={ACCOUNT_TYPE_OPTIONS}
-                    trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-                    error={accountErrors?.accountType?.message}
-                    {...register(`bankAccounts.${index}.accountType`)}
+                  <Controller
+                    control={control}
+                    name={`bankAccounts.${index}.accountType`}
+                    render={({ field }) => (
+                      <Select
+                        id={`bank-type-${index}`}
+                        label="Account type *"
+                        required
+                        options={ACCOUNT_TYPE_OPTIONS}
+                        trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                        error={accountErrors?.accountType?.message}
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
+                      />
+                    )}
                   />
                 </div>
               </div>

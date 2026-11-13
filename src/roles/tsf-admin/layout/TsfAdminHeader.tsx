@@ -14,12 +14,14 @@ export const TsfAdminHeader: React.FC<TsfAdminHeaderProps> = ({
 
   // Dynamic breadcrumb mapping matching the application state
   const getBreadcrumbInfo = (pathname: string) => {
+    if (pathname.startsWith('/admin/onboard')) {
+      return {
+        eyebrow: 'FPC MANAGEMENT',
+        breadcrumb: 'FPC Management > Onboard New FPC'
+      };
+    }
+
     switch (pathname) {
-      case '/admin/onboard':
-        return {
-          eyebrow: 'FPC MANAGEMENT',
-          breadcrumb: 'FPC Management > Onboard New FPC'
-        };
       case '/admin/all-fpcs':
         return {
           eyebrow: 'FPC MANAGEMENT',

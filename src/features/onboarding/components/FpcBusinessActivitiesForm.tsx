@@ -1,8 +1,11 @@
 import React from 'react';
+import { Controller } from 'react-hook-form';
 import { ChevronRight, Search } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
 import { Select } from '../../../shared/components/Select';
+import { DatePicker } from '../../../shared/components/DatePicker';
+import { MultiSelect, type MultiSelectOption } from '../../../shared/components/MultiSelect';
 import { Button } from '../../../shared/components/Button';
 import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import {
@@ -17,7 +20,7 @@ export interface FpcBusinessActivitiesFormProps {
   onPreviousStep: () => void;
 }
 
-const PRIMARY_ACTIVITY_OPTIONS = [
+const PRIMARY_ACTIVITY_OPTIONS: MultiSelectOption[] = [
   { value: 'Produce Procurement', label: 'Produce Procurement' },
   { value: 'Input Supply / Seeds & Fertilizers', label: 'Input Supply / Seeds & Fertilizers' },
   { value: 'Processing & Value Addition', label: 'Processing & Value Addition' },
@@ -34,30 +37,90 @@ const OPERATIONAL_STATUS_OPTIONS = [
   { value: 'Commercial Operations', label: 'Commercial Operations' },
 ];
 
+const COMMODITIES_HANDLED_OPTIONS: MultiSelectOption[] = [
+  { value: 'Produce procurement', label: 'Produce procurement' },
+  { value: 'Dairy & Livestock', label: 'Dairy & Livestock' },
+  { value: 'Paddy', label: 'Paddy' },
+  { value: 'Maize', label: 'Maize' },
+  { value: 'Arhar', label: 'Arhar' },
+  { value: 'Mustard', label: 'Mustard' },
+  { value: 'Wheat', label: 'Wheat' },
+  { value: 'Millets', label: 'Millets' },
+  { value: 'Vegetables', label: 'Vegetables' },
+  { value: 'Fruits', label: 'Fruits' },
+  { value: 'Chana', label: 'Chana' },
+  { value: 'Moong', label: 'Moong' },
+  { value: 'Urad', label: 'Urad' },
+  { value: 'Soybean', label: 'Soybean' },
+  { value: 'Groundnut', label: 'Groundnut' },
+  { value: 'Cotton', label: 'Cotton' },
+  { value: 'Turmeric', label: 'Turmeric' },
+  { value: 'Ginger', label: 'Ginger' },
+  { value: 'Chilli', label: 'Chilli' },
+];
+
+const parseActivities = (val?: string[] | string | null): string[] => {
+  if (!val) return ['Produce Procurement'];
+  if (Array.isArray(val)) return val.filter(Boolean);
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (!trimmed) return [];
+    // Match against known options first (handles options containing slashes/ampersands)
+    const exactMatch = PRIMARY_ACTIVITY_OPTIONS.find(
+      (opt) => opt.value.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (exactMatch) {
+      return [exactMatch.value];
+    }
+    // If it is comma-separated multiple selections
+    if (trimmed.includes(',')) {
+      return trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+    return [trimmed];
+  }
+  return [];
+};
+
+const parseCommodities = (val?: string[] | string | null): string[] => {
+  if (!val) return ['Produce procurement', 'Dairy & Livestock'];
+  if (Array.isArray(val)) return val.filter(Boolean);
+  if (typeof val === 'string') {
+    if (val.includes('/')) return val.split('/').map((s) => s.trim()).filter(Boolean);
+    if (val.includes(',')) return val.split(',').map((s) => s.trim()).filter(Boolean);
+    return [val.trim()].filter(Boolean);
+  }
+  return [];
+};
+
 export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps> = ({
   initialData,
   onSubmit,
   onPreviousStep,
 }) => {
+  const formValues: BusinessActivitiesFormValues = {
+    primaryActivity: parseActivities(initialData?.primaryActivity),
+    operationalStatus: initialData?.operationalStatus || 'Operational',
+    commencementDate: initialData?.commencementDate || '',
+    commoditiesHandled: parseCommodities(initialData?.commoditiesHandled),
+    targetFarmers: initialData?.targetFarmers || '250',
+    villagesCovered: initialData?.villagesCovered || '15',
+    activityScope:
+      initialData?.activityScope ||
+      'Procurement, aggregation and marketing of paddy, maize, arhar and mustard across 15 villages, supporting 250 enrolled farmers.',
+  };
+
   // ZERO useEffect: initial values populated directly during component mount
   const {
+    control,
     register,
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
   } = useFpcForm<BusinessActivitiesFormValues>({
     schema: businessActivitiesSchema,
-    defaultValues: {
-      primaryActivity: initialData?.primaryActivity || 'Produce Procurement',
-      operationalStatus: initialData?.operationalStatus || 'Operational',
-      commencementDate: initialData?.commencementDate || '',
-      commoditiesHandled: initialData?.commoditiesHandled || 'Paddy / Maize / Arhar / Mustard',
-      targetFarmers: initialData?.targetFarmers || '250',
-      villagesCovered: initialData?.villagesCovered || '15',
-      activityScope:
-        initialData?.activityScope ||
-        'Procurement, aggregation and marketing of paddy, maize, arhar and mustard across 15 villages, supporting 250 enrolled farmers.',
-    },
+    defaultValues: formValues,
+    values: formValues,
+    resetOptions: { keepDirtyValues: true },
   });
 
   const submit = handleSubmit(async (values) => {
@@ -96,44 +159,77 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
         {/* Form Inputs Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
           {/* Row 1: Primary business activity & Operational status */}
-          <Select
-            id="fpc-primary-activity"
-            label="Primary business activity *"
-            required
-            options={PRIMARY_ACTIVITY_OPTIONS}
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            error={errors.primaryActivity?.message}
-            {...register('primaryActivity')}
+          <Controller
+            name="primaryActivity"
+            control={control}
+            render={({ field }) => (
+              <MultiSelect
+                id="fpc-primary-activity"
+                label="Primary business activity *"
+                required
+                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                placeholder="Select primary business activities..."
+                options={PRIMARY_ACTIVITY_OPTIONS}
+                value={Array.isArray(field.value) ? field.value : parseActivities(field.value)}
+                onChange={(vals) => field.onChange(vals)}
+                onBlur={field.onBlur}
+                error={errors.primaryActivity?.message}
+              />
+            )}
           />
-          <Select
-            id="fpc-operational-status"
-            label="Operational status *"
-            required
-            options={OPERATIONAL_STATUS_OPTIONS}
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            error={errors.operationalStatus?.message}
-            {...register('operationalStatus')}
+          <Controller
+            name="operationalStatus"
+            control={control}
+            render={({ field }) => (
+              <Select
+                id="fpc-operational-status"
+                label="Operational status *"
+                required
+                options={OPERATIONAL_STATUS_OPTIONS}
+                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                error={errors.operationalStatus?.message}
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+            )}
           />
 
           {/* Row 2: Date of commencement & Commodities handled */}
-          <Input
-            id="fpc-commencement-date"
-            label="Date of commencement *"
-            required
-            placeholder="dd-mm-yyyy"
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            error={errors.commencementDate?.message}
-            {...register('commencementDate')}
+          <Controller
+            name="commencementDate"
+            control={control}
+            render={({ field }) => (
+              <DatePicker
+                id="fpc-commencement-date"
+                label="Date of commencement *"
+                required
+                placeholder="dd-mm-yyyy"
+                error={errors.commencementDate?.message}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
           />
-          <Input
-            id="fpc-commodities-handled"
-            label="Commodities handled *"
-            required
-            leadingIcon={<Search className="w-4 h-4 text-secondary" />}
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            placeholder="Paddy / Maize / Arhar / Mustard"
-            error={errors.commoditiesHandled?.message}
-            {...register('commoditiesHandled')}
+          <Controller
+            name="commoditiesHandled"
+            control={control}
+            render={({ field }) => (
+              <MultiSelect
+                id="fpc-commodities-handled"
+                label="Commodities handled *"
+                required
+                leadingIcon={<Search className="w-4 h-4 text-secondary" />}
+                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                placeholder="Select commodities handled..."
+                options={COMMODITIES_HANDLED_OPTIONS}
+                value={Array.isArray(field.value) ? field.value : parseCommodities(field.value)}
+                onChange={(vals) => field.onChange(vals)}
+                onBlur={field.onBlur}
+                error={errors.commoditiesHandled?.message}
+              />
+            )}
           />
 
           {/* Row 3: Target farmers enrolment & Villages covered */}

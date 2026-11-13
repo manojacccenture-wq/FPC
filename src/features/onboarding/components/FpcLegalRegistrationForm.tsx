@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFieldArray } from 'react-hook-form';
+import { useFieldArray, Controller } from 'react-hook-form';
 import { ChevronRight, Plus } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
@@ -34,6 +34,25 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
   onSubmit,
   onPreviousStep,
 }) => {
+  const formValues: LegalRegistrationFormValues = {
+    companyPan: initialData?.companyPan || '',
+    companyTan: initialData?.companyTan || '',
+    gstin: initialData?.gstin || '',
+    fssaiLicense: initialData?.fssaiLicense || '',
+    seedLicense: initialData?.seedLicense || '',
+    fertilizerLicense: initialData?.fertilizerLicense || '',
+    additionalLicenses: initialData?.additionalLicenses && initialData.additionalLicenses.length > 0
+      ? initialData.additionalLicenses
+      : [
+          {
+            id: 'license-1',
+            licenseType: '',
+            licenseNumber: '',
+            issuingAuthority: '',
+          },
+        ],
+  };
+
   // ZERO useEffect: initial values populated directly during component mount
   const {
     register,
@@ -43,24 +62,9 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
     formState: { errors, isSubmitting },
   } = useFpcForm<LegalRegistrationFormValues>({
     schema: legalRegistrationSchema,
-    defaultValues: {
-      companyPan: initialData?.companyPan || '',
-      companyTan: initialData?.companyTan || '',
-      gstin: initialData?.gstin || '',
-      fssaiLicense: initialData?.fssaiLicense || '',
-      seedLicense: initialData?.seedLicense || '',
-      fertilizerLicense: initialData?.fertilizerLicense || '',
-      additionalLicenses: initialData?.additionalLicenses && initialData.additionalLicenses.length > 0
-        ? initialData.additionalLicenses
-        : [
-            {
-              id: 'license-1',
-              licenseType: '',
-              licenseNumber: '',
-              issuingAuthority: '',
-            },
-          ],
-    },
+    defaultValues: formValues,
+    values: formValues,
+    resetOptions: { keepDirtyValues: true },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -199,15 +203,23 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
 
                 {/* Sub-card Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                  <Select
-                    id={`license-type-${index}`}
-                    label="License type *"
-                    required
-                    options={LICENSE_TYPE_OPTIONS}
-                    placeholder="Select license type"
-                    trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-                    error={licenseErrors?.licenseType?.message}
-                    {...register(`additionalLicenses.${index}.licenseType`)}
+                  <Controller
+                    control={control}
+                    name={`additionalLicenses.${index}.licenseType`}
+                    render={({ field }) => (
+                      <Select
+                        id={`license-type-${index}`}
+                        label="License type *"
+                        required
+                        options={LICENSE_TYPE_OPTIONS}
+                        placeholder="Select license type"
+                        trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                        error={licenseErrors?.licenseType?.message}
+                        value={field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
+                      />
+                    )}
                   />
                   <Input
                     id={`license-number-${index}`}

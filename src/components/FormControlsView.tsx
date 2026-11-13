@@ -2,6 +2,7 @@ import { useState, type FC } from 'react';
 import { 
   Input, 
   Select, 
+  DatePicker,
   Textarea, 
   Button, 
   Checkbox, 
@@ -27,6 +28,7 @@ export const FormControlsView: FC = () => {
   const [crop, setCrop] = useState('paddy');
   const [acreage, setAcreage] = useState('4.5');
   const [remarks, setRemarks] = useState('Organically cultivated without synthetic pesticides.');
+  const [harvestDate, setHarvestDate] = useState('19-11-2026');
   const [confirmed, setConfirmed] = useState(true);
   
   // Validation state demo
@@ -306,6 +308,15 @@ export const FormControlsView: FC = () => {
                   onChange={(e) => setAcreage(e.target.value)}
                   placeholder="e.g. 5.0"
                   helperText="Total land dedicated for this season"
+                />
+
+                <DatePicker
+                  label="Expected Harvest Date"
+                  required
+                  value={harvestDate}
+                  onChange={(e) => setHarvestDate(e.target.value)}
+                  placeholder="dd-mm-yyyy"
+                  helperText="Calendar picker with standard FPC tokens"
                 />
               </div>
 

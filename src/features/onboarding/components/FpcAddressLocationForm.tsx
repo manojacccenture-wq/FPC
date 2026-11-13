@@ -1,4 +1,5 @@
 import React from 'react';
+import { Controller } from 'react-hook-form';
 import { ChevronRight } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
@@ -59,27 +60,32 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
   onSubmit,
   onPreviousStep,
 }) => {
+  const formValues: AddressLocationFormValues = {
+    streetAddress: initialData?.streetAddress || '',
+    state: initialData?.state || 'Odisha',
+    district: initialData?.district || 'Jajpur',
+    block: initialData?.block || 'Jajpur Sadar',
+    gramPanchayat: initialData?.gramPanchayat || '',
+    village: initialData?.village || '',
+    pinCode: initialData?.pinCode || '',
+    officeMobile: initialData?.officeMobile || '+91 9437890123',
+    officialEmail: initialData?.officialEmail || 'admin@kalinganagarfpc.in',
+    latitude: initialData?.latitude || '',
+    longitude: initialData?.longitude || '',
+  };
+
   // ZERO useEffect: initial values populated directly during component mount
   const {
+    control,
     register,
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
   } = useFpcForm<AddressLocationFormValues>({
     schema: addressLocationSchema,
-    defaultValues: {
-      streetAddress: initialData?.streetAddress || '',
-      state: initialData?.state || 'Odisha',
-      district: initialData?.district || 'Jajpur',
-      block: initialData?.block || 'Jajpur Sadar',
-      gramPanchayat: initialData?.gramPanchayat || '',
-      village: initialData?.village || '',
-      pinCode: initialData?.pinCode || '',
-      officeMobile: initialData?.officeMobile || '+91 9437890123',
-      officialEmail: initialData?.officialEmail || 'admin@kalinganagarfpc.in',
-      latitude: initialData?.latitude || '',
-      longitude: initialData?.longitude || '',
-    },
+    defaultValues: formValues,
+    values: formValues,
+    resetOptions: { keepDirtyValues: true },
   });
 
   const submit = handleSubmit(async (values) => {
@@ -133,56 +139,96 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             error={errors.streetAddress?.message}
             {...register('streetAddress')}
           />
-          <Select
-            id="fpc-state"
-            label="State *"
-            required
-            options={STATE_OPTIONS}
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            error={errors.state?.message}
-            {...register('state')}
+          <Controller
+            control={control}
+            name="state"
+            render={({ field }) => (
+              <Select
+                id="fpc-state"
+                label="State *"
+                required
+                options={STATE_OPTIONS}
+                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                error={errors.state?.message}
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+            )}
           />
 
           {/* Row 2: District & Block */}
-          <Select
-            id="fpc-district"
-            label="District *"
-            required
-            options={DISTRICT_OPTIONS}
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            error={errors.district?.message}
-            {...register('district')}
+          <Controller
+            control={control}
+            name="district"
+            render={({ field }) => (
+              <Select
+                id="fpc-district"
+                label="District *"
+                required
+                options={DISTRICT_OPTIONS}
+                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                error={errors.district?.message}
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+            )}
           />
-          <Select
-            id="fpc-block"
-            label="Block *"
-            required
-            options={BLOCK_OPTIONS}
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            error={errors.block?.message}
-            {...register('block')}
+          <Controller
+            control={control}
+            name="block"
+            render={({ field }) => (
+              <Select
+                id="fpc-block"
+                label="Block *"
+                required
+                options={BLOCK_OPTIONS}
+                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                error={errors.block?.message}
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+            )}
           />
 
           {/* Row 3: Gram Panchayat & Village */}
-          <Select
-            id="fpc-gp"
-            label="Gram Panchayat *"
-            required
-            options={GRAM_PANCHAYAT_OPTIONS}
-            placeholder="Select Gram Panchayat"
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            error={errors.gramPanchayat?.message}
-            {...register('gramPanchayat')}
+          <Controller
+            control={control}
+            name="gramPanchayat"
+            render={({ field }) => (
+              <Select
+                id="fpc-gp"
+                label="Gram Panchayat *"
+                required
+                options={GRAM_PANCHAYAT_OPTIONS}
+                placeholder="Select Gram Panchayat"
+                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                error={errors.gramPanchayat?.message}
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+            )}
           />
-          <Select
-            id="fpc-village"
-            label="Village *"
-            required
-            options={VILLAGE_OPTIONS}
-            placeholder="Select village"
-            trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-            error={errors.village?.message}
-            {...register('village')}
+          <Controller
+            control={control}
+            name="village"
+            render={({ field }) => (
+              <Select
+                id="fpc-village"
+                label="Village *"
+                required
+                options={VILLAGE_OPTIONS}
+                placeholder="Select village"
+                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                error={errors.village?.message}
+                value={field.value}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+              />
+            )}
           />
 
           {/* Row 4: PIN code & Office mobile number */}

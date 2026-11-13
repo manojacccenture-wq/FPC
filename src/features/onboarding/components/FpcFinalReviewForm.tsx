@@ -84,7 +84,15 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
       step: 7,
       badge: '07',
       title: 'Business activities',
-      summary: `${step7Data?.primaryActivity || 'Produce Procurement'} • ${step7Data?.commoditiesHandled || 'Paddy, Maize, Arhar, Mustard'}`,
+      summary: `${
+        Array.isArray(step7Data?.primaryActivity)
+          ? step7Data.primaryActivity.join(', ')
+          : (step7Data?.primaryActivity || 'Produce Procurement')
+      } • ${
+        Array.isArray(step7Data?.commoditiesHandled)
+          ? step7Data.commoditiesHandled.join(', ')
+          : (step7Data?.commoditiesHandled || 'Paddy, Maize, Arhar, Mustard')
+      }`,
     },
   ];
 

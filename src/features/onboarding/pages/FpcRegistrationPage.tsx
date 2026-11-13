@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../../shared/components/Button';
@@ -14,7 +14,9 @@ import { FpcAddressLocationForm } from '../components/FpcAddressLocationForm';
 import { FpcBusinessActivitiesForm } from '../components/FpcBusinessActivitiesForm';
 import { FpcFinalReviewForm } from '../components/FpcFinalReviewForm';
 import { invitationApi } from '../api/invitation.api';
+import { onboardingSyncService } from '../services/onboardingSyncService';
 import { resolveErrorMessage } from '../../../shared/forms';
+import { formatDateToISO } from '../../../shared/utils/date';
 import { useValidateFpcInvitationQuery, useCompleteFpcInvitationMutation } from '../api/fpcInvitationApi';
 import type { FpcInvitation } from '../types';
 import type { BasicDetailsFormValues } from '../schemas/basicDetails.schema';
@@ -47,13 +49,53 @@ export const FpcRegistrationPage: React.FC = () => {
   const [finalErrorMessage, setFinalErrorMessage] = useState<string | null>(null);
 
   // Synchronous pre-read of stored step data for zero useEffect render
-  const storedStep1Data = invitationApi.getStepOneData(activeToken);
-  const storedStep2Data = invitationApi.getStepTwoData(activeToken);
-  const storedStep3Data = invitationApi.getStepThreeData(activeToken);
-  const storedStep4Data = invitationApi.getStepFourData(activeToken);
-  const storedStep5Data = invitationApi.getStepFiveData(activeToken);
-  const storedStep6Data = invitationApi.getStepSixData(activeToken);
-  const storedStep7Data = invitationApi.getStepSevenData(activeToken);
+  const [drafts, setDrafts] = useState<{
+    step1: Partial<BasicDetailsFormValues> | null;
+    step2: Partial<LegalRegistrationFormValues> | null;
+    step3: Partial<FinancialInformationFormValues> | null;
+    step4: Partial<BoardOfDirectorsFormValues> | null;
+    step5: Partial<LogoDocumentsFormValues> | null;
+    step6: Partial<AddressLocationFormValues> | null;
+    step7: Partial<BusinessActivitiesFormValues> | null;
+  }>(() => ({
+    step1: invitationApi.getStepOneData(activeToken),
+    step2: invitationApi.getStepTwoData(activeToken),
+    step3: invitationApi.getStepThreeData(activeToken),
+    step4: invitationApi.getStepFourData(activeToken),
+    step5: invitationApi.getStepFiveData(activeToken),
+    step6: invitationApi.getStepSixData(activeToken),
+    step7: invitationApi.getStepSevenData(activeToken),
+  }));
+  const [isDexieHydrated, setIsDexieHydrated] = useState(false);
+
+  // Asynchronous Dexie IndexedDB hydration on page refresh/mount
+  useEffect(() => {
+    let isCancelled = false;
+    async function hydrateFromDexie() {
+      if (!activeToken) return;
+      try {
+        const dexieDrafts = await invitationApi.loadAllDraftsFromDexie(activeToken);
+        if (!isCancelled) {
+          setDrafts((prev) => ({
+            step1: dexieDrafts.step1 || prev.step1,
+            step2: dexieDrafts.step2 || prev.step2,
+            step3: dexieDrafts.step3 || prev.step3,
+            step4: dexieDrafts.step4 || prev.step4,
+            step5: dexieDrafts.step5 || prev.step5,
+            step6: dexieDrafts.step6 || prev.step6,
+            step7: dexieDrafts.step7 || prev.step7,
+          }));
+          setIsDexieHydrated(true);
+        }
+      } catch (err) {
+        console.warn('Dexie hydration warning:', err);
+      }
+    }
+    hydrateFromDexie();
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeToken]);
 
   const goToStep = (stepNumber: number) => {
     setCurrentStep(stepNumber);
@@ -70,9 +112,10 @@ export const FpcRegistrationPage: React.FC = () => {
    * Throws on failure so the step form's `handleSubmit` can surface the message
    * through its own error handling instead of silently staying on the page.
    */
-  const runStep = async (
+  const runStep = async <T,>(
     stepNumber: number,
-    action: () => Promise<{ success: boolean; message: string }>
+    action: () => Promise<{ success: boolean; message: string }>,
+    savedData?: T
   ) => {
     setStepSuccessMessage(null);
 
@@ -81,30 +124,37 @@ export const FpcRegistrationPage: React.FC = () => {
       throw new Error(result.message || 'We could not save this step. Please try again.');
     }
 
+    if (savedData !== undefined) {
+      setDrafts((prev) => ({
+        ...prev,
+        [`step${stepNumber}`]: savedData,
+      }));
+    }
+
     setStepSuccessMessage(result.message);
     goToStep(stepNumber + 1);
   };
 
   const handleStepOneSubmit = (values: BasicDetailsFormValues) =>
-    runStep(1, () => invitationApi.submitStepOne(activeToken, values));
+    runStep(1, () => invitationApi.submitStepOne(activeToken, values), values);
 
   const handleStepTwoSubmit = (values: LegalRegistrationFormValues) =>
-    runStep(2, () => invitationApi.submitStepTwo(activeToken, values));
+    runStep(2, () => invitationApi.submitStepTwo(activeToken, values), values);
 
   const handleStepThreeSubmit = (values: FinancialInformationFormValues) =>
-    runStep(3, () => invitationApi.submitStepThree(activeToken, values));
+    runStep(3, () => invitationApi.submitStepThree(activeToken, values), values);
 
   const handleStepFourSubmit = (values: BoardOfDirectorsFormValues) =>
-    runStep(4, () => invitationApi.submitStepFour(activeToken, values));
+    runStep(4, () => invitationApi.submitStepFour(activeToken, values), values);
 
   const handleStepFiveSubmit = (values: LogoDocumentsFormValues) =>
-    runStep(5, () => invitationApi.submitStepFive(activeToken, values));
+    runStep(5, () => invitationApi.submitStepFive(activeToken, values), values);
 
   const handleStepSixSubmit = (values: AddressLocationFormValues) =>
-    runStep(6, () => invitationApi.submitStepSix(activeToken, values));
+    runStep(6, () => invitationApi.submitStepSix(activeToken, values), values);
 
   const handleStepSevenSubmit = (values: BusinessActivitiesFormValues) =>
-    runStep(7, () => invitationApi.submitStepSeven(activeToken, values));
+    runStep(7, () => invitationApi.submitStepSeven(activeToken, values), values);
 
   const handleFinalSubmit = async () => {
     if (isFinalSubmitting) return;
@@ -115,7 +165,103 @@ export const FpcRegistrationPage: React.FC = () => {
 
     try {
       if (activeToken) {
-        await completeInvitation({ token: activeToken }).unwrap();
+        // Collect verified data from all steps for atomic server-side persistence
+        const step1 = drafts.step1 || invitationApi.getStepOneData(activeToken);
+        const step2 = drafts.step2 || invitationApi.getStepTwoData(activeToken);
+        const step3 = drafts.step3 || invitationApi.getStepThreeData(activeToken);
+        const step5 = drafts.step5 || invitationApi.getStepFiveData(activeToken);
+        const step6 = drafts.step6 || invitationApi.getStepSixData(activeToken);
+
+        const primaryBank = step3?.bankAccounts?.[0];
+        const address2Parts = [step6?.block, step6?.village].filter(Boolean);
+        const normalizedRegistrationDate = formatDateToISO(step1?.dateOfIncorporation);
+
+        const documents: Array<{
+          documentType: string;
+          fileName: string;
+          storagePath?: string;
+          expiryDate?: string;
+        }> = [];
+
+        if (step5?.incorporationCertName) {
+          documents.push({
+            documentType: 'CertificateOfIncorporation',
+            fileName: step5.incorporationCertName,
+          });
+        }
+        if (step5?.panCertName) {
+          documents.push({
+            documentType: 'PanCard',
+            fileName: step5.panCertName,
+          });
+        }
+        if (step5?.gstinCertName) {
+          documents.push({
+            documentType: 'GstinCertificate',
+            fileName: step5.gstinCertName,
+          });
+        }
+        if (step5?.fssaiLicenseName) {
+          documents.push({
+            documentType: 'FssaiLicense',
+            fileName: step5.fssaiLicenseName,
+            expiryDate: formatDateToISO(step5.fssaiExpiryDate),
+          });
+        }
+        if (step5?.seedLicenseName) {
+          documents.push({
+            documentType: 'SeedLicense',
+            fileName: step5.seedLicenseName,
+            expiryDate: formatDateToISO(step5.seedLicenseExpiryDate),
+          });
+        }
+        if (step5?.fertilizerLicenseName) {
+          documents.push({
+            documentType: 'FertilizerLicense',
+            fileName: step5.fertilizerLicenseName,
+            expiryDate: formatDateToISO(step5.fertilizerLicenseExpiryDate),
+          });
+        }
+        if (step5?.moaAoaDocName) {
+          documents.push({
+            documentType: 'MoaAoa',
+            fileName: step5.moaAoaDocName,
+          });
+        }
+        if (step5?.boardResolutionDocName) {
+          documents.push({
+            documentType: 'BoardResolution',
+            fileName: step5.boardResolutionDocName,
+          });
+        }
+
+        const result = await onboardingSyncService.submitOnboarding(
+          {
+            token: activeToken,
+            legalName: step1?.legalName,
+            cin: step1?.cin,
+            registrationDate: normalizedRegistrationDate,
+            officialEmail: step1?.contactEmail,
+            officialMobile: step1?.contactMobile,
+            pan: step2?.companyPan,
+            tan: step2?.companyTan,
+            gstin: step2?.gstin,
+            bankName: primaryBank?.bankName,
+            bankAccountNumber: primaryBank?.accountNumber,
+            bankIfsc: primaryBank?.ifscCode,
+            addressLine1: step6?.streetAddress,
+            addressLine2: address2Parts.length > 0 ? address2Parts.join(', ') : undefined,
+            pincode: step6?.pinCode,
+            district: step6?.district,
+            state: step6?.state,
+            documents: documents.length > 0 ? documents : undefined,
+          },
+          (payload) => completeInvitation(payload).unwrap()
+        );
+
+        if (result.queuedOffline) {
+          setStepSuccessMessage(result.message || 'Saved offline successfully.');
+        }
       }
       await invitationApi.submitFinalReview(activeToken);
       setIsSubmitted(true);
@@ -274,7 +420,9 @@ export const FpcRegistrationPage: React.FC = () => {
         {/* Step 1: Basic Details */}
         {currentStep === 1 && (
           <FpcBasicDetailsForm
+            key={`step1_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
             invitation={invitation}
+            initialData={drafts.step1}
             onSubmit={handleStepOneSubmit}
             onBackToLogin={handleBackToLogin}
           />
@@ -283,7 +431,8 @@ export const FpcRegistrationPage: React.FC = () => {
         {/* Step 2: Legal & Registration */}
         {currentStep === 2 && (
           <FpcLegalRegistrationForm
-            initialData={storedStep2Data}
+            key={`step2_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
+            initialData={drafts.step2}
             onSubmit={handleStepTwoSubmit}
             onPreviousStep={() => goToStep(1)}
           />
@@ -292,7 +441,8 @@ export const FpcRegistrationPage: React.FC = () => {
         {/* Step 3: Financial Information */}
         {currentStep === 3 && (
           <FpcFinancialInformationForm
-            initialData={storedStep3Data}
+            key={`step3_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
+            initialData={drafts.step3}
             onSubmit={handleStepThreeSubmit}
             onPreviousStep={() => goToStep(2)}
           />
@@ -301,7 +451,8 @@ export const FpcRegistrationPage: React.FC = () => {
         {/* Step 4: Board of Directors */}
         {currentStep === 4 && (
           <FpcBoardOfDirectorsForm
-            initialData={storedStep4Data}
+            key={`step4_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
+            initialData={drafts.step4}
             onSubmit={handleStepFourSubmit}
             onPreviousStep={() => goToStep(3)}
           />
@@ -310,7 +461,8 @@ export const FpcRegistrationPage: React.FC = () => {
         {/* Step 5: Logo & Documents */}
         {currentStep === 5 && (
           <FpcLogoDocumentsForm
-            initialData={storedStep5Data}
+            key={`step5_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
+            initialData={drafts.step5}
             onSubmit={handleStepFiveSubmit}
             onPreviousStep={() => goToStep(4)}
           />
@@ -319,7 +471,8 @@ export const FpcRegistrationPage: React.FC = () => {
         {/* Step 6: Address & Location */}
         {currentStep === 6 && (
           <FpcAddressLocationForm
-            initialData={storedStep6Data}
+            key={`step6_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
+            initialData={drafts.step6}
             onSubmit={handleStepSixSubmit}
             onPreviousStep={() => goToStep(5)}
           />
@@ -328,7 +481,8 @@ export const FpcRegistrationPage: React.FC = () => {
         {/* Step 7: Business Activities */}
         {currentStep === 7 && (
           <FpcBusinessActivitiesForm
-            initialData={storedStep7Data}
+            key={`step7_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
+            initialData={drafts.step7}
             onSubmit={handleStepSevenSubmit}
             onPreviousStep={() => goToStep(6)}
           />
@@ -349,13 +503,13 @@ export const FpcRegistrationPage: React.FC = () => {
             )}
 
             <FpcFinalReviewForm
-              step1Data={storedStep1Data}
-              step2Data={storedStep2Data}
-              step3Data={storedStep3Data}
-              step4Data={storedStep4Data}
-              step5Data={storedStep5Data}
-              step6Data={storedStep6Data}
-              step7Data={storedStep7Data}
+              step1Data={drafts.step1}
+              step2Data={drafts.step2}
+              step3Data={drafts.step3}
+              step4Data={drafts.step4}
+              step5Data={drafts.step5}
+              step6Data={drafts.step6}
+              step7Data={drafts.step7}
               onEditStep={(step) => goToStep(step)}
               onPreviousStep={() => goToStep(7)}
               onSubmit={handleFinalSubmit}

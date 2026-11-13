@@ -15,11 +15,12 @@ const STATUS_VARIANTS: Record<FpcStatus, BadgeVariant> = {
 export interface FpcStatusBadgeProps {
   status: FpcStatus;
   label: string;
+  variant?: BadgeVariant;
 }
 
 /** Single source of truth for FPC status presentation (Badge variant + dot). */
-export const FpcStatusBadge: React.FC<FpcStatusBadgeProps> = ({ status, label }) => (
-  <Badge variant={STATUS_VARIANTS[status]} dot size="md">
+export const FpcStatusBadge: React.FC<FpcStatusBadgeProps> = ({ status, label, variant }) => (
+  <Badge variant={variant || STATUS_VARIANTS[status]} dot size="md">
     {label}
   </Badge>
 );

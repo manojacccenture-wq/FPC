@@ -4,6 +4,7 @@ import { Upload } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Button } from '../../../shared/components/Button';
 import { Badge } from '../../../shared/components/Badge';
+import { DatePicker } from '../../../shared/components/DatePicker';
 import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import {
   logoDocumentsSchema,
@@ -20,15 +21,32 @@ export interface FpcLogoDocumentsFormProps {
 interface StatutoryDocConfig {
   key: keyof LogoDocumentsFormValues;
   title: string;
+  expiryKey?: keyof LogoDocumentsFormValues;
+  expiryLabel?: string;
 }
 
 const STATUTORY_DOCUMENTS: StatutoryDocConfig[] = [
   { key: 'incorporationCertName', title: 'Certificate of Incorporation' },
   { key: 'panCertName', title: 'Company PAN Certificate' },
   { key: 'gstinCertName', title: 'GSTIN Certificate' },
-  { key: 'fssaiLicenseName', title: 'FSSAI Food Safety License' },
-  { key: 'seedLicenseName', title: 'Seed Production/Distribution License' },
-  { key: 'fertilizerLicenseName', title: 'Fertilizer Retail/Wholesale License' },
+  {
+    key: 'fssaiLicenseName',
+    title: 'FSSAI Food Safety License',
+    expiryKey: 'fssaiExpiryDate',
+    expiryLabel: 'FSSAI License Expiry Date',
+  },
+  {
+    key: 'seedLicenseName',
+    title: 'Seed Production/Distribution License',
+    expiryKey: 'seedLicenseExpiryDate',
+    expiryLabel: 'Seed License Expiry Date',
+  },
+  {
+    key: 'fertilizerLicenseName',
+    title: 'Fertilizer Retail/Wholesale License',
+    expiryKey: 'fertilizerLicenseExpiryDate',
+    expiryLabel: 'Fertilizer License Expiry Date',
+  },
   { key: 'moaAoaDocName', title: 'ROC MOA & AOA Documents' },
   { key: 'boardResolutionDocName', title: 'Board Resolution / Supporting Documents' },
 ];
@@ -59,6 +77,21 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
     setLogoPreview(url);
   };
 
+  const formValues: LogoDocumentsFormValues = {
+    logoFileName: initialData?.logoFileName || '',
+    incorporationCertName: initialData?.incorporationCertName || '',
+    panCertName: initialData?.panCertName || '',
+    gstinCertName: initialData?.gstinCertName || '',
+    fssaiLicenseName: initialData?.fssaiLicenseName || '',
+    fssaiExpiryDate: initialData?.fssaiExpiryDate || '',
+    seedLicenseName: initialData?.seedLicenseName || '',
+    seedLicenseExpiryDate: initialData?.seedLicenseExpiryDate || '',
+    fertilizerLicenseName: initialData?.fertilizerLicenseName || '',
+    fertilizerLicenseExpiryDate: initialData?.fertilizerLicenseExpiryDate || '',
+    moaAoaDocName: initialData?.moaAoaDocName || '',
+    boardResolutionDocName: initialData?.boardResolutionDocName || '',
+  };
+
   // ZERO useEffect for form values: initial values populated directly during component mount
   const {
     control,
@@ -67,17 +100,9 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
     formState: { errors, isSubmitting },
   } = useFpcForm<LogoDocumentsFormValues>({
     schema: logoDocumentsSchema,
-    defaultValues: {
-      logoFileName: initialData?.logoFileName || '',
-      incorporationCertName: initialData?.incorporationCertName || '',
-      panCertName: initialData?.panCertName || '',
-      gstinCertName: initialData?.gstinCertName || '',
-      fssaiLicenseName: initialData?.fssaiLicenseName || '',
-      seedLicenseName: initialData?.seedLicenseName || '',
-      fertilizerLicenseName: initialData?.fertilizerLicenseName || '',
-      moaAoaDocName: initialData?.moaAoaDocName || '',
-      boardResolutionDocName: initialData?.boardResolutionDocName || '',
-    },
+    defaultValues: formValues,
+    values: formValues,
+    resetOptions: { keepDirtyValues: true },
   });
 
   const submit = handleSubmit(async (values) => {
@@ -221,6 +246,31 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
                           PDF, PNG or JPG • Maximum 5 MB (proposed policy)
                         </small>
                       </label>
+
+                      {/* Expiry Date Field if statutory license has an expiry date */}
+                      {doc.expiryKey && (
+                        <div className="pt-1 border-t border-neutral-100">
+                          <Controller
+                            control={control}
+                            name={doc.expiryKey}
+                            render={({ field: expiryField, fieldState }) => (
+                              <DatePicker
+                                id={`expiry-${doc.key}`}
+                                label={`${doc.expiryLabel ?? 'Expiry Date'}${isUploaded ? ' *' : ''}`}
+                                placeholder="DD-MM-YYYY"
+                                size="md"
+                                disablePastDates
+                                clearable
+                                value={expiryField.value ?? ''}
+                                error={fieldState.error?.message}
+                                helperText="Must be today or a future date"
+                                onChange={(e) => expiryField.onChange(e.target.value)}
+                                onDateChange={(_d, str) => expiryField.onChange(str ?? '')}
+                              />
+                            )}
+                          />
+                        </div>
+                      )}
                     </div>
                   );
                 }}

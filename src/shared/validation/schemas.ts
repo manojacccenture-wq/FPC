@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isFutureOrToday, parseDateString } from '../utils/date';
 
 /**
  * Centralized, reusable validation rules based on Zod.
@@ -198,3 +199,38 @@ export const dateStringSchema = (fieldName: string) =>
   z.string()
     .trim()
     .min(1, `${fieldName} is required`);
+
+/**
+ * Future or today date validation schema (e.g. for statutory document expiry dates).
+ * Prevents past dates (yesterday and earlier), while allowing today and any future date.
+ */
+export const futureOrTodayDateSchema = (fieldName: string, isRequired = false) => {
+  if (isRequired) {
+    return z
+      .string()
+      .trim()
+      .min(1, `${fieldName} is required`)
+      .refine(
+        (val: string) => {
+          const parsed = parseDateString(val);
+          if (!parsed) return false;
+          return isFutureOrToday(parsed);
+        },
+        { message: `${fieldName} must be today or a future date` }
+      );
+  }
+
+  return z
+    .string()
+    .trim()
+    .optional()
+    .refine(
+      (val?: string) => {
+        if (!val || val === '') return true;
+        const parsed = parseDateString(val);
+        if (!parsed) return false;
+        return isFutureOrToday(parsed);
+      },
+      { message: `${fieldName} must be today or a future date` }
+    );
+};

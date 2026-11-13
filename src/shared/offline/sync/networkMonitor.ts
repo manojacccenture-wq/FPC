@@ -11,6 +11,16 @@ export function initializeNetworkMonitor(): () => void {
 
   const handleOnline = () => {
     store.dispatch(setOnlineStatus(true));
+    // Dynamically trigger background replay of queued offline submissions
+    import('../../../features/onboarding/services/onboardingSyncService')
+      .then(({ onboardingSyncService }) => {
+        import('../../../features/onboarding/api/fpcInvitationApi').then(({ fpcInvitationApi }) => {
+          onboardingSyncService.processPendingSubmissions((payload) =>
+            store.dispatch(fpcInvitationApi.endpoints.completeFpcInvitation.initiate(payload)).unwrap()
+          );
+        });
+      })
+      .catch(() => {});
   };
 
   const handleOffline = () => {

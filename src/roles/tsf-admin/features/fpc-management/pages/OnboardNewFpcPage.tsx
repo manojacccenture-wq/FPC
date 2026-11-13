@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
-import { Search, MoreHorizontal, HelpCircle, ExternalLink, Copy, Check } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
+import { Search, MoreHorizontal, HelpCircle, ExternalLink, Copy, Check, Eye, Trash2, AlertTriangle } from 'lucide-react';
 import {
   Button,
   Input,
   Badge,
+  type BadgeVariant,
   Alert,
   Card,
   Table,
   type TableColumn,
+  Modal,
 } from '../../../../../shared/components';
 import { InviteFpcModal, type InviteFpcFormData } from '../components/InviteFpcModal';
 import { FpcStatusBadge, type FpcStatus } from '../components/FpcStatusBadge';
+import { calculateRegistrationProgress } from '../utils/registrationProgress';
 import {
   useCreateFpcInvitationMutation,
   useGetFpcInvitationsQuery,
@@ -26,14 +31,19 @@ import { resolveErrorMessage } from '../../../../../shared/forms';
 
 interface FpcRecord {
   id: string;
+  recordType: 'fpc' | 'invitation';
   fpcId?: string;
   invitationId?: string;
+  token?: string;
+  cin?: string;
   name: string;
   location: string;
   farmers: number;
   shareholders: string | number;
   status: FpcStatus;
   statusLabel: string;
+  badgeVariant?: BadgeVariant;
+  progressPercentage: number;
 }
 
 /**
@@ -51,7 +61,11 @@ export const OnboardNewFpcPage: React.FC = () => {
   const [invitationSuccess, setInvitationSuccess] = useState<string | null>(null);
   const [invitationLink, setInvitationLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [activeMenuRecord, setActiveMenuRecord] = useState<FpcRecord | null>(null);
+  const [menuCoords, setMenuCoords] = useState<{ top: number; left: number } | null>(null);
+  const [fpcToDelete, setFpcToDelete] = useState<FpcRecord | null>(null);
 
+  const navigate = useNavigate();
   const { notify } = useNotification();
 
   const currentUser = useAppSelector((state) => state.auth.currentUser);
@@ -69,31 +83,55 @@ export const OnboardNewFpcPage: React.FC = () => {
 
   const [createFpcInvitation] = useCreateFpcInvitationMutation();
   const [revokeFpcInvitation] = useRevokeFpcInvitationMutation();
-  const [deleteFpc] = useDeleteFpcMutation();
+  const [deleteFpc, { isLoading: isDeletingFpc }] = useDeleteFpcMutation();
 
   // Map live registered FPCs from PostgreSQL backend
-  const registeredRecords: FpcRecord[] = liveFpcs.map((fpc) => ({
-    id: fpc.code || fpc.cin,
-    fpcId: fpc.id,
-    name: fpc.name,
-    location: fpc.location,
-    farmers: fpc.farmersCount,
-    shareholders: fpc.shareholdersCount > 0 ? fpc.shareholdersCount : '-',
-    status: fpc.status,
-    statusLabel: fpc.statusLabel,
-  }));
+  const registeredRecords: FpcRecord[] = liveFpcs.map((fpc) => {
+    const progress = calculateRegistrationProgress({
+      status: fpc.status,
+      isRegisteredFpc: true,
+    });
+    return {
+      id: fpc.code || fpc.cin,
+      recordType: 'fpc',
+      fpcId: fpc.id,
+      cin: fpc.cin,
+      name: fpc.name,
+      location: fpc.location,
+      farmers: fpc.farmersCount,
+      shareholders: fpc.shareholdersCount > 0 ? fpc.shareholdersCount : '-',
+      status: fpc.status,
+      statusLabel: progress.label,
+      badgeVariant: progress.badgeVariant,
+      progressPercentage: progress.percentage,
+    };
+  });
 
   // Map live dispatched invitations from PostgreSQL backend
-  const invitationRecords: FpcRecord[] = liveInvitations.map((inv, idx) => ({
-    id: `INV-${(inv.state || 'IND').substring(0, 3).toUpperCase()}-${String(idx + 1).padStart(3, '0')}`,
-    invitationId: inv.id,
-    name: inv.companyName,
-    location: `${inv.district}, ${inv.state}`,
-    farmers: 0,
-    shareholders: '-',
-    status: inv.status === 'Expired' ? ('Overdue' as const) : ('Onboarding' as const),
-    statusLabel: `Invited (${inv.status})`,
-  }));
+  const invitationRecords: FpcRecord[] = liveInvitations.map((inv, idx) => {
+    const progress = calculateRegistrationProgress({
+      status: inv.status,
+      isRegisteredFpc: false,
+      token: inv.token,
+      invitationId: inv.id,
+      companyName: inv.companyName,
+      email: inv.email,
+    });
+    return {
+      id: `INV-${(inv.state || 'IND').substring(0, 3).toUpperCase()}-${String(idx + 1).padStart(3, '0')}`,
+      recordType: 'invitation',
+      invitationId: inv.id,
+      token: inv.token,
+      name: inv.companyName,
+      location: `${inv.district}, ${inv.state}`,
+      farmers: 0,
+      shareholders: '-',
+      status: inv.status === 'Expired' ? ('Overdue' as const) : ('Onboarding' as const),
+      statusLabel: progress.label,
+      badgeVariant: progress.badgeVariant,
+      progressPercentage: progress.percentage,
+    };
+  });
 
   // Complete backend-driven records (Single Source of Truth)
   const allRecords = [...invitationRecords, ...registeredRecords];
@@ -123,17 +161,44 @@ export const OnboardNewFpcPage: React.FC = () => {
         );
       }
     } else if (record.fpcId) {
-      try {
-        await deleteFpc(record.fpcId).unwrap();
-        setInvitationLink(null);
-        notify('FPC record successfully deleted.', 'success');
-      } catch (err: unknown) {
-        notify(
-          resolveErrorMessage(err, 'We could not delete this FPC. Please try again.'),
-          'danger',
-          'Delete failed'
-        );
-      }
+      setFpcToDelete(record);
+    }
+  };
+
+  const handleToggleMenu = (e: React.MouseEvent<HTMLButtonElement>, record: FpcRecord) => {
+    e.stopPropagation();
+    if (activeMenuRecord?.id === record.id) {
+      setActiveMenuRecord(null);
+      setMenuCoords(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const menuWidth = 160;
+    let left = rect.right - menuWidth;
+    if (left < 10) left = 10;
+    if (typeof window !== 'undefined' && left + menuWidth > window.innerWidth - 10) {
+      left = window.innerWidth - menuWidth - 10;
+    }
+    let top = rect.bottom + 4;
+    if (typeof window !== 'undefined' && top + 120 > window.innerHeight) {
+      top = rect.top - 100;
+    }
+    setMenuCoords({ top, left });
+    setActiveMenuRecord(record);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!fpcToDelete?.fpcId) return;
+    try {
+      await deleteFpc(fpcToDelete.fpcId).unwrap();
+      notify(`FPC "${fpcToDelete.name}" successfully deleted.`, 'success');
+      setFpcToDelete(null);
+    } catch (err: unknown) {
+      notify(
+        resolveErrorMessage(err, 'We could not delete this FPC. Please try again.'),
+        'danger',
+        'Delete failed'
+      );
     }
   };
 
@@ -149,6 +214,20 @@ export const OnboardNewFpcPage: React.FC = () => {
 
   const handleInviteSubmit = async (data: InviteFpcFormData) => {
     const result = await createFpcInvitation(data).unwrap();
+    if (result.registrationUrl) {
+      try {
+        const urlObj = new URL(result.registrationUrl, window.location.origin);
+        const rawToken = urlObj.searchParams.get('token');
+        if (rawToken && result.id) {
+          localStorage.setItem(`fpc_token_map_${result.id}`, rawToken);
+          if (result.companyName) {
+            localStorage.setItem(`fpc_token_map_${result.companyName.toLowerCase()}`, rawToken);
+          }
+        }
+      } catch {
+        // Fallback gracefully
+      }
+    }
     setInvitationLink(result.registrationUrl);
     setInvitationSuccess(`Invitation dispatched to ${result.nominatedAdmin} (${result.email})`);
     notify(`Invitation dispatched to ${result.nominatedAdmin} (${result.email})`, 'success');
@@ -181,6 +260,13 @@ export const OnboardNewFpcPage: React.FC = () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     notify('Records exported successfully.', 'success');
+  };
+
+  const handleRowClick = (record: FpcRecord) => {
+    const targetId = record.invitationId || record.fpcId || record.id;
+    navigate(`/admin/onboard/${encodeURIComponent(targetId)}?type=${record.recordType}`, {
+      state: { record, type: record.recordType },
+    });
   };
 
   // Shared Table empty-state content (presentation only; filtering stays on this page)
@@ -245,8 +331,14 @@ export const OnboardNewFpcPage: React.FC = () => {
     {
       id: 'status',
       header: 'Status',
-      widthClassName: 'w-[160px]',
-      cell: (item) => <FpcStatusBadge status={item.status} label={item.statusLabel} />,
+      widthClassName: 'min-w-[220px]',
+      cell: (item) => (
+        <FpcStatusBadge
+          status={item.status}
+          label={item.statusLabel}
+          variant={item.badgeVariant}
+        />
+      ),
     },
     {
       id: 'actions',
@@ -259,24 +351,34 @@ export const OnboardNewFpcPage: React.FC = () => {
             type="button"
             variant="ghost"
             size="xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRowClick(item);
+            }}
             className="p-0 h-auto text-xs text-brand hover:underline hover:bg-transparent min-w-0"
           >
             Edit
           </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => handleDelete(item)}
-            className={DESTRUCTIVE_ACTION_CLASSES}
-          >
-            {item.invitationId ? 'Revoke' : 'Delete'}
-          </Button>
+          {item.recordType === 'invitation' && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(item);
+              }}
+              className={DESTRUCTIVE_ACTION_CLASSES}
+            >
+              Revoke
+            </Button>
+          )}
           <Button
             type="button"
             variant="ghost"
             size="xs"
             iconOnly
-            className="p-1 rounded-full"
+            onClick={(e) => handleToggleMenu(e, item)}
+            className="p-1 rounded-full text-secondary hover:text-primary hover:bg-neutral-100 transition-colors"
             title="More options"
           >
             <MoreHorizontal className="w-4 h-4" />
@@ -491,6 +593,7 @@ export const OnboardNewFpcPage: React.FC = () => {
           isLoading={isLoadingFpcs || isLoadingInvitations}
           emptyState={emptyState}
           footer={paginationFooter}
+          onRowClick={handleRowClick}
         />
       </Card>
 
@@ -500,6 +603,151 @@ export const OnboardNewFpcPage: React.FC = () => {
         onClose={() => setIsInviteModalOpen(false)}
         onSubmitInvite={handleInviteSubmit}
       />
+
+      {/* Three-Dot Actions Dropdown Menu rendered via Portal */}
+      {activeMenuRecord && menuCoords && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-50 select-none"
+          onClick={(e) => {
+            e.stopPropagation();
+            setActiveMenuRecord(null);
+            setMenuCoords(null);
+          }}
+        >
+          <div
+            style={{
+              position: 'fixed',
+              top: menuCoords.top,
+              left: menuCoords.left,
+              width: 160,
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-xl border border-default shadow-lg py-1.5 z-50 text-xs animate-in fade-in duration-100"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                const rec = activeMenuRecord;
+                setActiveMenuRecord(null);
+                setMenuCoords(null);
+                handleRowClick(rec);
+              }}
+              className="w-full px-3.5 py-2 text-left text-primary hover:bg-neutral-50 flex items-center gap-2 font-medium transition-colors cursor-pointer"
+            >
+              <Eye className="w-3.5 h-3.5 text-secondary" />
+              <span>View Details</span>
+            </button>
+
+            {activeMenuRecord.recordType === 'fpc' && (
+              <>
+                <div className="border-t border-neutral-100 my-1" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const rec = activeMenuRecord;
+                    setActiveMenuRecord(null);
+                    setMenuCoords(null);
+                    setFpcToDelete(rec);
+                  }}
+                  className="w-full px-3.5 py-2 text-left text-danger hover:bg-red-50 flex items-center gap-2 font-medium transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-danger" />
+                  <span>Delete FPC</span>
+                </button>
+              </>
+            )}
+
+            {activeMenuRecord.recordType === 'invitation' && (
+              <>
+                <div className="border-t border-neutral-100 my-1" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const rec = activeMenuRecord;
+                    setActiveMenuRecord(null);
+                    setMenuCoords(null);
+                    handleDelete(rec);
+                  }}
+                  className="w-full px-3.5 py-2 text-left text-danger hover:bg-red-50 flex items-center gap-2 font-medium transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-danger" />
+                  <span>Revoke Invitation</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Delete FPC Confirmation Modal */}
+      <Modal
+        isOpen={!!fpcToDelete}
+        onClose={() => {
+          if (!isDeletingFpc) {
+            setFpcToDelete(null);
+          }
+        }}
+        size="sm"
+        showCloseButton={!isDeletingFpc}
+        title={
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-red-50 text-danger flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4 h-4 stroke-[2]" />
+            </div>
+            <span className="text-base font-bold text-primary">Delete FPC</span>
+          </div>
+        }
+        description="Are you sure you want to delete this Farmer Producer Company?"
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setFpcToDelete(null)}
+              disabled={isDeletingFpc}
+              className="text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleConfirmDelete}
+              loading={isDeletingFpc}
+              disabled={isDeletingFpc}
+              leadingIcon={<Trash2 className="w-3.5 h-3.5" />}
+              className="text-xs"
+            >
+              Delete FPC
+            </Button>
+          </div>
+        }
+      >
+        {fpcToDelete && (
+          <div className="space-y-3.5 text-xs">
+            <div className="p-3 rounded-xl bg-neutral-50 border border-default space-y-1.5">
+              <div className="font-semibold text-primary text-sm">
+                {fpcToDelete.name}
+              </div>
+              <div className="flex items-center gap-2 text-secondary">
+                <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-default text-[11px]">
+                  {fpcToDelete.cin || fpcToDelete.id}
+                </span>
+                <span>&bull;</span>
+                <span>{fpcToDelete.location}</span>
+              </div>
+            </div>
+
+            <p className="text-secondary leading-relaxed">
+              This action will soft-delete the FPC record and remove it from active directory listings and onboarding workflows.
+              Historical audit logs, approval records, and statutory financial data will remain archived in accordance with data retention compliance policies.
+            </p>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

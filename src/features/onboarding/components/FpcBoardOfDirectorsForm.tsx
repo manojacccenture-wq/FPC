@@ -4,6 +4,7 @@ import { ChevronRight, Plus, Upload } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
 import { Select } from '../../../shared/components/Select';
+import { DatePicker } from '../../../shared/components/DatePicker';
 import { Button } from '../../../shared/components/Button';
 import { FormField } from '../../../shared/components/FormField';
 import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
@@ -52,6 +53,39 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
   onSubmit,
   onPreviousStep,
 }) => {
+  const formValues: BoardOfDirectorsFormValues = {
+    directors: initialData?.directors && initialData.directors.length > 0
+      ? initialData.directors
+      : [
+          {
+            id: 'director-1',
+            fullName: 'Subhashree Jena',
+            din: '12345678',
+            designation: 'Managing Director',
+            gender: 'Female',
+            appointmentDate: '05-11-2026',
+            mobileNumber: '+91 9437890123',
+            email: 'admin@kalinganagarfpc.in',
+            pan: '',
+            socialCategory: '',
+            activeStatus: 'Active',
+          },
+          {
+            id: 'director-2',
+            fullName: 'Chairperson',
+            din: '',
+            designation: 'Chairperson',
+            gender: '',
+            appointmentDate: '',
+            mobileNumber: '',
+            email: '',
+            pan: '',
+            socialCategory: '',
+            activeStatus: '',
+          },
+        ],
+  };
+
   // ZERO useEffect: initial values populated directly during component mount
   const {
     register,
@@ -61,38 +95,9 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
     formState: { errors, isSubmitting },
   } = useFpcForm<BoardOfDirectorsFormValues>({
     schema: boardOfDirectorsSchema,
-    defaultValues: {
-      directors: initialData?.directors && initialData.directors.length > 0
-        ? initialData.directors
-        : [
-            {
-              id: 'director-1',
-              fullName: 'Subhashree Jena',
-              din: '12345678',
-              designation: 'Managing Director',
-              gender: 'Female',
-              appointmentDate: '05-11-2026',
-              mobileNumber: '+91 9437890123',
-              email: 'admin@kalinganagarfpc.in',
-              pan: '',
-              socialCategory: '',
-              activeStatus: 'Active',
-            },
-            {
-              id: 'director-2',
-              fullName: 'Chairperson',
-              din: '',
-              designation: 'Chairperson',
-              gender: '',
-              appointmentDate: '',
-              mobileNumber: '',
-              email: '',
-              pan: '',
-              socialCategory: '',
-              activeStatus: '',
-            },
-          ],
-    },
+    defaultValues: formValues,
+    values: formValues,
+    resetOptions: { keepDirtyValues: true },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -230,38 +235,61 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
 
                   {/* Row 2: Designation & Gender */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <Select
-                      id={`director-desig-${index}`}
-                      label="Designation *"
-                      required
-                      options={DESIGNATION_OPTIONS}
-                      placeholder="Select designation"
-                      trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-                      error={directorErrors?.designation?.message}
-                      {...register(`directors.${index}.designation`)}
+                    <Controller
+                      control={control}
+                      name={`directors.${index}.designation`}
+                      render={({ field }) => (
+                        <Select
+                          id={`director-desig-${index}`}
+                          label="Designation *"
+                          required
+                          options={DESIGNATION_OPTIONS}
+                          placeholder="Select designation"
+                          trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                          error={directorErrors?.designation?.message}
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          onBlur={field.onBlur}
+                        />
+                      )}
                     />
-                    <Select
-                      id={`director-gender-${index}`}
-                      label="Gender *"
-                      required
-                      options={GENDER_OPTIONS}
-                      placeholder="Select gender"
-                      trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-                      error={directorErrors?.gender?.message}
-                      {...register(`directors.${index}.gender`)}
+                    <Controller
+                      control={control}
+                      name={`directors.${index}.gender`}
+                      render={({ field }) => (
+                        <Select
+                          id={`director-gender-${index}`}
+                          label="Gender *"
+                          required
+                          options={GENDER_OPTIONS}
+                          placeholder="Select gender"
+                          trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                          error={directorErrors?.gender?.message}
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          onBlur={field.onBlur}
+                        />
+                      )}
                     />
                   </div>
 
                   {/* Row 3: Appointment date & Mobile number */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <Input
-                      id={`director-date-${index}`}
-                      label="Appointment date *"
-                      required
-                      placeholder="dd-mm-yyyy"
-                      trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-                      error={directorErrors?.appointmentDate?.message}
-                      {...register(`directors.${index}.appointmentDate`)}
+                    <Controller
+                      control={control}
+                      name={`directors.${index}.appointmentDate`}
+                      render={({ field }) => (
+                        <DatePicker
+                          id={`director-date-${index}`}
+                          label="Appointment date *"
+                          required
+                          placeholder="dd-mm-yyyy"
+                          error={directorErrors?.appointmentDate?.message}
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                        />
+                      )}
                     />
                     <Input
                       id={`director-mobile-${index}`}
@@ -296,24 +324,40 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
 
                   {/* Row 5: Social category & Active status */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <Select
-                      id={`director-social-${index}`}
-                      label="Social category"
-                      options={SOCIAL_CATEGORY_OPTIONS}
-                      placeholder="Select social category"
-                      trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-                      error={directorErrors?.socialCategory?.message}
-                      {...register(`directors.${index}.socialCategory`)}
+                    <Controller
+                      control={control}
+                      name={`directors.${index}.socialCategory`}
+                      render={({ field }) => (
+                        <Select
+                          id={`director-social-${index}`}
+                          label="Social category"
+                          options={SOCIAL_CATEGORY_OPTIONS}
+                          placeholder="Select social category"
+                          trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                          error={directorErrors?.socialCategory?.message}
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          onBlur={field.onBlur}
+                        />
+                      )}
                     />
-                    <Select
-                      id={`director-status-${index}`}
-                      label="Active status *"
-                      required
-                      options={ACTIVE_STATUS_OPTIONS}
-                      placeholder="Select status"
-                      trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-                      error={directorErrors?.activeStatus?.message}
-                      {...register(`directors.${index}.activeStatus`)}
+                    <Controller
+                      control={control}
+                      name={`directors.${index}.activeStatus`}
+                      render={({ field }) => (
+                        <Select
+                          id={`director-status-${index}`}
+                          label="Active status *"
+                          required
+                          options={ACTIVE_STATUS_OPTIONS}
+                          placeholder="Select status"
+                          trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                          error={directorErrors?.activeStatus?.message}
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          onBlur={field.onBlur}
+                        />
+                      )}
                     />
                   </div>
 
@@ -379,7 +423,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
             className="w-full py-3.5 px-4 rounded-xl border border-dashed border-neutral-300 hover:border-neutral-400 bg-white hover:bg-neutral-50/50 text-secondary hover:text-primary text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Add Director</span>
+            <span> Add Director</span>
           </button>
         </div>
       </Card>

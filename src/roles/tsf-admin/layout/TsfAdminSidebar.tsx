@@ -1,118 +1,113 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-  LayoutGrid,
-  LineChart,
   Users,
-  ChevronDown,
-  ChevronUp,
-  Globe,
-  FileText,
-  Image as GalleryIcon,
-  SlidersHorizontal,
   Search,
   X,
-  LogOut
+  LogOut,
+  ChevronRight,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button, Input } from '../../../shared/components';
-import { useAppSelector } from '../../../app/store/hooks';
+import { useAppDispatch, useAppSelector } from '../../../app/store/hooks';
+import { setSidebarCollapsed, toggleSidebar } from '../../../shared/slices/uiSlice';
+import fpcSeal from '../../../assets/fpc-seal.svg';
 
 export interface TsfAdminSidebarProps {
   isMobileOpen?: boolean;
+  isCollapsed?: boolean;
   onCloseMobile?: () => void;
   onSignOut?: () => void;
 }
 
+/** Static approvals counter shown on the sub-item badge (as per reference design). */
+const APPROVALS_COUNT = 7;
+
 export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
   isMobileOpen = false,
+  isCollapsed = false,
   onCloseMobile,
   onSignOut
 }) => {
   const location = useLocation();
+  const dispatch = useAppDispatch();
   const [fpcManagementOpen, setFpcManagementOpen] = useState(true);
-  const [oneGroupActive, setOneGroupActive] = useState(true);
-  const [allSyncedActive, setAllSyncedActive] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const currentUser = useAppSelector((state) => state.auth.currentUser);
+  const activeFpcId = useAppSelector((state) => state.auth.activeFpcId);
 
-  const displayName = currentUser?.fullName || 'TSF Central Admin';
-  const displayRole = currentUser?.activeRoleCode === 'TsfAdmin'
-    ? 'TSF Central Admin'
-    : (currentUser?.activeRoleCode || 'Administrator');
-  const activeFpcDisplayName = currentUser?.activeFpcName || 'TSF Programme';
+  // Dynamically resolve active FPC context and active membership from authenticated profile
+  const currentActiveFpcId = activeFpcId || currentUser?.activeFpcId;
+  const activeMembership = useMemo(
+    () => currentUser?.memberships?.find((m) => m.fpcId === currentActiveFpcId),
+    [currentUser?.memberships, currentActiveFpcId]
+  );
 
-  // Primary navigation links configuration
-  // NOTE: Items marked hidden: true are temporarily hidden from the visible sidebar.
-  // Set hidden: false (or remove the flag) to restore their visibility at any time.
-  const navItems = [
-    {
-      name: 'Dashboard',
-      path: '/admin/dashboard',
-      icon: LayoutGrid,
-      hidden: true, // Temporarily hidden
-    },
-    {
-      name: 'Monitoring',
-      path: '/admin/monitoring',
-      icon: LineChart,
-      hidden: true, // Temporarily hidden
-    },
+  const activeFpcDisplayName =
+    activeMembership?.fpcName || currentUser?.activeFpcName || '';
+
+  const displayName = currentUser?.fullName?.trim() || '';
+
+  const displayRole = useMemo(() => {
+    if (activeMembership?.roleName) return activeMembership.roleName;
+    if (currentUser?.activeRoleCode === 'TsfAdmin') return 'TSF Central Admin';
+    return currentUser?.activeRoleCode || '';
+  }, [activeMembership?.roleName, currentUser?.activeRoleCode]);
+
+  const userInitials = useMemo(() => {
+    if (!displayName) return '--';
+    const parts = displayName.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }, [displayName]);
+
+  // Only the FPC Management group is shown in the sidebar for now.
+  // Uncomment the entries below to restore the other workspace pages.
+  const workspaceItems: Array<{ name: string; path: string; icon: LucideIcon }> = [
+    // { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutGrid },
+    // { name: 'Monitoring', path: '/admin/monitoring', icon: ClipboardPen },
   ];
 
   const fpcSubItems = [
     { name: 'All FPCs', path: '/admin/all-fpcs' },
     { name: 'Onboard New FPC', path: '/admin/onboard' },
-    { name: 'Pending Approvals', path: '/admin/pending-approvals' },
+    { name: 'Approvals', path: '/admin/pending-approvals', badge: APPROVALS_COUNT },
   ];
 
-  // Secondary navigation links configuration
-  // Set hidden: false (or remove the flag) to restore their visibility at any time.
-  const secondaryNavItems = [
-    {
-      name: 'Network Data',
-      path: '/admin/network-data',
-      icon: Globe,
-      hidden: true, // Temporarily hidden
-    },
-    {
-      name: 'Analytics and MIS',
-      path: '/admin/analytics',
-      icon: FileText,
-      hidden: true, // Temporarily hidden
-    },
-    {
-      name: 'Gallery',
-      path: '/admin/gallery',
-      icon: GalleryIcon,
-      hidden: true, // Temporarily hidden
-    },
-    {
-      name: 'Administration',
-      path: '/admin/administration',
-      icon: SlidersHorizontal,
-      hidden: true, // Temporarily hidden
-    },
-  ];
-
-  const visibleNavItems = navItems.filter((i) => !i.hidden);
-  const visibleSecondaryNavItems = secondaryNavItems.filter((i) => !i.hidden);
+  // Operations navigation is temporarily hidden along with the other pages.
+  // const operationsItems = [
+  //   { name: 'Network Data', path: '/admin/network-data', icon: House },
+  //   { name: 'Analytics and MIS', path: '/admin/analytics', icon: NotepadText },
+  //   { name: 'Gallery', path: '/admin/gallery', icon: Box },
+  //   { name: 'Administration', path: '/admin/administration', icon: User },
+  // ];
 
   const query = searchQuery.trim().toLowerCase();
-  const filteredNavItems = query
-    ? visibleNavItems.filter((i) => i.name.toLowerCase().includes(query))
-    : visibleNavItems;
+  const filteredWorkspaceItems = query
+    ? workspaceItems.filter((i) => i.name.toLowerCase().includes(query))
+    : workspaceItems;
   const filteredFpcSubItems = query
     ? fpcSubItems.filter((i) => i.name.toLowerCase().includes(query))
     : fpcSubItems;
-  const filteredSecondaryNavItems = query
-    ? visibleSecondaryNavItems.filter((i) => i.name.toLowerCase().includes(query))
-    : visibleSecondaryNavItems;
+  // const filteredOperationsItems = query
+  //   ? operationsItems.filter((i) => i.name.toLowerCase().includes(query))
+  //   : operationsItems;
 
   const showFpcSection =
     !query || 'fpc management'.includes(query) || filteredFpcSubItems.length > 0;
+  const showWorkspaceSection = filteredWorkspaceItems.length > 0 || showFpcSection;
   const isAccordionOpen = fpcManagementOpen || Boolean(query);
+  const activeFpcSubItem = fpcSubItems.find((sub) => location.pathname === sub.path);
+  const isFpcManagementActive = Boolean(activeFpcSubItem);
 
-  const isFpcManagementActive = fpcSubItems.some(sub => location.pathname === sub.path);
+  const handleFpcManagementClick = () => {
+    if (isCollapsed) {
+      dispatch(setSidebarCollapsed(false));
+      setFpcManagementOpen(true);
+      return;
+    }
+    setFpcManagementOpen((open) => !open);
+  };
 
   return (
     <>
@@ -127,186 +122,186 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed md:sticky top-0 left-0 h-screen w-[220px] lg:w-[230px] shrink-0 bg-sidebar-bg text-white flex flex-col justify-between z-50 transition-transform duration-200 ease-in-out ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-          }`}
+        className={`app-sidebar fixed md:sticky top-0 left-0 h-screen z-50 ${isCollapsed ? 'is-collapsed' : ''
+          } ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
-        {/* Top Section: Branding, Search & Nav */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 select-none scrollbar-thin">
-
-          {/* Header Branding */}
-          <div className="flex items-center justify-between pb-1">
-            <div>
-              <h1 className="brand-title font-bold text-white tracking-tight leading-tight">
-                FPC Desk
-              </h1>
-              <small className="text-sidebar-muted font-medium truncate max-w-[140px] block" title={activeFpcDisplayName}>
+        {/* Branding */}
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            <img src={fpcSeal} alt="FPC seal" className="sidebar-brand-logo" />
+            <div className="sidebar-brand-text">
+              <h1 className="sidebar-brand-title">FPC Desk</h1>
+              <p className="sidebar-brand-subtitle" title={activeFpcDisplayName}>
                 {activeFpcDisplayName}
-              </small>
+              </p>
             </div>
-              {/* Mobile Close Button: Reusing Shared Button */}
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              iconOnly
-              onClick={onCloseMobile}
-              className="md:hidden p-1 rounded-md text-sidebar-muted hover:text-white hover:bg-sidebar-surface w-7 h-7"
-              aria-label="Close menu"
-            >
-              <X className="w-5 h-5" />
+          </div>
+
+          {/* Collapse / expand toggle */}
+          <Button
+            variant="ghost"
+            size="xs"
+            iconOnly
+            className="sidebar-toggle hidden md:inline-flex"
+            onClick={() => dispatch(toggleSidebar())}
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!isCollapsed}
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <ChevronRight className="w-4 h-4 stroke-[1.75]" />
+          </Button>
+
+          {/* Mobile Close Button */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            iconOnly
+            onClick={onCloseMobile}
+            className="md:hidden p-1 rounded-md text-sidebar-muted hover:text-white hover:bg-sidebar-surface w-8 h-8 shrink-0"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
           </Button>
         </div>
 
-        {/* Search Box: Reusing Shared Input */}
-        <div className="space-y-1">
-          <Input
-            size="sm"
-            leadingIcon={<Search className="w-3.5 h-3.5 text-sidebar-muted shrink-0" />}
-            placeholder="Search menu ⌘K"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-9 bg-sidebar-surface border-brand/40 text-xs text-white placeholder:text-sidebar-muted rounded-xl hover:border-brand/60 focus:ring-brand"
-          />
-          <small className="text-sidebar-muted font-normal px-1 block">
-            Search pages Ctrl K
-          </small>
-        </div>
+        <div className="sidebar-body">
+          {/* Search */}
+          <div className="sidebar-search-wrap">
+            <Input
+              size="sm"
+              containerClassName="sidebar-search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search pages"
+              aria-label="Search pages"
+              leadingIcon={<Search className="sidebar-search-icon" aria-hidden="true" />}
+              trailingIcon={
+                <span className="sidebar-search-hint" aria-hidden="true">⌘K</span>
+              }
+            />
+          </div>
 
-        {/* Navigation Links */}
-        <nav className="space-y-1 pt-1 text-xs">
-          {/* Top items */}
-          {filteredNavItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => onCloseMobile && onCloseMobile()}
-                className={({ isActive }) =>
-                  `flex items-center gap-2.5 px-3 py-2 rounded-control font-medium transition-colors cursor-pointer ${isActive
-                    ? 'bg-brand text-white shadow-xs'
-                    : 'text-sidebar-icon hover:text-white hover:bg-sidebar-surface/50'
-                  }`
-                }
-              >
-                <Icon className="w-4 h-4 shrink-0 stroke-[2]" />
-                <span>{item.name}</span>
-              </NavLink>
-            );
-          })}
+          <nav className="sidebar-nav" aria-label="Primary">
+            {showWorkspaceSection && (
+              <>
+                <p className="sidebar-section-label">Workspace</p>
+                <ul className="sidebar-menu">
+                  {filteredWorkspaceItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <li key={item.path}>
+                        <NavLink
+                          to={item.path}
+                          onClick={() => onCloseMobile && onCloseMobile()}
+                          aria-label={isCollapsed ? item.name : undefined}
+                          className={({ isActive }) =>
+                            `sidebar-link${isActive ? ' is-active' : ''}`
+                          }
+                        >
+                          <Icon className="sidebar-link-icon" aria-hidden="true" />
+                          <span className="sidebar-link-label">{item.name}</span>
+                          <span className="sidebar-tooltip" role="tooltip">
+                            <span className="sidebar-tooltip-title">{item.name}</span>
+                            <span className="sidebar-tooltip-subtitle">Workspace</span>
+                          </span>
+                        </NavLink>
+                      </li>
+                    );
+                  })}
 
-          {/* FPC Management Accordion: Reusing Shared Button */}
-          {showFpcSection && (
-            <div className="pt-0.5">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setFpcManagementOpen(!fpcManagementOpen)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-control font-medium transition-colors ${
-                  isFpcManagementActive || isAccordionOpen
-                    ? 'text-white hover:bg-sidebar-surface/50'
-                    : 'text-sidebar-icon hover:text-white hover:bg-sidebar-surface/50'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Users className="w-4 h-4 shrink-0 stroke-[2]" />
-                  <span>FPC Management</span>
-                </div>
-                {isAccordionOpen ? (
-                  <ChevronUp className="w-3.5 h-3.5 text-sidebar-muted" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5 text-sidebar-muted" />
-                )}
-              </Button>
+                  {showFpcSection && (
+                    <li>
+                      <button
+                        type="button"
+                        onClick={handleFpcManagementClick}
+                        aria-label={isCollapsed ? (activeFpcSubItem?.name || 'FPC Management') : undefined}
+                        aria-expanded={isAccordionOpen}
+                        className={`sidebar-link sidebar-accordion${isFpcManagementActive ? ' has-active-route' : ''
+                          }`}
+                      >
+                        <Users className="sidebar-link-icon" aria-hidden="true" />
+                        <span className="sidebar-link-label">FPC Management</span>
+                        <span className="sidebar-tooltip" role="tooltip">
+                          <span className="sidebar-tooltip-title">
+                            {activeFpcSubItem?.name || 'FPC Management'}
+                          </span>
+                          <span className="sidebar-tooltip-subtitle">
+                            {activeFpcSubItem ? 'FPC Management' : 'Workspace'}
+                          </span>
+                        </span>
+                      </button>
 
-              {/* Sub-menu items */}
-              {isAccordionOpen && (
-                <div className="mt-1 space-y-1">
-                  {filteredFpcSubItems.map((sub) => (
-                    <NavLink
-                      key={sub.path}
-                      to={sub.path}
-                      onClick={() => onCloseMobile && onCloseMobile()}
-                      className={({ isActive }) =>
-                        `block pl-9 pr-3 py-1.5 rounded-control font-medium transition-colors cursor-pointer ${
-                          isActive
-                            ? 'bg-brand text-white shadow-xs'
-                            : 'text-sidebar-icon hover:text-white hover:bg-sidebar-surface/40'
-                        }`
-                      }
-                    >
-                      {sub.name}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                      {isAccordionOpen && (
+                        <div className="sidebar-submenu">
+                          {filteredFpcSubItems.map((sub) => (
+                            <NavLink
+                              key={sub.path}
+                              to={sub.path}
+                              onClick={() => onCloseMobile && onCloseMobile()}
+                              title={isCollapsed ? sub.name : undefined}
+                              className={({ isActive }) =>
+                                `sidebar-sublink${isActive ? ' is-active' : ''}${sub.badge ? ' has-badge' : ''
+                                }`
+                              }
+                            >
+                              <span className="sidebar-link-label">{sub.name}</span>
+                              {sub.badge ? (
+                                <span className="sidebar-badge">{sub.badge}</span>
+                              ) : null}
+                            </NavLink>
+                          ))}
+                        </div>
+                      )}
+                    </li>
+                  )}
+                </ul>
+              </>
+            )}
 
-          {/* Secondary items */}
-          {filteredSecondaryNavItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => onCloseMobile && onCloseMobile()}
-                className={({ isActive }) =>
-                  `flex items-center gap-2.5 px-3 py-2 rounded-control font-medium transition-colors cursor-pointer ${isActive
-                    ? 'bg-brand text-white shadow-xs'
-                    : 'text-sidebar-icon hover:text-white hover:bg-sidebar-surface/50'
-                  }`
-                }
-              >
-                <Icon className="w-4 h-4 shrink-0 stroke-[2]" />
-                <span>{item.name}</span>
-              </NavLink>
-            );
-          })}
+            {/* Operations navigation is temporarily hidden.
+            {filteredOperationsItems.length > 0 && (
+              <>
+                <p className="sidebar-section-label">Operations</p>
+                <ul className="sidebar-menu">
+                  {filteredOperationsItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <li key={item.path}>
+                        <NavLink
+                          to={item.path}
+                          onClick={() => onCloseMobile && onCloseMobile()}
+                          aria-label={isCollapsed ? item.name : undefined}
+                          className={({ isActive }) =>
+                            `sidebar-link${isActive ? ' is-active' : ''}`
+                          }
+                        >
+                          <Icon className="sidebar-link-icon" aria-hidden="true" />
+                          <span className="sidebar-link-label">{item.name}</span>
+                          <span className="sidebar-tooltip" role="tooltip">
+                            <span className="sidebar-tooltip-title">{item.name}</span>
+                            <span className="sidebar-tooltip-subtitle">Operations</span>
+                          </span>
+                        </NavLink>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
+            */}
           </nav>
         </div>
 
-        {/* Bottom Section: Controls & User Profile */}
-        <div className="p-3.5 border-t border-sidebar-surface/60 space-y-2.5 bg-sidebar-bg">
-          {/* Status Switch 1: One group at a time */}
-          <div
-            onClick={() => setOneGroupActive(!oneGroupActive)}
-            className="bg-white rounded-xl px-2.5 py-2 flex items-center justify-between cursor-pointer shadow-2xs select-none hover:bg-neutral-50 transition-colors"
-          >
-            <div className={`w-7 h-4 rounded-full p-0.5 transition-colors flex items-center ${
-              oneGroupActive ? 'bg-brand justify-end' : 'bg-neutral-300 justify-start'
-            }`}>
-              <div className="w-3 h-3 rounded-full bg-white shadow-xs" />
+        {/* Account */}
+        <div className="sidebar-footer">
+          <div className="sidebar-user">
+            <div className="sidebar-avatar" title={displayName}>
+              {userInitials}
             </div>
-            <small className="font-medium text-primary ml-2 flex-1 text-left">
-              One group at a time
-            </small>
-          </div>
-
-          {/* Status Switch 2: Connected / All changes synced */}
-          <div
-            onClick={() => setAllSyncedActive(!allSyncedActive)}
-            className="bg-white rounded-xl px-2.5 py-2 flex items-center justify-between cursor-pointer shadow-2xs select-none hover:bg-neutral-50 transition-colors"
-          >
-            <div className={`w-7 h-4 rounded-full p-0.5 transition-colors flex items-center ${
-              allSyncedActive ? 'bg-brand justify-end' : 'bg-neutral-300 justify-start'
-            }`}>
-              <div className="w-3 h-3 rounded-full bg-white shadow-xs" />
-            </div>
-            <small className="font-medium text-primary ml-2 flex-1 text-left leading-tight">
-              Connected / All changes synced
-            </small>
-          </div>
-
-          {/* User Account / Session Profile */}
-          <div className="pt-1 flex items-center justify-between">
-            <div className="text-left">
-              <p className="text-xs font-semibold text-white leading-tight truncate max-w-[130px]" title={displayName}>
-                {displayName}
-              </p>
-              <small className="text-sidebar-muted font-medium truncate max-w-[130px] block">
-                {displayRole} &lt;
-              </small>
+            <div className="sidebar-user-text">
+              <p className="sidebar-user-name" title={displayName}>{displayName}</p>
+              <span className="sidebar-user-role">{displayRole}</span>
             </div>
             {onSignOut && (
               <Button
@@ -316,9 +311,10 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
                 iconOnly
                 onClick={onSignOut}
                 title="Sign out"
-                className="p-1.5 rounded-md text-sidebar-muted hover:text-white hover:bg-sidebar-surface cursor-pointer transition-colors w-7 h-7"
+                aria-label="Sign out"
+                className="shrink-0 rounded-md text-sidebar-muted hover:text-white hover:bg-sidebar-surface cursor-pointer transition-colors w-8 h-8"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-4 h-4" />
               </Button>
             )}
           </div>
@@ -327,4 +323,3 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
     </>
   );
 };
-

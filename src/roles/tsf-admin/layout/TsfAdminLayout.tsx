@@ -3,7 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { TsfAdminSidebar } from './TsfAdminSidebar';
 import { TsfAdminHeader } from './TsfAdminHeader';
 import { useLogoutMutation } from '../../../features/auth/api/authApi';
-import { useAppDispatch } from '../../../app/store/hooks';
+import { useAppDispatch, useAppSelector } from '../../../app/store/hooks';
 import { loggedOut } from '../../../features/auth/slices/authSlice';
 import { baseApi } from '../../../app/api/baseApi';
 
@@ -13,6 +13,7 @@ export interface TsfAdminLayoutProps {
 
 export const TsfAdminLayout: React.FC<TsfAdminLayoutProps> = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isSidebarCollapsed = useAppSelector((state) => state.ui.isSidebarCollapsed);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [logout] = useLogoutMutation();
@@ -34,6 +35,7 @@ export const TsfAdminLayout: React.FC<TsfAdminLayoutProps> = ({ children }) => {
       {/* 1. Left Sidebar: Reusable Persistent Navigation */}
       <TsfAdminSidebar
         isMobileOpen={mobileMenuOpen}
+        isCollapsed={isSidebarCollapsed}
         onCloseMobile={() => setMobileMenuOpen(false)}
         onSignOut={handleSignOut}
       />

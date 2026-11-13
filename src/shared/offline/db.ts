@@ -30,6 +30,25 @@ export class FpcOfflineDatabase extends Dexie {
   }
 
   /**
+   * Explicitly opens and initializes the IndexedDB database in the browser.
+   * Ensures the database schema is created and visible in browser DevTools immediately.
+   */
+  async initialize(): Promise<boolean> {
+    try {
+      if (typeof window === 'undefined' || !window.indexedDB) {
+        return false;
+      }
+      if (!this.isOpen()) {
+        await this.open();
+      }
+      return true;
+    } catch (err) {
+      console.warn('Failed to open FpcOfflineDb:', err);
+      return false;
+    }
+  }
+
+  /**
    * Helper to retrieve all pending mutations for a specific active tenant
    */
   async getPendingMutations(fpcId: string): Promise<OfflineMutationRecord[]> {

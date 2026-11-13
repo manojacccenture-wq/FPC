@@ -35,6 +35,36 @@ export interface InvitationValidationResult {
   state?: string | null;
   district?: string | null;
   expiresAtUtc?: string | null;
+  invitationId?: string | null;
+}
+
+export interface FpcDocumentPayload {
+  documentType: string;
+  fileName: string;
+  storagePath?: string;
+  expiryDate?: string;
+}
+
+export interface CompleteFpcInvitationRequest {
+  token: string;
+  legalName?: string;
+  cin?: string;
+  registrationDate?: string;
+  officialEmail?: string;
+  officialMobile?: string;
+  pan?: string;
+  tan?: string;
+  gstin?: string;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankIfsc?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  pincode?: string;
+  district?: string;
+  state?: string;
+  documents?: FpcDocumentPayload[];
+  clientMutationId?: string;
 }
 
 export interface ApiResponse<T> {
@@ -51,6 +81,12 @@ export const fpcInvitationApi = baseApi.injectEndpoints({
       query: () => '/fpc-invitations',
       transformResponse: (response: ApiResponse<FpcInvitationDto[]>) => response.data,
       providesTags: [TAG_TYPES.FpcInvitation],
+    }),
+
+    getFpcInvitationById: builder.query<FpcInvitationDto, string>({
+      query: (id) => `/fpc-invitations/${id}`,
+      transformResponse: (response: ApiResponse<FpcInvitationDto>) => response.data,
+      providesTags: (_result, _error, id) => [{ type: TAG_TYPES.FpcInvitation, id }],
     }),
 
     validateFpcInvitation: builder.query<InvitationValidationResult, string>({
@@ -76,13 +112,16 @@ export const fpcInvitationApi = baseApi.injectEndpoints({
       invalidatesTags: [TAG_TYPES.FpcInvitation],
     }),
 
-    completeFpcInvitation: builder.mutation<{ success: boolean; message?: string }, { token: string }>({
+    completeFpcInvitation: builder.mutation<
+      { success: boolean; message?: string },
+      CompleteFpcInvitationRequest
+    >({
       query: (body) => ({
         url: '/fpc-invitations/complete',
         method: 'POST',
         body,
       }),
-      invalidatesTags: [TAG_TYPES.FpcInvitation],
+      invalidatesTags: [TAG_TYPES.FpcInvitation, TAG_TYPES.Fpc],
     }),
   }),
   overrideExisting: false,
@@ -90,6 +129,7 @@ export const fpcInvitationApi = baseApi.injectEndpoints({
 
 export const {
   useGetFpcInvitationsQuery,
+  useGetFpcInvitationByIdQuery,
   useValidateFpcInvitationQuery,
   useCreateFpcInvitationMutation,
   useRevokeFpcInvitationMutation,

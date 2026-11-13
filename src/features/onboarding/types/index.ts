@@ -87,8 +87,11 @@ export interface FpcLogoDocumentsFormData {
   panCertName?: string;
   gstinCertName?: string;
   fssaiLicenseName?: string;
+  fssaiExpiryDate?: string;
   seedLicenseName?: string;
+  seedLicenseExpiryDate?: string;
   fertilizerLicenseName?: string;
+  fertilizerLicenseExpiryDate?: string;
   moaAoaDocName?: string;
   boardResolutionDocName?: string;
 }
@@ -108,10 +111,10 @@ export interface FpcAddressLocationFormData {
 }
 
 export interface FpcBusinessActivitiesFormData {
-  primaryActivity: string;
+  primaryActivity: string[] | string;
   operationalStatus: string;
   commencementDate: string;
-  commoditiesHandled: string;
+  commoditiesHandled: string[] | string;
   targetFarmers: string;
   villagesCovered: string;
   activityScope: string;

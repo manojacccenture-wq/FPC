@@ -21,10 +21,18 @@ const rawBaseQuery = fetchBaseQuery({
       headers.set('X-XSRF-TOKEN', xsrfToken);
     }
 
-    // 2. Attach active FpcId tenant header if resolved in Redux state
+    // 2. Attach active FpcId tenant header if resolved in Redux state (exclude platform and invitation endpoints)
     const state = getState() as { auth?: { activeFpcId?: string | null } };
     const activeFpcId = state.auth?.activeFpcId;
-    if (activeFpcId) {
+    const isPlatformOrInvitation =
+      endpoint === 'completeInvitation' ||
+      endpoint === 'validateFpcInvitation' ||
+      endpoint === 'createFpcInvitation' ||
+      endpoint === 'getFpcInvitations' ||
+      endpoint === 'getFpcInvitationById' ||
+      endpoint === 'revokeFpcInvitation';
+
+    if (activeFpcId && !isPlatformOrInvitation) {
       headers.set('X-Active-Fpc-Id', activeFpcId);
     }
 

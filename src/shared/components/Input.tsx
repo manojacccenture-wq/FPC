@@ -66,8 +66,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   const effectiveLeading = leadingIcon || leftIcon;
   const effectiveTrailing = trailingIcon || rightIcon;
 
+  const hasFieldWrapper = Boolean(label || error || helperText);
+
   const inputElement = (
-    <div className="relative w-full flex items-center">
+    <div className={cn("relative w-full flex items-center", !hasFieldWrapper && containerClassName)}>
       {effectiveLeading && (
         <span className="absolute left-3.5 text-secondary pointer-events-none flex items-center justify-center shrink-0">
           {effectiveLeading}
@@ -110,7 +112,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
     </div>
   );
 
-  if (label || error || helperText) {
+  if (hasFieldWrapper) {
     return (
       <FormField
         id={id}

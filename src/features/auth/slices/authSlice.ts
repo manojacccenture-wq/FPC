@@ -117,6 +117,19 @@ export const authSlice = createSlice({
       if (action.payload.role) {
         state.activeRole = action.payload.role;
       }
+      if (state.currentUser) {
+        state.currentUser.activeFpcId = action.payload.fpcId;
+        const matchedMembership = state.currentUser.memberships?.find(
+          (m) => m.fpcId === action.payload.fpcId
+        );
+        if (matchedMembership) {
+          state.currentUser.activeFpcName = matchedMembership.fpcName;
+          if (matchedMembership.roleCode) {
+            state.currentUser.activeRoleCode = matchedMembership.roleCode;
+            state.activeRole = matchedMembership.roleCode;
+          }
+        }
+      }
     },
     loggedOut: (state) => {
       state.isAuthenticated = false;
