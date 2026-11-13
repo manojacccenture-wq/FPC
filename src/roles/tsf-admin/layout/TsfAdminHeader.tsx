@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { Bell, Menu } from 'lucide-react';
-import { Button } from '../../../shared/components';
+import { Button, NetworkStatusBadge } from '../../../shared/components';
 
 export interface TsfAdminHeaderProps {
   onToggleMobileMenu?: () => void;
@@ -96,8 +96,11 @@ export const TsfAdminHeader: React.FC<TsfAdminHeaderProps> = ({
         </div>
       </div>
 
-      {/* Right: Actions (English Pill + Notification Bell) Reusing Shared Button */}
+      {/* Right: Actions (Connectivity Status + English Pill + Notification Bell) Reusing Shared Button */}
       <div className="flex items-center gap-3 sm:gap-4">
+        {/* Global Connectivity Indicator (Offline persistent / Online 4s transient) */}
+        <NetworkStatusBadge />
+
         {/* English Pill Button */}
         <Button
           type="button"

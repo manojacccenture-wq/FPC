@@ -31,7 +31,7 @@ export const TsfAdminLayout: React.FC<TsfAdminLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-primary flex flex-row w-full overflow-x-hidden">
+    <div className="min-h-screen min-h-dvh md:h-screen md:h-dvh w-full flex flex-row md:overflow-hidden bg-neutral-50 text-primary">
       {/* 1. Left Sidebar: Reusable Persistent Navigation */}
       <TsfAdminSidebar
         isMobileOpen={mobileMenuOpen}
@@ -41,14 +41,14 @@ export const TsfAdminLayout: React.FC<TsfAdminLayoutProps> = ({ children }) => {
       />
 
       {/* 2. Main Layout Area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-neutral-50">
+      <div className="flex-1 flex flex-col min-w-0 md:h-full md:overflow-hidden bg-neutral-50">
         {/* Reusable Application Header */}
         <TsfAdminHeader
           onToggleMobileMenu={() => setMobileMenuOpen(true)}
         />
 
         {/* 3. Dynamic Center Content Area: Centralized Page Padding & Viewport-Adaptive Max-Width */}
-        <main className="flex-1 page-container max-w-[1440px] w-full mx-auto overflow-y-auto">
+        <main className="flex-1 page-container max-w-[1440px] w-full mx-auto md:min-h-0 md:overflow-y-auto">
           {children || <Outlet />}
         </main>
       </div>

@@ -4,6 +4,7 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../../shared/components/Button';
 import { Card } from '../../../shared/components/Card';
 import { Alert } from '../../../shared/components/Alert';
+import { NetworkStatusBadge } from '../../../shared/components/NetworkStatusBadge';
 import { OnboardingStepper } from '../components/OnboardingStepper';
 import { FpcBasicDetailsForm } from '../components/FpcBasicDetailsForm';
 import { FpcLegalRegistrationForm } from '../components/FpcLegalRegistrationForm';
@@ -304,13 +305,16 @@ export const FpcRegistrationPage: React.FC = () => {
           >
             Back to Login
           </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            className="rounded-full bg-brand-soft text-brand text-xs px-4 py-1.5 border-none font-medium"
-          >
-            English
-          </Button>
+          <div className="flex items-center gap-3">
+            <NetworkStatusBadge />
+            <Button
+              type="button"
+              variant="secondary"
+              className="rounded-full bg-brand-soft text-brand text-xs px-4 py-1.5 border-none font-medium"
+            >
+              English
+            </Button>
+          </div>
         </header>
 
         <main className="max-w-lg w-full mx-auto my-auto">
@@ -376,13 +380,16 @@ export const FpcRegistrationPage: React.FC = () => {
           >
             Back to Login
           </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            className="rounded-full bg-brand-soft text-brand text-xs px-4 py-1.5 border-none font-medium"
-          >
-            English
-          </Button>
+          <div className="flex items-center gap-3">
+            <NetworkStatusBadge />
+            <Button
+              type="button"
+              variant="secondary"
+              className="rounded-full bg-brand-soft text-brand text-xs px-4 py-1.5 border-none font-medium"
+            >
+              English
+            </Button>
+          </div>
         </header>
 
         {/* Title block */}

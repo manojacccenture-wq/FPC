@@ -1,7 +1,10 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
+export type NetworkBadgeVisibility = 'hidden' | 'offline' | 'online';
+
 export interface SyncState {
   isOnline: boolean;
+  badgeVisibility: NetworkBadgeVisibility;
   isSyncing: boolean;
   pendingMutationsCount: number;
   lastSyncedAtUtc: string | null;
@@ -9,8 +12,11 @@ export interface SyncState {
   lastSyncError: string | null;
 }
 
+const isInitialOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+
 const initialState: SyncState = {
-  isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+  isOnline: isInitialOnline,
+  badgeVisibility: !isInitialOnline ? 'offline' : 'hidden',
   isSyncing: false,
   pendingMutationsCount: 0,
   lastSyncedAtUtc: null,
@@ -22,8 +28,34 @@ export const syncSlice = createSlice({
   name: 'sync',
   initialState,
   reducers: {
+    initializeConnectivity: (
+      state,
+      action: PayloadAction<{ isOnline: boolean; badgeVisibility: NetworkBadgeVisibility }>
+    ) => {
+      state.isOnline = action.payload.isOnline;
+      state.badgeVisibility = action.payload.badgeVisibility;
+    },
+    setConnectivityOffline: (state) => {
+      state.isOnline = false;
+      state.badgeVisibility = 'offline';
+    },
+    setConnectivityOnline: (
+      state,
+      action: PayloadAction<{ showTemporaryBadge: boolean }>
+    ) => {
+      state.isOnline = true;
+      state.badgeVisibility = action.payload.showTemporaryBadge ? 'online' : 'hidden';
+    },
+    dismissOnlineBadge: (state) => {
+      if (state.badgeVisibility === 'online') {
+        state.badgeVisibility = 'hidden';
+      }
+    },
     setOnlineStatus: (state, action: PayloadAction<boolean>) => {
       state.isOnline = action.payload;
+      if (!action.payload) {
+        state.badgeVisibility = 'offline';
+      }
     },
     setSyncing: (state, action: PayloadAction<boolean>) => {
       state.isSyncing = action.payload;
@@ -55,6 +87,10 @@ export const syncSlice = createSlice({
 });
 
 export const {
+  initializeConnectivity,
+  setConnectivityOffline,
+  setConnectivityOnline,
+  dismissOnlineBadge,
   setOnlineStatus,
   setSyncing,
   setPendingCount,

@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 import { cn } from '../utils/cn';
 
-export type BadgeVariant = 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'count';
+export type BadgeVariant = 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'count' | 'offline';
 export type BadgeSize = 'sm' | 'md' | 'lg';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
@@ -43,6 +43,10 @@ const variantStyles: Record<BadgeVariant, {
   count: {
     container: "bg-warning-soft text-warning border-warning-border/50 font-bold min-w-[20px] h-[20px] p-0 flex items-center justify-center",
     dot: "",
+  },
+  offline: {
+    container: "bg-danger-soft text-danger border-danger-border/50",
+    dot: "bg-danger",
   },
 };
 

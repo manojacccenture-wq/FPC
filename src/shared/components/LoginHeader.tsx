@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '../utils/cn';
 import { Button } from './Button';
+import { NetworkStatusBadge } from './NetworkStatusBadge';
 
 export interface LoginHeaderProps extends React.HTMLAttributes<HTMLElement> {
   className?: string;
@@ -36,8 +37,9 @@ export const LoginHeader: React.FC<LoginHeaderProps> = ({
         </span>
       </div>
 
-      {/* Right: English Pill Button Reusing Shared Button */}
-      <div>
+      {/* Right: Connectivity Status + English Pill Button Reusing Shared Button */}
+      <div className="flex items-center gap-3">
+        <NetworkStatusBadge />
         <Button
           type="button"
           variant="secondary"

@@ -15,5 +15,6 @@ export * from './Table';
 export * from './LoginHeader';
 export * from './DatePicker';
 export * from './MultiSelect';
+export * from './NetworkStatusBadge';
 
 

@@ -122,7 +122,7 @@ export const TsfAdminSidebar: React.FC<TsfAdminSidebarProps> = ({
 
       {/* Sidebar Container */}
       <aside
-        className={`app-sidebar fixed md:sticky top-0 left-0 h-screen z-50 ${isCollapsed ? 'is-collapsed' : ''
+        className={`app-sidebar fixed md:relative inset-y-0 md:inset-auto left-0 h-full z-50 md:z-40 shrink-0 flex flex-col ${isCollapsed ? 'is-collapsed' : ''
           } ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
         {/* Branding */}
