@@ -6,20 +6,18 @@ import { Card } from '../../../shared/components/Card';
 import { Alert } from '../../../shared/components/Alert';
 import { NetworkStatusBadge } from '../../../shared/components/NetworkStatusBadge';
 import { OnboardingStepper } from '../components/OnboardingStepper';
-import { FpcBasicDetailsForm } from '../components/FpcBasicDetailsForm';
-import { FpcLegalRegistrationForm } from '../components/FpcLegalRegistrationForm';
-import { FpcFinancialInformationForm } from '../components/FpcFinancialInformationForm';
-import { FpcBoardOfDirectorsForm } from '../components/FpcBoardOfDirectorsForm';
-import { FpcLogoDocumentsForm } from '../components/FpcLogoDocumentsForm';
-import { FpcAddressLocationForm } from '../components/FpcAddressLocationForm';
-import { FpcBusinessActivitiesForm } from '../components/FpcBusinessActivitiesForm';
-import { FpcFinalReviewForm } from '../components/FpcFinalReviewForm';
+import { FpcRegistrationForm } from '../components/registration-form/FpcRegistrationForm';
+import { type LogoDocumentsFileMap } from '../components/FpcLogoDocumentsForm';
 import { invitationApi } from '../api/invitation.api';
 import { onboardingSyncService } from '../services/onboardingSyncService';
 import { resolveErrorMessage } from '../../../shared/forms';
 import { formatDateToISO } from '../../../shared/utils/date';
-import { useValidateFpcInvitationQuery, useCompleteFpcInvitationMutation } from '../api/fpcInvitationApi';
-import type { FpcInvitation } from '../types';
+import {
+  useValidateFpcInvitationQuery,
+  useCompleteFpcInvitationMutation,
+  useUploadDocumentMutation,
+} from '../api/fpcInvitationApi';
+import type { FpcInvitation, FpcLogoDocumentsFormData } from '../types';
 import type { BasicDetailsFormValues } from '../schemas/basicDetails.schema';
 import type { LegalRegistrationFormValues } from '../schemas/legalRegistration.schema';
 import type { FinancialInformationFormValues } from '../schemas/financialInformation.schema';
@@ -27,6 +25,10 @@ import type { BoardOfDirectorsFormValues } from '../schemas/boardOfDirectors.sch
 import type { LogoDocumentsFormValues } from '../schemas/logoDocuments.schema';
 import type { AddressLocationFormValues } from '../schemas/addressLocation.schema';
 import type { BusinessActivitiesFormValues } from '../schemas/businessActivities.schema';
+import {
+  DOCUMENT_TYPE_BY_FIELD,
+  EXPIRY_FIELD_BY_FIELD,
+} from '../constants/documentTypes';
 
 export const FpcRegistrationPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -39,6 +41,7 @@ export const FpcRegistrationPage: React.FC = () => {
     skip: !rawToken,
   });
   const [completeInvitation] = useCompleteFpcInvitationMutation();
+  const [uploadDocument] = useUploadDocumentMutation();
   const activeToken = rawToken;
 
   const [currentStep, setCurrentStep] = useState<number>(
@@ -55,7 +58,7 @@ export const FpcRegistrationPage: React.FC = () => {
     step2: Partial<LegalRegistrationFormValues> | null;
     step3: Partial<FinancialInformationFormValues> | null;
     step4: Partial<BoardOfDirectorsFormValues> | null;
-    step5: Partial<LogoDocumentsFormValues> | null;
+    step5: Partial<FpcLogoDocumentsFormData> | null;
     step6: Partial<AddressLocationFormValues> | null;
     step7: Partial<BusinessActivitiesFormValues> | null;
   }>(() => ({
@@ -67,7 +70,6 @@ export const FpcRegistrationPage: React.FC = () => {
     step6: invitationApi.getStepSixData(activeToken),
     step7: invitationApi.getStepSevenData(activeToken),
   }));
-  const [isDexieHydrated, setIsDexieHydrated] = useState(false);
 
   // Asynchronous Dexie IndexedDB hydration on page refresh/mount
   useEffect(() => {
@@ -86,7 +88,6 @@ export const FpcRegistrationPage: React.FC = () => {
             step6: dexieDrafts.step6 || prev.step6,
             step7: dexieDrafts.step7 || prev.step7,
           }));
-          setIsDexieHydrated(true);
         }
       } catch (err) {
         console.warn('Dexie hydration warning:', err);
@@ -148,8 +149,44 @@ export const FpcRegistrationPage: React.FC = () => {
   const handleStepFourSubmit = (values: BoardOfDirectorsFormValues) =>
     runStep(4, () => invitationApi.submitStepFour(activeToken, values), values);
 
-  const handleStepFiveSubmit = (values: LogoDocumentsFormValues) =>
-    runStep(5, () => invitationApi.submitStepFive(activeToken, values), values);
+  /**
+   * Uploads the selected files first, then saves the step with the returned document IDs.
+   * Only IDs are persisted; the File objects stay in memory for the duration of the submit.
+   */
+  const handleStepFiveSubmit = async (
+    values: LogoDocumentsFormValues,
+    files: LogoDocumentsFileMap
+  ) => {
+    setStepSuccessMessage(null);
+
+    const documentIds: Record<string, string> = { ...(drafts.step5?.documentIds ?? {}) };
+
+    for (const [field, file] of Object.entries(files) as Array<
+      [keyof LogoDocumentsFormValues, File | undefined]
+    >) {
+      const documentType = DOCUMENT_TYPE_BY_FIELD[field];
+      if (!file || !documentType) {
+        continue;
+      }
+
+      const expiryField = EXPIRY_FIELD_BY_FIELD[field];
+      const expiryDate = expiryField
+        ? formatDateToISO(values[expiryField] as string | undefined)
+        : undefined;
+
+      const uploaded = await uploadDocument({
+        token: activeToken,
+        documentType,
+        file,
+        expiryDate,
+      }).unwrap();
+
+      documentIds[field] = uploaded.documentId;
+    }
+
+    const savedStep: Partial<FpcLogoDocumentsFormData> = { ...values, documentIds };
+    await runStep(5, () => invitationApi.submitStepFive(activeToken, savedStep), savedStep);
+  };
 
   const handleStepSixSubmit = (values: AddressLocationFormValues) =>
     runStep(6, () => invitationApi.submitStepSix(activeToken, values), values);
@@ -177,35 +214,48 @@ export const FpcRegistrationPage: React.FC = () => {
         const address2Parts = [step6?.block, step6?.village].filter(Boolean);
         const normalizedRegistrationDate = formatDateToISO(step1?.dateOfIncorporation);
 
+        const step5DocumentIds = step5?.documentIds ?? {};
+
         const documents: Array<{
           documentType: string;
           fileName: string;
-          storagePath?: string;
+          documentId?: string;
           expiryDate?: string;
         }> = [];
 
+        if (step5?.logoFileName) {
+          documents.push({
+            documentType: 'CompanyLogo',
+            fileName: step5.logoFileName,
+            documentId: step5DocumentIds.logoFileName,
+          });
+        }
         if (step5?.incorporationCertName) {
           documents.push({
             documentType: 'CertificateOfIncorporation',
             fileName: step5.incorporationCertName,
+            documentId: step5DocumentIds.incorporationCertName,
           });
         }
         if (step5?.panCertName) {
           documents.push({
             documentType: 'PanCard',
             fileName: step5.panCertName,
+            documentId: step5DocumentIds.panCertName,
           });
         }
         if (step5?.gstinCertName) {
           documents.push({
             documentType: 'GstinCertificate',
             fileName: step5.gstinCertName,
+            documentId: step5DocumentIds.gstinCertName,
           });
         }
         if (step5?.fssaiLicenseName) {
           documents.push({
             documentType: 'FssaiLicense',
             fileName: step5.fssaiLicenseName,
+            documentId: step5DocumentIds.fssaiLicenseName,
             expiryDate: formatDateToISO(step5.fssaiExpiryDate),
           });
         }
@@ -213,6 +263,7 @@ export const FpcRegistrationPage: React.FC = () => {
           documents.push({
             documentType: 'SeedLicense',
             fileName: step5.seedLicenseName,
+            documentId: step5DocumentIds.seedLicenseName,
             expiryDate: formatDateToISO(step5.seedLicenseExpiryDate),
           });
         }
@@ -220,6 +271,7 @@ export const FpcRegistrationPage: React.FC = () => {
           documents.push({
             documentType: 'FertilizerLicense',
             fileName: step5.fertilizerLicenseName,
+            documentId: step5DocumentIds.fertilizerLicenseName,
             expiryDate: formatDateToISO(step5.fertilizerLicenseExpiryDate),
           });
         }
@@ -227,14 +279,26 @@ export const FpcRegistrationPage: React.FC = () => {
           documents.push({
             documentType: 'MoaAoa',
             fileName: step5.moaAoaDocName,
+            documentId: step5DocumentIds.moaAoaDocName,
           });
         }
         if (step5?.boardResolutionDocName) {
           documents.push({
             documentType: 'BoardResolution',
             fileName: step5.boardResolutionDocName,
+            documentId: step5DocumentIds.boardResolutionDocName,
           });
         }
+
+        const fullRegistrationPayload = {
+          step1,
+          step2,
+          step3,
+          step4: drafts.step4 || invitationApi.getStepFourData(activeToken),
+          step5,
+          step6,
+          step7: drafts.step7 || invitationApi.getStepSevenData(activeToken),
+        };
 
         const result = await onboardingSyncService.submitOnboarding(
           {
@@ -256,6 +320,7 @@ export const FpcRegistrationPage: React.FC = () => {
             district: step6?.district,
             state: step6?.state,
             documents: documents.length > 0 ? documents : undefined,
+            registrationDataJson: JSON.stringify(fullRegistrationPayload),
           },
           (payload) => completeInvitation(payload).unwrap()
         );
@@ -424,81 +489,10 @@ export const FpcRegistrationPage: React.FC = () => {
           </Alert>
         )}
 
-        {/* Step 1: Basic Details */}
-        {currentStep === 1 && (
-          <FpcBasicDetailsForm
-            key={`step1_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
-            invitation={invitation}
-            initialData={drafts.step1}
-            onSubmit={handleStepOneSubmit}
-            onBackToLogin={handleBackToLogin}
-          />
-        )}
-
-        {/* Step 2: Legal & Registration */}
-        {currentStep === 2 && (
-          <FpcLegalRegistrationForm
-            key={`step2_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
-            initialData={drafts.step2}
-            onSubmit={handleStepTwoSubmit}
-            onPreviousStep={() => goToStep(1)}
-          />
-        )}
-
-        {/* Step 3: Financial Information */}
-        {currentStep === 3 && (
-          <FpcFinancialInformationForm
-            key={`step3_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
-            initialData={drafts.step3}
-            onSubmit={handleStepThreeSubmit}
-            onPreviousStep={() => goToStep(2)}
-          />
-        )}
-
-        {/* Step 4: Board of Directors */}
-        {currentStep === 4 && (
-          <FpcBoardOfDirectorsForm
-            key={`step4_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
-            initialData={drafts.step4}
-            onSubmit={handleStepFourSubmit}
-            onPreviousStep={() => goToStep(3)}
-          />
-        )}
-
-        {/* Step 5: Logo & Documents */}
-        {currentStep === 5 && (
-          <FpcLogoDocumentsForm
-            key={`step5_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
-            initialData={drafts.step5}
-            onSubmit={handleStepFiveSubmit}
-            onPreviousStep={() => goToStep(4)}
-          />
-        )}
-
-        {/* Step 6: Address & Location */}
-        {currentStep === 6 && (
-          <FpcAddressLocationForm
-            key={`step6_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
-            initialData={drafts.step6}
-            onSubmit={handleStepSixSubmit}
-            onPreviousStep={() => goToStep(5)}
-          />
-        )}
-
-        {/* Step 7: Business Activities */}
-        {currentStep === 7 && (
-          <FpcBusinessActivitiesForm
-            key={`step7_${activeToken}_${isDexieHydrated ? 'hydrated' : 'init'}`}
-            initialData={drafts.step7}
-            onSubmit={handleStepSevenSubmit}
-            onPreviousStep={() => goToStep(6)}
-          />
-        )}
-
-        {/* Step 8: Final Review & Submission */}
-        {currentStep === 8 && !isSubmitted && (
+        {/* Unified 8-Step Registration Form */}
+        {!isSubmitted && (
           <>
-            {finalErrorMessage && (
+            {currentStep === 8 && finalErrorMessage && (
               <Alert
                 tone="danger"
                 variant="card"
@@ -509,17 +503,21 @@ export const FpcRegistrationPage: React.FC = () => {
               </Alert>
             )}
 
-            <FpcFinalReviewForm
-              step1Data={drafts.step1}
-              step2Data={drafts.step2}
-              step3Data={drafts.step3}
-              step4Data={drafts.step4}
-              step5Data={drafts.step5}
-              step6Data={drafts.step6}
-              step7Data={drafts.step7}
-              onEditStep={(step) => goToStep(step)}
-              onPreviousStep={() => goToStep(7)}
-              onSubmit={handleFinalSubmit}
+            <FpcRegistrationForm
+              mode="editable"
+              currentStep={currentStep}
+              onStepChange={(step) => goToStep(step)}
+              drafts={drafts}
+              invitation={invitation}
+              onStepOneSubmit={handleStepOneSubmit}
+              onStepTwoSubmit={handleStepTwoSubmit}
+              onStepThreeSubmit={handleStepThreeSubmit}
+              onStepFourSubmit={handleStepFourSubmit}
+              onStepFiveSubmit={handleStepFiveSubmit}
+              onStepSixSubmit={handleStepSixSubmit}
+              onStepSevenSubmit={handleStepSevenSubmit}
+              onFinalSubmit={handleFinalSubmit}
+              onBackToLogin={handleBackToLogin}
               isSubmitting={isFinalSubmitting}
             />
           </>

@@ -16,6 +16,8 @@ export interface FpcLegalRegistrationFormProps {
   initialData?: Partial<FpcLegalRegistrationFormData> | null;
   onSubmit: (values: LegalRegistrationFormValues) => Promise<void> | void;
   onPreviousStep: () => void;
+  isReadOnly?: boolean;
+  onNextStep?: () => void;
 }
 
 const LICENSE_TYPE_OPTIONS = [
@@ -33,7 +35,20 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
   initialData,
   onSubmit,
   onPreviousStep,
+  isReadOnly = false,
+  onNextStep,
 }) => {
+  const defaultLicenses = isReadOnly
+    ? []
+    : [
+        {
+          id: 'license-1',
+          licenseType: '',
+          licenseNumber: '',
+          issuingAuthority: '',
+        },
+      ];
+
   const formValues: LegalRegistrationFormValues = {
     companyPan: initialData?.companyPan || '',
     companyTan: initialData?.companyTan || '',
@@ -43,14 +58,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
     fertilizerLicense: initialData?.fertilizerLicense || '',
     additionalLicenses: initialData?.additionalLicenses && initialData.additionalLicenses.length > 0
       ? initialData.additionalLicenses
-      : [
-          {
-            id: 'license-1',
-            licenseType: '',
-            licenseNumber: '',
-            issuingAuthority: '',
-          },
-        ],
+      : defaultLicenses,
   };
 
   // ZERO useEffect: initial values populated directly during component mount
@@ -121,6 +129,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
             id="fpc-company-pan"
             label="Company PAN *"
             required
+            disabled={isReadOnly}
             placeholder="AABCK6954F"
             helperText="10 characters"
             error={errors.companyPan?.message}
@@ -130,6 +139,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
             id="fpc-company-tan"
             label="Company TAN *"
             required
+            disabled={isReadOnly}
             placeholder="BBSK01234A"
             helperText="10 characters"
             error={errors.companyTan?.message}
@@ -141,6 +151,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
             id="fpc-gstin"
             label="GSTIN *"
             required
+            disabled={isReadOnly}
             placeholder="21AABCK6954F1Z5"
             helperText="15 characters • State codes: 21 Odisha / 20 Jharkhand"
             error={errors.gstin?.message}
@@ -150,6 +161,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
             id="fpc-fssai"
             label="FSSAI license number *"
             required
+            disabled={isReadOnly}
             placeholder="12026021000123"
             helperText="14 digits"
             error={errors.fssaiLicense?.message}
@@ -161,6 +173,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
             id="fpc-seed-license"
             label="Seed license number *"
             required
+            disabled={isReadOnly}
             placeholder="Enter license number"
             error={errors.seedLicense?.message}
             {...register('seedLicense')}
@@ -169,6 +182,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
             id="fpc-fertilizer-license"
             label="Fertilizer license number *"
             required
+            disabled={isReadOnly}
             placeholder="Enter license number"
             error={errors.fertilizerLicense?.message}
             {...register('fertilizerLicense')}
@@ -177,6 +191,9 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
 
         {/* Sub-cards: Additional Operating Licenses */}
         <div className="space-y-4 pt-2">
+          {fields.length === 0 && isReadOnly && (
+            <p className="text-xs text-secondary italic">No additional operating licenses recorded.</p>
+          )}
           {fields.map((field, index) => {
             const licenseErrors = errors.additionalLicenses?.[index];
 
@@ -188,17 +205,19 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
                 {/* Header with Title & Delete button */}
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold text-primary">
-                    Additional Operating Licenses
+                    Additional Operating Licenses {fields.length > 1 ? `(${index + 1})` : ''}
                   </h4>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => remove(index)}
-                    className="h-8 px-5 rounded-lg bg-[#8B2323] hover:bg-[#721C1C] text-white shadow-2xs"
-                  >
-                    Delete
-                  </Button>
+                  {!isReadOnly && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => remove(index)}
+                      className="h-8 px-5 rounded-lg bg-[#8B2323] hover:bg-[#721C1C] text-white shadow-2xs"
+                    >
+                      Delete
+                    </Button>
+                  )}
                 </div>
 
                 {/* Sub-card Fields */}
@@ -211,6 +230,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
                         id={`license-type-${index}`}
                         label="License type *"
                         required
+                        disabled={isReadOnly}
                         options={LICENSE_TYPE_OPTIONS}
                         placeholder="Select license type"
                         trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
@@ -225,6 +245,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
                     id={`license-number-${index}`}
                     label="License number *"
                     required
+                    disabled={isReadOnly}
                     placeholder="Enter license number"
                     error={licenseErrors?.licenseNumber?.message}
                     {...register(`additionalLicenses.${index}.licenseNumber`)}
@@ -236,6 +257,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
                     id={`license-authority-${index}`}
                     label="Issuing authority *"
                     required
+                    disabled={isReadOnly}
                     placeholder="Enter issuing authority"
                     error={licenseErrors?.issuingAuthority?.message}
                     {...register(`additionalLicenses.${index}.issuingAuthority`)}
@@ -246,14 +268,16 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
           })}
 
           {/* Add Another License Dashed Button */}
-          <button
-            type="button"
-            onClick={handleAddLicense}
-            className="w-full py-3.5 px-4 rounded-xl border border-dashed border-neutral-300 hover:border-neutral-400 bg-white hover:bg-neutral-50/50 text-secondary hover:text-primary text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ Add Another License</span>
-          </button>
+          {!isReadOnly && (
+            <Button
+              type="button"
+              onClick={handleAddLicense}
+              className="w-full py-3.5 px-4 rounded-xl border border-dashed border-neutral-300 hover:border-neutral-400 bg-white hover:bg-neutral-50/50 text-secondary hover:text-primary text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <Plus className="w-4 h-4" />
+              <span> Add Another License</span>
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -267,15 +291,28 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
         >
           ← Previous Step
         </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          isLoading={isSubmitting}
-          loadingText="Saving records..."
-          className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
-        >
-          Save and Continue →
-        </Button>
+        {isReadOnly ? (
+          onNextStep && (
+            <Button
+              type="button"
+              variant="primary"
+              onClick={onNextStep}
+              className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+            >
+              Next: Financial Information →
+            </Button>
+          )
+        ) : (
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={isSubmitting}
+            loadingText="Saving records..."
+            className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+          >
+            Save and Continue →
+          </Button>
+        )}
       </div>
     </form>
   );

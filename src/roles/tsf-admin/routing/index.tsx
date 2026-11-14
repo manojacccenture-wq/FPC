@@ -1,5 +1,6 @@
 import { Navigate, type RouteObject } from 'react-router-dom';
 import { TsfAdminLayout } from '../layout/TsfAdminLayout';
+import { RoleGuard } from '../../../shared/guards/RoleGuard';
 import { TsfAdminDashboardPage } from '../features/dashboard/pages/TsfAdminDashboardPage';
 import { OnboardNewFpcPage } from '../features/fpc-management/pages/OnboardNewFpcPage';
 import { FpcInviteDetailsPage } from '../features/fpc-management/pages/FpcInviteDetailsPage';
@@ -13,51 +14,56 @@ import { AdministrationPage } from '../features/administration/pages/Administrat
 
 export const tsfAdminRoutes: RouteObject = {
   path: 'admin',
-  element: <TsfAdminLayout />,
+  element: (
+    <RoleGuard allowedRoles={['TsfAdmin']} fallbackUrl="/fpc/dashboard">
+      <TsfAdminLayout />
+    </RoleGuard>
+  ),
   children: [
     {
       index: true,
-      element: <Navigate to="onboard" replace />
+      element: <Navigate to="onboard" replace />,
     },
     {
       path: 'onboard',
-      element: <OnboardNewFpcPage />
+      element: <OnboardNewFpcPage />,
     },
     {
       path: 'onboard/:id',
-      element: <FpcInviteDetailsPage />
+      element: <FpcInviteDetailsPage />,
     },
     {
       path: 'dashboard',
-      element: <TsfAdminDashboardPage />
+      element: <TsfAdminDashboardPage />,
     },
     {
       path: 'all-fpcs',
-      element: <AllFpcsPage />
+      element: <AllFpcsPage />,
     },
     {
       path: 'pending-approvals',
-      element: <PendingApprovalsPage />
+      element: <PendingApprovalsPage />,
     },
     {
       path: 'monitoring',
-      element: <MonitoringPage />
+      element: <MonitoringPage />,
     },
     {
       path: 'network-data',
-      element: <NetworkDataPage />
+      element: <NetworkDataPage />,
     },
     {
       path: 'analytics',
-      element: <AnalyticsMisPage />
+      element: <AnalyticsMisPage />,
     },
     {
       path: 'gallery',
-      element: <GalleryPage />
+      element: <GalleryPage />,
     },
     {
       path: 'administration',
-      element: <AdministrationPage />
-    }
-  ]
+      element: <AdministrationPage />,
+    },
+  ],
 };
+export default tsfAdminRoutes;

@@ -41,7 +41,24 @@ export interface InvitationValidationResult {
 export interface FpcDocumentPayload {
   documentType: string;
   fileName: string;
-  storagePath?: string;
+  /** Identifier returned by the upload endpoint; attaches the stored file. */
+  documentId?: string;
+  expiryDate?: string;
+}
+
+export interface UploadedFpcDocument {
+  documentId: string;
+  documentType: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  expiryDate?: string | null;
+}
+
+export interface UploadFpcDocumentRequest {
+  token: string;
+  documentType: string;
+  file: File;
   expiryDate?: string;
 }
 
@@ -65,6 +82,7 @@ export interface CompleteFpcInvitationRequest {
   state?: string;
   documents?: FpcDocumentPayload[];
   clientMutationId?: string;
+  registrationDataJson?: string;
 }
 
 export interface ApiResponse<T> {
@@ -112,6 +130,28 @@ export const fpcInvitationApi = baseApi.injectEndpoints({
       invalidatesTags: [TAG_TYPES.FpcInvitation],
     }),
 
+    /**
+     * Uploads the actual file bytes for an onboarding document. The browser sets the
+     * multipart boundary, so no Content-Type header is forced for this endpoint.
+     */
+    uploadDocument: builder.mutation<UploadedFpcDocument, UploadFpcDocumentRequest>({
+      query: ({ token, documentType, file, expiryDate }) => {
+        const body = new FormData();
+        body.append('documentType', documentType);
+        body.append('file', file, file.name);
+        if (expiryDate) {
+          body.append('expiryDate', expiryDate);
+        }
+
+        return {
+          url: `/fpc-invitations/${encodeURIComponent(token)}/documents`,
+          method: 'POST',
+          body,
+        };
+      },
+      transformResponse: (response: ApiResponse<UploadedFpcDocument>) => response.data,
+    }),
+
     completeFpcInvitation: builder.mutation<
       { success: boolean; message?: string },
       CompleteFpcInvitationRequest
@@ -133,6 +173,7 @@ export const {
   useValidateFpcInvitationQuery,
   useCreateFpcInvitationMutation,
   useRevokeFpcInvitationMutation,
+  useUploadDocumentMutation,
   useCompleteFpcInvitationMutation,
 } = fpcInvitationApi;
 

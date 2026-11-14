@@ -16,6 +16,8 @@ export interface FpcFinancialInformationFormProps {
   initialData?: Partial<FpcFinancialInformationFormData> | null;
   onSubmit: (values: FinancialInformationFormValues) => Promise<void> | void;
   onPreviousStep: () => void;
+  isReadOnly?: boolean;
+  onNextStep?: () => void;
 }
 
 const FINANCIAL_YEAR_OPTIONS = [
@@ -50,28 +52,37 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
   initialData,
   onSubmit,
   onPreviousStep,
+  isReadOnly = false,
+  onNextStep,
 }) => {
+  const defaultBankAccounts = isReadOnly
+    ? []
+    : [
+        {
+          id: 'bank-1',
+          bankName: '',
+          accountNumber: '',
+          ifscCode: '',
+          branchName: '',
+          accountType: 'Current',
+        },
+      ];
+
   const formValues: FinancialInformationFormValues = {
-    authorizedCapital: initialData?.authorizedCapital || '₹10,00,000',
-    paidUpCapital: initialData?.paidUpCapital || '₹6,00,000',
-    faceValuePerShare: initialData?.faceValuePerShare || '₹100',
-    annualTurnover: initialData?.annualTurnover || '₹15,00,000',
+    authorizedCapital: initialData?.authorizedCapital || '',
+    paidUpCapital: initialData?.paidUpCapital || '',
+    faceValuePerShare: initialData?.faceValuePerShare || '',
+    annualTurnover: initialData?.annualTurnover || '',
     financialYear: initialData?.financialYear || '2025-26',
-    farmers: initialData?.farmers || '120',
-    shareholders: initialData?.shareholders || '60',
-    employees: initialData?.employees || '6',
+    farmers: initialData?.farmers || '',
+    shareholders:
+      initialData?.shareholders && initialData.shareholders.trim() !== ''
+        ? initialData.shareholders
+        : '10',
+    employees: initialData?.employees || '',
     bankAccounts: initialData?.bankAccounts && initialData.bankAccounts.length > 0
       ? initialData.bankAccounts
-      : [
-          {
-            id: 'bank-1',
-            bankName: '',
-            accountNumber: '',
-            ifscCode: '',
-            branchName: '',
-            accountType: 'Current',
-          },
-        ],
+      : defaultBankAccounts,
   };
 
   // ZERO useEffect: initial values populated directly during component mount
@@ -115,9 +126,9 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
   // Dynamic Total Equity Shares calculation: Paid-up Capital ÷ Face Value
   const watchedPaidUp = useWatch({ control, name: 'paidUpCapital' }) || '';
   const watchedFaceValue = useWatch({ control, name: 'faceValuePerShare' }) || '';
-  const paidUpNum = parseFloat(watchedPaidUp.replace(/[^0-9.]/g, '')) || 600000;
-  const faceValueNum = parseFloat(watchedFaceValue.replace(/[^0-9.]/g, '')) || 100;
-  const calculatedShares = faceValueNum > 0 ? Math.floor(paidUpNum / faceValueNum) : 6000;
+  const paidUpNum = parseFloat(watchedPaidUp.replace(/[^0-9.]/g, '')) || 0;
+  const faceValueNum = parseFloat(watchedFaceValue.replace(/[^0-9.]/g, '')) || 0;
+  const calculatedShares = faceValueNum > 0 && paidUpNum > 0 ? Math.floor(paidUpNum / faceValueNum) : 0;
 
   return (
     <form onSubmit={submit} className="space-y-6" noValidate>
@@ -151,6 +162,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
             id="fpc-auth-capital"
             label="Authorized capital *"
             required
+            disabled={isReadOnly}
             placeholder="₹10,00,000"
             error={errors.authorizedCapital?.message}
             {...register('authorizedCapital')}
@@ -159,6 +171,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
             id="fpc-paid-capital"
             label="Paid-up capital *"
             required
+            disabled={isReadOnly}
             placeholder="₹6,00,000"
             error={errors.paidUpCapital?.message}
             {...register('paidUpCapital')}
@@ -169,6 +182,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
             id="fpc-face-value"
             label="Face value per share *"
             required
+            disabled={isReadOnly}
             placeholder="₹100"
             error={errors.faceValuePerShare?.message}
             {...register('faceValuePerShare')}
@@ -177,6 +191,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
             id="fpc-annual-turnover"
             label="Annual turnover *"
             required
+            disabled={isReadOnly}
             placeholder="₹15,00,000"
             error={errors.annualTurnover?.message}
             {...register('annualTurnover')}
@@ -191,6 +206,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
                 id="fpc-fin-year"
                 label="Financial year *"
                 required
+                disabled={isReadOnly}
                 options={FINANCIAL_YEAR_OPTIONS}
                 trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
                 error={errors.financialYear?.message}
@@ -204,6 +220,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
             id="fpc-farmers-count"
             label="Farmers *"
             required
+            disabled={isReadOnly}
             placeholder="120"
             error={errors.farmers?.message}
             {...register('farmers')}
@@ -214,7 +231,8 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
             id="fpc-shareholders-count"
             label="Shareholders *"
             required
-            placeholder="60"
+            disabled={isReadOnly}
+            placeholder="10"
             error={errors.shareholders?.message}
             {...register('shareholders')}
           />
@@ -222,6 +240,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
             id="fpc-employees-count"
             label="Employees *"
             required
+            disabled={isReadOnly}
             placeholder="6"
             error={errors.employees?.message}
             {...register('employees')}
@@ -247,6 +266,10 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
             Primary bank account details
           </h4>
 
+          {fields.length === 0 && isReadOnly && (
+            <p className="text-xs text-secondary italic">No bank accounts recorded.</p>
+          )}
+
           {fields.map((field, index) => {
             const accountErrors = errors.bankAccounts?.[index];
 
@@ -260,15 +283,17 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
                     <span className="text-xs font-semibold text-secondary">
                       Bank Account #{index + 1}
                     </span>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => remove(index)}
-                      className="h-7 px-4 rounded-lg text-xs font-semibold bg-[#8B2323] hover:bg-[#721C1C] text-white shadow-2xs"
-                    >
-                      Delete
-                    </Button>
+                    {!isReadOnly && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => remove(index)}
+                        className="h-7 px-4 rounded-lg text-xs font-semibold bg-[#8B2323] hover:bg-[#721C1C] text-white shadow-2xs"
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 )}
 
@@ -282,6 +307,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
                         id={`bank-name-${index}`}
                         label="Bank name *"
                         required
+                        disabled={isReadOnly}
                         options={BANK_NAME_OPTIONS}
                         placeholder="Select bank"
                         trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
@@ -296,6 +322,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
                     id={`bank-account-${index}`}
                     label="Account number *"
                     required
+                    disabled={isReadOnly}
                     placeholder="Enter account number"
                     error={accountErrors?.accountNumber?.message}
                     {...register(`bankAccounts.${index}.accountNumber`)}
@@ -308,6 +335,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
                     id={`bank-ifsc-${index}`}
                     label="IFSC code *"
                     required
+                    disabled={isReadOnly}
                     placeholder="Enter IFSC code"
                     error={accountErrors?.ifscCode?.message}
                     {...register(`bankAccounts.${index}.ifscCode`)}
@@ -316,6 +344,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
                     id={`bank-branch-${index}`}
                     label="Branch name *"
                     required
+                    disabled={isReadOnly}
                     placeholder="Enter branch name"
                     error={accountErrors?.branchName?.message}
                     {...register(`bankAccounts.${index}.branchName`)}
@@ -332,6 +361,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
                         id={`bank-type-${index}`}
                         label="Account type *"
                         required
+                        disabled={isReadOnly}
                         options={ACCOUNT_TYPE_OPTIONS}
                         trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
                         error={accountErrors?.accountType?.message}
@@ -347,14 +377,16 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
           })}
 
           {/* Add Bank Account Dashed Button */}
-          <button
-            type="button"
-            onClick={handleAddBankAccount}
-            className="w-full py-3.5 px-4 rounded-xl border border-dashed border-neutral-300 hover:border-neutral-400 bg-white hover:bg-neutral-50/50 text-secondary hover:text-primary text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ Add Bank Account</span>
-          </button>
+          {!isReadOnly && (
+            <Button
+              type="button"
+              onClick={handleAddBankAccount}
+              className="w-full py-3.5 px-4 rounded-xl border border-dashed border-neutral-300 hover:border-neutral-400 bg-white hover:bg-neutral-50/50 text-secondary hover:text-primary text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <Plus className="w-4 h-4" />
+              <span> Add Bank Account</span>
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -368,15 +400,28 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
         >
           ← Previous Step
         </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          isLoading={isSubmitting}
-          loadingText="Saving records..."
-          className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
-        >
-          Save and Continue →
-        </Button>
+        {isReadOnly ? (
+          onNextStep && (
+            <Button
+              type="button"
+              variant="primary"
+              onClick={onNextStep}
+              className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+            >
+              Next: Board of Directors →
+            </Button>
+          )
+        ) : (
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={isSubmitting}
+            loadingText="Saving records..."
+            className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+          >
+            Save and Continue →
+          </Button>
+        )}
       </div>
     </form>
   );

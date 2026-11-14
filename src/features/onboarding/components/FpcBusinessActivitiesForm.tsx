@@ -18,6 +18,8 @@ export interface FpcBusinessActivitiesFormProps {
   initialData?: Partial<FpcBusinessActivitiesFormData> | null;
   onSubmit: (values: BusinessActivitiesFormValues) => Promise<void> | void;
   onPreviousStep: () => void;
+  isReadOnly?: boolean;
+  onNextStep?: () => void;
 }
 
 const PRIMARY_ACTIVITY_OPTIONS: MultiSelectOption[] = [
@@ -60,7 +62,7 @@ const COMMODITIES_HANDLED_OPTIONS: MultiSelectOption[] = [
 ];
 
 const parseActivities = (val?: string[] | string | null): string[] => {
-  if (!val) return ['Produce Procurement'];
+  if (!val) return [];
   if (Array.isArray(val)) return val.filter(Boolean);
   if (typeof val === 'string') {
     const trimmed = val.trim();
@@ -82,7 +84,7 @@ const parseActivities = (val?: string[] | string | null): string[] => {
 };
 
 const parseCommodities = (val?: string[] | string | null): string[] => {
-  if (!val) return ['Produce procurement', 'Dairy & Livestock'];
+  if (!val) return [];
   if (Array.isArray(val)) return val.filter(Boolean);
   if (typeof val === 'string') {
     if (val.includes('/')) return val.split('/').map((s) => s.trim()).filter(Boolean);
@@ -96,17 +98,17 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
   initialData,
   onSubmit,
   onPreviousStep,
+  isReadOnly = false,
+  onNextStep,
 }) => {
   const formValues: BusinessActivitiesFormValues = {
     primaryActivity: parseActivities(initialData?.primaryActivity),
     operationalStatus: initialData?.operationalStatus || 'Operational',
     commencementDate: initialData?.commencementDate || '',
     commoditiesHandled: parseCommodities(initialData?.commoditiesHandled),
-    targetFarmers: initialData?.targetFarmers || '250',
-    villagesCovered: initialData?.villagesCovered || '15',
-    activityScope:
-      initialData?.activityScope ||
-      'Procurement, aggregation and marketing of paddy, maize, arhar and mustard across 15 villages, supporting 250 enrolled farmers.',
+    targetFarmers: initialData?.targetFarmers || '',
+    villagesCovered: initialData?.villagesCovered || '',
+    activityScope: initialData?.activityScope || '',
   };
 
   // ZERO useEffect: initial values populated directly during component mount
@@ -167,6 +169,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
                 id="fpc-primary-activity"
                 label="Primary business activity *"
                 required
+                disabled={isReadOnly}
                 trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
                 placeholder="Select primary business activities..."
                 options={PRIMARY_ACTIVITY_OPTIONS}
@@ -185,6 +188,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
                 id="fpc-operational-status"
                 label="Operational status *"
                 required
+                disabled={isReadOnly}
                 options={OPERATIONAL_STATUS_OPTIONS}
                 trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
                 error={errors.operationalStatus?.message}
@@ -204,6 +208,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
                 id="fpc-commencement-date"
                 label="Date of commencement *"
                 required
+                disabled={isReadOnly}
                 placeholder="dd-mm-yyyy"
                 error={errors.commencementDate?.message}
                 value={field.value}
@@ -220,6 +225,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
                 id="fpc-commodities-handled"
                 label="Commodities handled *"
                 required
+                disabled={isReadOnly}
                 leadingIcon={<Search className="w-4 h-4 text-secondary" />}
                 trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
                 placeholder="Select commodities handled..."
@@ -237,6 +243,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
             id="fpc-target-farmers"
             label="Target farmers enrolment *"
             required
+            disabled={isReadOnly}
             placeholder="250"
             error={errors.targetFarmers?.message}
             {...register('targetFarmers')}
@@ -245,6 +252,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
             id="fpc-villages-covered"
             label="Villages covered *"
             required
+            disabled={isReadOnly}
             placeholder="15"
             error={errors.villagesCovered?.message}
             {...register('villagesCovered')}
@@ -256,7 +264,8 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
               id="fpc-activity-scope"
               label="Activity scope & operational description *"
               required
-              placeholder="Procurement, aggregation and marketing of paddy, maize, arhar and mustard across 15 villages, supporting 250 enrolled farmers."
+              disabled={isReadOnly}
+              placeholder="Procurement, aggregation and marketing of commodities across target villages."
               error={errors.activityScope?.message}
               {...register('activityScope')}
             />
@@ -274,15 +283,28 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
         >
           ← Previous Step
         </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          isLoading={isSubmitting}
-          loadingText="Saving activities..."
-          className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
-        >
-          Save and Continue →
-        </Button>
+        {isReadOnly ? (
+          onNextStep && (
+            <Button
+              type="button"
+              variant="primary"
+              onClick={onNextStep}
+              className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+            >
+              Next: Final Review →
+            </Button>
+          )
+        ) : (
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={isSubmitting}
+            loadingText="Saving activities..."
+            className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+          >
+            Save and Continue →
+          </Button>
+        )}
       </div>
     </form>
   );

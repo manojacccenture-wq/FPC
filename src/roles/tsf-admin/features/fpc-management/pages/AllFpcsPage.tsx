@@ -22,7 +22,7 @@ export const AllFpcsPage: React.FC = () => {
 
   const directoryItems: FpcDirectoryItem[] = liveFpcs.map((fpc) => ({
     id: fpc.id,
-    cin: fpc.cin,
+    cin: fpc.cin ?? '',
     name: fpc.name,
     state: fpc.state,
     district: fpc.district,

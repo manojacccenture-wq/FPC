@@ -61,6 +61,13 @@ export const WIZARD_STEPS: WizardStepItem[] = [
     fieldCountSummary: '7 fields',
     countBadge: '7',
   },
+  {
+    step: 8,
+    badgeNumber: '08',
+    title: 'Final review & submission',
+    fieldCountSummary: 'Review all 7 sections',
+    countBadge: 'Review',
+  },
 ];
 
 export interface FpcWizardStepSidebarProps {

@@ -92,10 +92,10 @@ export const OnboardNewFpcPage: React.FC = () => {
       isRegisteredFpc: true,
     });
     return {
-      id: fpc.code || fpc.cin,
+      id: fpc.code || fpc.cin || fpc.id,
       recordType: 'fpc',
       fpcId: fpc.id,
-      cin: fpc.cin,
+      cin: fpc.cin ?? '',
       name: fpc.name,
       location: fpc.location,
       farmers: fpc.farmersCount,

@@ -14,7 +14,7 @@ function getCookie(name: string): string | null {
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: API_BASE_URL,
   credentials: 'include', // Automatically sends HttpOnly cookies (__Host-fpc-access, __Secure-fpc-refresh)
-  prepareHeaders: (headers, { getState, endpoint }) => {
+  prepareHeaders: (headers, { getState, endpoint, extra }) => {
     // 1. Attach CSRF token on mutating requests if present in document.cookie
     const xsrfToken = getCookie('XSRF-TOKEN');
     if (xsrfToken) {
@@ -30,7 +30,8 @@ const rawBaseQuery = fetchBaseQuery({
       endpoint === 'createFpcInvitation' ||
       endpoint === 'getFpcInvitations' ||
       endpoint === 'getFpcInvitationById' ||
-      endpoint === 'revokeFpcInvitation';
+      endpoint === 'revokeFpcInvitation' ||
+      endpoint === 'uploadDocument';
 
     if (activeFpcId && !isPlatformOrInvitation) {
       headers.set('X-Active-Fpc-Id', activeFpcId);
@@ -41,8 +42,13 @@ const rawBaseQuery = fetchBaseQuery({
       headers.set('Accept', 'application/json');
     }
 
-    // Prevent overriding Content-Type for FormData uploads
-    if (endpoint !== 'uploadDocument' && !headers.has('Content-Type')) {
+    // Prevent overriding Content-Type for FormData uploads (allows browser to set multipart boundary)
+    const isFormData =
+      (extra as { isFormData?: boolean })?.isFormData ||
+      endpoint === 'uploadDocument' ||
+      endpoint === 'uploadFpcDocument';
+
+    if (!isFormData && !headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
     }
 
@@ -58,7 +64,18 @@ export const baseQueryWithReauth: BaseQueryFn<
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
-  let result = await rawBaseQuery(args, api, extraOptions);
+  const isFormData =
+    typeof args === 'object' &&
+    args !== null &&
+    'body' in args &&
+    typeof FormData !== 'undefined' &&
+    args.body instanceof FormData;
+
+  const mergedExtra = isFormData
+    ? { ...((extraOptions as Record<string, unknown>) || {}), isFormData: true }
+    : extraOptions;
+
+  let result = await rawBaseQuery(args, api, mergedExtra);
 
   // If 401 Unauthorized occurs and not already on the refresh/login endpoint, attempt token refresh
   if (result.error && result.error.status === 401) {
@@ -86,7 +103,7 @@ export const baseQueryWithReauth: BaseQueryFn<
           method: 'POST',
         },
         api,
-        extraOptions
+        mergedExtra
       );
 
       if (refreshResult.data) {
@@ -97,7 +114,7 @@ export const baseQueryWithReauth: BaseQueryFn<
           );
         }
         // Retry the original query now that cookies are refreshed
-        result = await rawBaseQuery(args, api, extraOptions);
+        result = await rawBaseQuery(args, api, mergedExtra);
       } else {
         // Refresh token expired or revoked - trigger client-side logout
         api.dispatch({ type: 'auth/loggedOut' });

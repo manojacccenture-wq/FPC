@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAppSelector } from '../../app/store/hooks';
+import { ChangePasswordModal } from '../../features/auth/components/ChangePasswordModal';
 
 export interface AuthGuardProps {
   isAuthenticated?: boolean;
@@ -19,9 +20,10 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   fallback = null,
   children,
 }) => {
-  const { isAuthenticated, isInitialized } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, isInitialized, mustChangePassword, currentUser } = useAppSelector((state) => state.auth);
 
   const effectiveAuth = propIsAuthenticated !== undefined ? propIsAuthenticated : isAuthenticated;
+  const requiresPasswordChange = Boolean(mustChangePassword ?? currentUser?.mustChangePassword);
 
   // If session is still verifying on initial application mount, wait for gate completion
   if (!isInitialized) {
@@ -32,5 +34,10 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     return <Navigate to={redirectPath} replace />;
   }
 
-  return children ? <>{children}</> : <Outlet />;
+  return (
+    <>
+      {requiresPasswordChange && <ChangePasswordModal isOpen={true} />}
+      {children ? <>{children}</> : <Outlet />}
+    </>
+  );
 };

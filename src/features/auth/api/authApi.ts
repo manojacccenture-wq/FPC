@@ -29,6 +29,11 @@ export interface SwitchFpcRequest {
   targetFpcId: string;
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -103,6 +108,15 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Auth'],
     }),
+
+    changePassword: builder.mutation<ApiResponse<CurrentUserProfile>, ChangePasswordRequest>({
+      query: (body) => ({
+        url: '/auth/change-password',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Auth'],
+    }),
   }),
   overrideExisting: false,
 });
@@ -116,5 +130,6 @@ export const {
   useRefreshTokenMutation,
   useSwitchFpcMutation,
   useLogoutMutation,
+  useChangePasswordMutation,
 } = authApi;
 

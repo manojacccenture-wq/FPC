@@ -91,8 +91,11 @@ export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
           onSuccessLogin(userProfile.activeRoleCode || 'TSF Admin');
         }
 
-        // Navigate directly to the TSF Admin onboard page
-        navigate('/admin/onboard');
+        // Navigate role-aware directly to the authorized workspace
+        const targetRoute = userProfile.activeRoleCode === 'FpcAdmin'
+          ? '/fpc/dashboard'
+          : '/admin/onboard';
+        navigate(targetRoute, { replace: true });
       } else {
         setErrorMessage(response.message || 'Authentication failed. Please verify your credentials.');
       }

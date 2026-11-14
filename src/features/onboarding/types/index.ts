@@ -82,6 +82,8 @@ export interface FpcBoardOfDirectorsFormData {
 }
 
 export interface FpcLogoDocumentsFormData {
+  /** Upload endpoint document IDs keyed by step-5 field name. Never stores File objects. */
+  documentIds?: Record<string, string>;
   logoFileName?: string;
   incorporationCertName?: string;
   panCertName?: string;

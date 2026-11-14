@@ -16,6 +16,8 @@ export interface FpcAddressLocationFormProps {
   initialData?: Partial<FpcAddressLocationFormData> | null;
   onSubmit: (values: AddressLocationFormValues) => Promise<void> | void;
   onPreviousStep: () => void;
+  isReadOnly?: boolean;
+  onNextStep?: () => void;
 }
 
 const STATE_OPTIONS = [
@@ -59,6 +61,8 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
   initialData,
   onSubmit,
   onPreviousStep,
+  isReadOnly = false,
+  onNextStep,
 }) => {
   const formValues: AddressLocationFormValues = {
     streetAddress: initialData?.streetAddress || '',
@@ -68,8 +72,8 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
     gramPanchayat: initialData?.gramPanchayat || '',
     village: initialData?.village || '',
     pinCode: initialData?.pinCode || '',
-    officeMobile: initialData?.officeMobile || '+91 9437890123',
-    officialEmail: initialData?.officialEmail || 'admin@kalinganagarfpc.in',
+    officeMobile: initialData?.officeMobile || '',
+    officialEmail: initialData?.officialEmail || '',
     latitude: initialData?.latitude || '',
     longitude: initialData?.longitude || '',
   };
@@ -135,6 +139,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             id="fpc-street-address"
             label="Registered office street address *"
             required
+            disabled={isReadOnly}
             placeholder="Enter registered office address"
             error={errors.streetAddress?.message}
             {...register('streetAddress')}
@@ -147,6 +152,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
                 id="fpc-state"
                 label="State *"
                 required
+                disabled={isReadOnly}
                 options={STATE_OPTIONS}
                 trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
                 error={errors.state?.message}
@@ -166,6 +172,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
                 id="fpc-district"
                 label="District *"
                 required
+                disabled={isReadOnly}
                 options={DISTRICT_OPTIONS}
                 trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
                 error={errors.district?.message}
@@ -183,6 +190,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
                 id="fpc-block"
                 label="Block *"
                 required
+                disabled={isReadOnly}
                 options={BLOCK_OPTIONS}
                 trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
                 error={errors.block?.message}
@@ -202,6 +210,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
                 id="fpc-gp"
                 label="Gram Panchayat *"
                 required
+                disabled={isReadOnly}
                 options={GRAM_PANCHAYAT_OPTIONS}
                 placeholder="Select Gram Panchayat"
                 trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
@@ -220,6 +229,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
                 id="fpc-village"
                 label="Village *"
                 required
+                disabled={isReadOnly}
                 options={VILLAGE_OPTIONS}
                 placeholder="Select village"
                 trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
@@ -236,6 +246,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             id="fpc-pincode"
             label="PIN code *"
             required
+            disabled={isReadOnly}
             placeholder="Enter PIN code"
             helperText="6 digits"
             error={errors.pinCode?.message}
@@ -246,6 +257,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             type="tel"
             label="Office mobile number *"
             required
+            disabled={isReadOnly}
             placeholder="+91 9437890123"
             error={errors.officeMobile?.message}
             {...register('officeMobile')}
@@ -257,6 +269,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             type="email"
             label="Official email address *"
             required
+            disabled={isReadOnly}
             placeholder="admin@kalinganagarfpc.in"
             error={errors.officialEmail?.message}
             {...register('officialEmail')}
@@ -264,6 +277,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
           <Input
             id="fpc-latitude"
             label="Latitude"
+            disabled={isReadOnly}
             placeholder="Enter latitude"
             helperText="Optional"
             error={errors.latitude?.message}
@@ -275,6 +289,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             <Input
               id="fpc-longitude"
               label="Longitude"
+              disabled={isReadOnly}
               placeholder="Enter longitude"
               helperText="Optional"
               error={errors.longitude?.message}
@@ -294,15 +309,28 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
         >
           ← Previous Step
         </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          isLoading={isSubmitting}
-          loadingText="Saving location..."
-          className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
-        >
-          Save and Continue →
-        </Button>
+        {isReadOnly ? (
+          onNextStep && (
+            <Button
+              type="button"
+              variant="primary"
+              onClick={onNextStep}
+              className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+            >
+              Next: Business Activities →
+            </Button>
+          )
+        ) : (
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={isSubmitting}
+            loadingText="Saving location..."
+            className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+          >
+            Save and Continue →
+          </Button>
+        )}
       </div>
     </form>
   );

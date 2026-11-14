@@ -14,7 +14,9 @@ export interface FpcBasicDetailsFormProps {
   invitation: FpcInvitation;
   initialData?: Partial<FpcBasicDetailsFormData> | null;
   onSubmit: (values: BasicDetailsFormValues) => Promise<void> | void;
-  onBackToLogin: () => void;
+  onBackToLogin?: () => void;
+  isReadOnly?: boolean;
+  onNextStep?: () => void;
 }
 
 const ROC_OFFICES = [
@@ -49,6 +51,8 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
   initialData,
   onSubmit,
   onBackToLogin,
+  isReadOnly = false,
+  onNextStep,
 }) => {
   const defaultRoc = invitation.state === 'Odisha' ? 'ROC Cuttack' : 'ROC Kolkata';
   const formValues: BasicDetailsFormValues = {
@@ -117,6 +121,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             id="fpc-legal-name"
             label="FPC legal name *"
             required
+            disabled={isReadOnly}
             placeholder="Kalinganagar Farmer Producer Company Ltd."
             error={errors.legalName?.message}
             {...register('legalName')}
@@ -125,6 +130,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             id="fpc-cin"
             label="CIN *"
             required
+            disabled={isReadOnly}
             placeholder="U01100OD2026PTC000001"
             helperText="21 alphanumeric characters"
             error={errors.cin?.message}
@@ -136,6 +142,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             id="fpc-reg-number"
             label="FPC registration number *"
             required
+            disabled={isReadOnly}
             placeholder="000001"
             error={errors.registrationNumber?.message}
             {...register('registrationNumber')}
@@ -148,6 +155,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
                 id="fpc-roc-office"
                 label="ROC office *"
                 required
+                disabled={isReadOnly}
                 options={ROC_OFFICES}
                 placeholder="Select ROC office"
                 trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
@@ -168,6 +176,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
                 id="fpc-date-incorporation"
                 label="Date of incorporation *"
                 required
+                disabled={isReadOnly}
                 placeholder="dd-mm-yyyy"
                 error={errors.dateOfIncorporation?.message}
                 value={field.value}
@@ -184,6 +193,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
                 id="fpc-company-category"
                 label="Company category *"
                 required
+                disabled={isReadOnly}
                 options={COMPANY_CATEGORIES}
                 helperText="Producer Company under Section 378A of CA 2013"
                 trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
@@ -202,6 +212,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             label="Official contact email *"
             required
             readOnly
+            disabled={isReadOnly}
             helperText="Read-only • Provided in your invitation"
             error={errors.contactEmail?.message}
             {...register('contactEmail')}
@@ -212,6 +223,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             label="Official contact mobile *"
             required
             readOnly
+            disabled={isReadOnly}
             helperText="Read-only • Provided in your invitation"
             error={errors.contactMobile?.message}
             {...register('contactMobile')}
@@ -223,6 +235,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
               id="fpc-website"
               type="url"
               label="Official website"
+              disabled={isReadOnly}
               placeholder="https://kalinganagarfpc.in"
               helperText="Optional"
               error={errors.website?.message}
@@ -234,23 +247,40 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
 
       {/* Bottom Action Bar */}
       <div className="flex items-center justify-end gap-3 pt-2">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onBackToLogin}
-          className="rounded-full bg-brand-soft text-brand hover:bg-forest-100 px-6 py-2.5 text-xs font-semibold"
-        >
-          Back to Login
-        </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          isLoading={isSubmitting}
-          loadingText="Saving details..."
-          className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
-        >
-          Save and Continue →
-        </Button>
+        {isReadOnly ? (
+          onNextStep && (
+            <Button
+              type="button"
+              variant="primary"
+              onClick={onNextStep}
+              className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+            >
+              Next: Legal & Registration →
+            </Button>
+          )
+        ) : (
+          <>
+            {onBackToLogin && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onBackToLogin}
+                className="rounded-full bg-brand-soft text-brand hover:bg-forest-100 px-6 py-2.5 text-xs font-semibold"
+              >
+                Back to Login
+              </Button>
+            )}
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={isSubmitting}
+              loadingText="Saving details..."
+              className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+            >
+              Save and Continue →
+            </Button>
+          </>
+        )}
       </div>
     </form>
   );

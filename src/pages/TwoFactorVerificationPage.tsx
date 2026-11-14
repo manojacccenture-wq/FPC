@@ -23,7 +23,7 @@ function maskEmail(email: string): string {
 export const TwoFactorVerificationPage: FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { pendingTwoFactor, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { pendingTwoFactor, isAuthenticated, activeRole } = useAppSelector((state) => state.auth);
 
   const [verifyTwoFactor, { isLoading: isVerifying }] = useVerifyTwoFactorMutation();
   const [resendTwoFactor, { isLoading: isResending }] = useResendTwoFactorMutation();
@@ -37,9 +37,10 @@ export const TwoFactorVerificationPage: FC = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/admin/onboard', { replace: true });
+      const target = activeRole === 'FpcAdmin' ? '/fpc/dashboard' : '/admin/onboard';
+      navigate(target, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, activeRole, navigate]);
 
   // Redirect to login if no pending 2FA challenge is present
   useEffect(() => {
@@ -96,8 +97,11 @@ export const TwoFactorVerificationPage: FC = () => {
 
         dispatch(clearPendingTwoFactor());
 
-        // Redirect to admin landing page
-        navigate('/admin/onboard', { replace: true });
+        // Redirect to role-aware landing page
+        const targetRoute = response.data.activeRoleCode === 'FpcAdmin'
+          ? '/fpc/dashboard'
+          : '/admin/onboard';
+        navigate(targetRoute, { replace: true });
       } else {
         setErrorMessage(response.message || 'Verification failed. Please check the code and try again.');
       }

@@ -23,6 +23,7 @@ export interface FpcFinalReviewFormProps {
   onPreviousStep: () => void;
   onSubmit: () => Promise<void> | void;
   isSubmitting?: boolean;
+  isReadOnly?: boolean;
 }
 
 interface ReviewSectionItem {
@@ -42,13 +43,14 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
   onPreviousStep,
   onSubmit,
   isSubmitting = false,
+  isReadOnly = false,
 }) => {
   const sections: ReviewSectionItem[] = [
     {
       step: 1,
       badge: '01',
       title: 'Basic company details',
-      summary: `${step1Data?.legalName || 'Kalinganagar Farmer Producer Company Ltd.'} • ${step1Data?.rocOffice || 'ROC Cuttack'}`,
+      summary: `${step1Data?.legalName || 'Company name pending'}${step1Data?.rocOffice ? ` • ${step1Data.rocOffice}` : ''}`,
     },
     {
       step: 2,
@@ -60,13 +62,13 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
       step: 3,
       badge: '03',
       title: 'Financial information',
-      summary: `${step3Data?.authorizedCapital || '₹10,00,000'} authorized • ${step3Data?.paidUpCapital || '₹6,00,000'} paid up • 6,000 shares`,
+      summary: `${step3Data?.authorizedCapital ? `${step3Data.authorizedCapital} authorized` : 'Financial details pending'}${step3Data?.paidUpCapital ? ` • ${step3Data.paidUpCapital} paid up` : ''}`,
     },
     {
       step: 4,
       badge: '04',
       title: 'Board of directors',
-      summary: `Total entered: ${step4Data?.directors?.length || 5} • Managing Director ${step4Data?.directors?.[0]?.fullName || 'Subhashree Jena'}`,
+      summary: `Total entered: ${step4Data?.directors?.length || 0}${step4Data?.directors?.[0]?.fullName ? ` • ${step4Data.directors[0].fullName}` : ''}`,
     },
     {
       step: 5,
@@ -78,7 +80,7 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
       step: 6,
       badge: '06',
       title: 'Address & location',
-      summary: `${step6Data?.block || 'Jajpur Sadar'}, ${step6Data?.district || 'Jajpur'}, ${step6Data?.state || 'Odisha'}`,
+      summary: [step6Data?.block, step6Data?.district, step6Data?.state].filter(Boolean).join(', ') || 'Address details pending',
     },
     {
       step: 7,
@@ -87,11 +89,11 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
       summary: `${
         Array.isArray(step7Data?.primaryActivity)
           ? step7Data.primaryActivity.join(', ')
-          : (step7Data?.primaryActivity || 'Produce Procurement')
-      } • ${
-        Array.isArray(step7Data?.commoditiesHandled)
-          ? step7Data.commoditiesHandled.join(', ')
-          : (step7Data?.commoditiesHandled || 'Paddy, Maize, Arhar, Mustard')
+          : (step7Data?.primaryActivity || 'Primary activity pending')
+      }${
+        step7Data?.commoditiesHandled?.length
+          ? ` • ${Array.isArray(step7Data?.commoditiesHandled) ? step7Data.commoditiesHandled.join(', ') : step7Data.commoditiesHandled}`
+          : ''
       }`,
     },
   ];
@@ -143,9 +145,9 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
               <button
                 type="button"
                 onClick={() => onEditStep(section.step)}
-                className="rounded-full bg-[#E8F5E9] hover:bg-[#D7EEDF] text-[#0F4C36] px-4 py-1.5 font-semibold select-none flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                className="rounded-full bg-[#E8F5E9] hover:bg-[#D7EEDF] text-[#0F4C36] px-4 py-1.5 font-semibold select-none flex items-center gap-1 cursor-pointer transition-colors shrink-0 text-xs"
               >
-                <span>Edit</span>
+                <span>{isReadOnly ? 'View' : 'Edit'}</span>
                 <span>→</span>
               </button>
             </div>
@@ -174,18 +176,20 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
           onClick={onPreviousStep}
           className="rounded-full bg-brand-soft text-brand hover:bg-forest-100 px-6 py-2.5 text-xs font-semibold"
         >
-          Previous Step
+          ← Previous Step
         </Button>
-        <Button
-          type="button"
-          variant="primary"
-          onClick={onSubmit}
-          isLoading={isSubmitting}
-          loadingText="Submitting..."
-          className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
-        >
-          Submit Onboarding
-        </Button>
+        {!isReadOnly && (
+          <Button
+            type="button"
+            variant="primary"
+            onClick={onSubmit}
+            isLoading={isSubmitting}
+            loadingText="Submitting..."
+            className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+          >
+            Submit Onboarding
+          </Button>
+        )}
       </div>
     </div>
   );

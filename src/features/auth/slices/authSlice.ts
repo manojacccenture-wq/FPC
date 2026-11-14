@@ -8,6 +8,7 @@ export interface UserMembership {
   roleName: string;
   roleCode: string;
   isActive: boolean;
+  logoUrl?: string | null;
 }
 
 export interface CurrentUserProfile {
@@ -21,6 +22,10 @@ export interface CurrentUserProfile {
   activeRoleCode: string | null;
   permissions: string[];
   memberships: UserMembership[];
+  mustChangePassword?: boolean;
+  activeFpcLogoUrl?: string | null;
+  workspaceTitle?: string | null;
+  organizationName?: string | null;
 }
 
 export interface PendingTwoFactorChallenge {
@@ -34,9 +39,11 @@ export interface AuthState {
   currentUser: CurrentUserProfile | null;
   activeFpcId: string | null;
   activeRole: string | null;
+  activeFpcLogoUrl: string | null;
   availableMemberships: UserMembership[];
   isInitialized: boolean;
   pendingTwoFactor: PendingTwoFactorChallenge | null;
+  mustChangePassword?: boolean;
 }
 
 const PENDING_2FA_STORAGE_KEY = 'fpc_pending_2fa';
@@ -74,6 +81,7 @@ const initialState: AuthState = {
   currentUser: null,
   activeFpcId: null,
   activeRole: null,
+  activeFpcLogoUrl: null,
   availableMemberships: [],
   isInitialized: false,
   pendingTwoFactor: getStoredPending2Fa(),
@@ -104,10 +112,18 @@ export const authSlice = createSlice({
       state.currentUser = action.payload.user;
       state.activeFpcId = action.payload.activeFpcId ?? action.payload.user.activeFpcId ?? null;
       state.activeRole = action.payload.activeRole ?? action.payload.user.activeRoleCode ?? null;
+      state.activeFpcLogoUrl = action.payload.user.activeFpcLogoUrl ?? null;
       state.availableMemberships = action.payload.memberships ?? action.payload.user.memberships ?? [];
+      state.mustChangePassword = action.payload.user.mustChangePassword ?? false;
       state.isInitialized = true;
       state.pendingTwoFactor = null;
       persistPending2Fa(null);
+    },
+    passwordChanged: (state) => {
+      state.mustChangePassword = false;
+      if (state.currentUser) {
+        state.currentUser.mustChangePassword = false;
+      }
     },
     setActiveFpc: (
       state,
@@ -124,11 +140,20 @@ export const authSlice = createSlice({
         );
         if (matchedMembership) {
           state.currentUser.activeFpcName = matchedMembership.fpcName;
+          state.currentUser.organizationName = matchedMembership.fpcName;
           if (matchedMembership.roleCode) {
             state.currentUser.activeRoleCode = matchedMembership.roleCode;
             state.activeRole = matchedMembership.roleCode;
           }
+          state.currentUser.activeFpcLogoUrl = matchedMembership.logoUrl ?? null;
+          state.activeFpcLogoUrl = matchedMembership.logoUrl ?? null;
+        } else {
+          // If no matching membership, clear logo so previous FPC's logo is never retained
+          state.currentUser.activeFpcLogoUrl = null;
+          state.activeFpcLogoUrl = null;
         }
+      } else {
+        state.activeFpcLogoUrl = null;
       }
     },
     loggedOut: (state) => {
@@ -136,6 +161,7 @@ export const authSlice = createSlice({
       state.currentUser = null;
       state.activeFpcId = null;
       state.activeRole = null;
+      state.activeFpcLogoUrl = null;
       state.availableMemberships = [];
       state.isInitialized = true;
       state.pendingTwoFactor = null;
@@ -151,6 +177,7 @@ export const {
   setPendingTwoFactor,
   clearPendingTwoFactor,
   setCredentials,
+  passwordChanged,
   setActiveFpc,
   loggedOut,
   setInitialized,

@@ -7,7 +7,7 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, X } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { parseDateString, getStartOfToday } from '../utils/date';
 import { FormField } from './FormField';
@@ -165,6 +165,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const preventOpenOnFocusRef = useRef(false);
 
   // Sync combined ref for React Hook Form without Proxy
   const setCombinedRef = useCallback(
@@ -254,8 +255,79 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(({
     const formatted = formatDateToDMY(date);
     emitValueChange(formatted, date);
     setIsOpen(false);
+
+    // Prevent programmatic focus from triggering onFocus and reopening popup
+    preventOpenOnFocusRef.current = true;
     inputRef.current?.focus();
+    setTimeout(() => {
+      preventOpenOnFocusRef.current = false;
+    }, 100);
   };
+
+  // Dynamic available years based on minDate, maxDate, selectedDate, and current year
+  const yearOptions = useMemo(() => {
+    const currentYear = today.getFullYear();
+    const explicitMinYear = parsedMinDate ? parsedMinDate.getFullYear() : currentYear - 75;
+    const explicitMaxYear = parsedMaxDate ? parsedMaxDate.getFullYear() : currentYear + 25;
+
+    const minYear = selectedDate ? Math.min(explicitMinYear, selectedDate.getFullYear()) : explicitMinYear;
+    const maxYear = selectedDate ? Math.max(explicitMaxYear, selectedDate.getFullYear()) : explicitMaxYear;
+
+    const years: number[] = [];
+    for (let y = minYear; y <= maxYear; y++) {
+      years.push(y);
+    }
+    return years;
+  }, [today, parsedMinDate, parsedMaxDate, selectedDate]);
+
+  // Check if a specific month is disabled in a given year
+  const isMonthDisabled = useCallback(
+    (monthIndex: number, year: number): boolean => {
+      if (parsedMinDate) {
+        const minYear = parsedMinDate.getFullYear();
+        const minMonth = parsedMinDate.getMonth();
+        if (year < minYear) return true;
+        if (year === minYear && monthIndex < minMonth) return true;
+      }
+      if (parsedMaxDate) {
+        const maxYear = parsedMaxDate.getFullYear();
+        const maxMonth = parsedMaxDate.getMonth();
+        if (year > maxYear) return true;
+        if (year === maxYear && monthIndex > maxMonth) return true;
+      }
+      return false;
+    },
+    [parsedMinDate, parsedMaxDate]
+  );
+
+  const handleYearSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextYear = Number(e.target.value);
+    setViewYear(nextYear);
+
+    // If current viewMonth is invalid in new year, automatically clamp to nearest valid month
+    if (parsedMinDate && nextYear === parsedMinDate.getFullYear() && viewMonth < parsedMinDate.getMonth()) {
+      setViewMonth(parsedMinDate.getMonth());
+    } else if (parsedMaxDate && nextYear === parsedMaxDate.getFullYear() && viewMonth > parsedMaxDate.getMonth()) {
+      setViewMonth(parsedMaxDate.getMonth());
+    }
+  };
+
+  const handleMonthSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextMonth = Number(e.target.value);
+    setViewMonth(nextMonth);
+  };
+
+  const isPrevMonthDisabled = useMemo(() => {
+    if (!parsedMinDate) return false;
+    const prevMonthLastDay = new Date(viewYear, viewMonth, 0);
+    return prevMonthLastDay < parsedMinDate;
+  }, [viewYear, viewMonth, parsedMinDate]);
+
+  const isNextMonthDisabled = useMemo(() => {
+    if (!parsedMaxDate) return false;
+    const nextMonthFirstDay = new Date(viewYear, viewMonth + 1, 1);
+    return nextMonthFirstDay > parsedMaxDate;
+  }, [viewYear, viewMonth, parsedMaxDate]);
 
   // Month navigation
   const handlePrevMonth = (e: React.MouseEvent) => {
@@ -417,7 +489,10 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(({
             onChange?.(e);
           }}
           onClick={() => !disabled && setIsOpen(true)}
-          onFocus={() => !disabled && setIsOpen(true)}
+          onFocus={() => {
+            if (preventOpenOnFocusRef.current) return;
+            if (!disabled) setIsOpen(true);
+          }}
           onKeyDown={handleKeyDown}
           onBlur={onBlur}
           className={cn(
@@ -472,26 +547,60 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(({
           aria-label="Calendar"
           className="absolute left-0 top-full mt-2 z-50 bg-white rounded-3xl border border-neutral-200/90 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.12)] p-5 w-[320px] max-w-full select-none animate-in fade-in-50 duration-150"
         >
-          {/* Header Row: Prev Month Button, Month & Year Title, Next Month Button */}
+          {/* Header Row: Prev Month Button, Direct Month & Year Selectors, Next Month Button */}
           <div className="flex items-center justify-between mb-5">
             <button
               type="button"
               aria-label="Previous month"
               onClick={handlePrevMonth}
-              className="p-1.5 rounded-full hover:bg-[#F4F6F5] text-[#0F4C36] transition-colors cursor-pointer"
+              disabled={isPrevMonthDisabled}
+              className="p-1.5 rounded-full hover:bg-[#F4F6F5] text-[#0F4C36] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-5 h-5 stroke-[2.2]" />
             </button>
 
-            <span className="text-base font-semibold text-[#0E1B16] tracking-tight">
-              {MONTH_NAMES[viewMonth]} {viewYear}
-            </span>
+            <div className="flex items-center gap-1.5">
+              {/* Direct Month Selector */}
+              <div className="relative inline-flex items-center">
+                <select
+                  aria-label="Select month"
+                  value={viewMonth}
+                  onChange={handleMonthSelectChange}
+                  className="appearance-none bg-transparent hover:bg-[#F4F6F5] text-[#0E1B16] font-semibold text-sm sm:text-base py-1 pl-2 pr-6 rounded-lg cursor-pointer transition-colors outline-none focus:ring-1 focus:ring-brand"
+                >
+                  {MONTH_NAMES.map((month, idx) => (
+                    <option key={month} value={idx} disabled={isMonthDisabled(idx, viewYear)}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-1.5 pointer-events-none" />
+              </div>
+
+              {/* Direct Year Selector */}
+              <div className="relative inline-flex items-center">
+                <select
+                  aria-label="Select year"
+                  value={viewYear}
+                  onChange={handleYearSelectChange}
+                  className="appearance-none bg-transparent hover:bg-[#F4F6F5] text-[#0E1B16] font-semibold text-sm sm:text-base py-1 pl-2 pr-6 rounded-lg cursor-pointer transition-colors outline-none focus:ring-1 focus:ring-brand"
+                >
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-1.5 pointer-events-none" />
+              </div>
+            </div>
 
             <button
               type="button"
               aria-label="Next month"
               onClick={handleNextMonth}
-              className="p-1.5 rounded-full hover:bg-[#F4F6F5] text-[#0F4C36] transition-colors cursor-pointer"
+              disabled={isNextMonthDisabled}
+              className="p-1.5 rounded-full hover:bg-[#F4F6F5] text-[#0F4C36] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronRight className="w-5 h-5 stroke-[2.2]" />
             </button>
