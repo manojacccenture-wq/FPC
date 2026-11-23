@@ -7,7 +7,7 @@ import { useLoginMutation } from '../features/auth/api/authApi';
 import { useAppDispatch } from '../app/store/hooks';
 import { setCredentials, setPendingTwoFactor, type CurrentUserProfile } from '../features/auth/slices/authSlice';
 import { loginSchema, type LoginFormValues } from '../features/auth/schemas/login.schema';
-import { Button, Input, Checkbox, Card, Alert, Modal, LoginHeader } from '../shared/components';
+import { Button, Input, Checkbox, Card, Alert, LoginHeader } from '../shared/components';
 
 interface TsfAdminLoginPageProps {
   isEmbedPreview?: boolean;
@@ -47,7 +47,6 @@ export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [forgotModalOpen, setForgotModalOpen] = useState(false);
 
   const handleSignIn = async (values: LoginFormValues) => {
     setErrorMessage('');
@@ -245,7 +244,7 @@ export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
                 type="button"
                 variant="ghost"
                 size="xs"
-                onClick={() => setForgotModalOpen(true)}
+                onClick={() => navigate('/forgot-password')}
                 className="p-0 h-auto floating-label font-semibold text-brand hover:underline hover:bg-transparent min-w-0"
               >
                 FORGOT PASSWORD?
@@ -325,32 +324,6 @@ export const TsfAdminLoginPage: FC<TsfAdminLoginPageProps> = ({
           Secure access · TSF FPC Management / v1.0
         </small>
       </footer>
-
-      {/* Reset Password: Reusing Shared Modal & Button */}
-      <Modal
-        isOpen={forgotModalOpen}
-        onClose={() => setForgotModalOpen(false)}
-        title="Reset Password"
-        size="sm"
-        footer={
-          <div className="flex justify-end w-full">
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={() => setForgotModalOpen(false)}
-              className="px-4 py-1.5 bg-brand text-white font-semibold rounded-xs hover:bg-brand-hover"
-            >
-              Got it
-            </Button>
-          </div>
-        }
-      >
-        <p className="text-secondary leading-relaxed">
-          For administrative security, password resets must be authorized by the TSF Super Administrator. Please contact <strong>support@tsf.org</strong>.
-        </p>
-      </Modal>
-
     </div>
   );
 };

@@ -35,6 +35,26 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ValidateResetTokenRequest {
+  token: string;
+}
+
+export interface ValidateResetTokenResponse {
+  isValid: boolean;
+  email?: string;
+  message: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -135,6 +155,30 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Auth'],
     }),
+
+    forgotPassword: builder.mutation<ApiResponse<void>, ForgotPasswordRequest>({
+      query: (body) => ({
+        url: AUTH_ENDPOINTS.FORGOT_PASSWORD,
+        method: 'POST',
+        body,
+      }),
+    }),
+
+    validateResetToken: builder.query<ApiResponse<ValidateResetTokenResponse>, ValidateResetTokenRequest>({
+      query: (body) => ({
+        url: AUTH_ENDPOINTS.VALIDATE_RESET_TOKEN,
+        method: 'POST',
+        body,
+      }),
+    }),
+
+    resetPassword: builder.mutation<ApiResponse<void>, ResetPasswordRequest>({
+      query: (body) => ({
+        url: AUTH_ENDPOINTS.RESET_PASSWORD,
+        method: 'POST',
+        body,
+      }),
+    }),
   }),
   overrideExisting: false,
 });
@@ -149,5 +193,8 @@ export const {
   useSwitchFpcMutation,
   useLogoutMutation,
   useChangePasswordMutation,
+  useForgotPasswordMutation,
+  useValidateResetTokenQuery,
+  useResetPasswordMutation,
 } = authApi;
 

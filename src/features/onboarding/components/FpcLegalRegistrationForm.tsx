@@ -11,6 +11,10 @@ import {
   type LegalRegistrationFormValues,
 } from '../schemas/legalRegistration.schema';
 import type { FpcLegalRegistrationFormData } from '../types';
+import {
+  legalRegistrationGuidance,
+  additionalLicenseGuidance,
+} from '../constants/fieldGuidance';
 
 export interface FpcLegalRegistrationFormProps {
   initialData?: Partial<FpcLegalRegistrationFormData> | null;
@@ -127,6 +131,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
           {/* Row 1: Company PAN & Company TAN */}
           <Input
             id="fpc-company-pan"
+            guidance={legalRegistrationGuidance.companyPan}
             label="Company PAN *"
             required
             disabled={isReadOnly}
@@ -137,6 +142,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
           />
           <Input
             id="fpc-company-tan"
+            guidance={legalRegistrationGuidance.companyTan}
             label="Company TAN *"
             required
             disabled={isReadOnly}
@@ -149,6 +155,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
           {/* Row 2: GSTIN & FSSAI license number */}
           <Input
             id="fpc-gstin"
+            guidance={legalRegistrationGuidance.gstin}
             label="GSTIN *"
             required
             disabled={isReadOnly}
@@ -159,6 +166,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
           />
           <Input
             id="fpc-fssai"
+            guidance={legalRegistrationGuidance.fssaiLicense}
             label="FSSAI license number *"
             required
             disabled={isReadOnly}
@@ -171,6 +179,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
           {/* Row 3: Seed license number & Fertilizer license number */}
           <Input
             id="fpc-seed-license"
+            guidance={legalRegistrationGuidance.seedLicense}
             label="Seed license number *"
             required
             disabled={isReadOnly}
@@ -180,6 +189,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
           />
           <Input
             id="fpc-fertilizer-license"
+            guidance={legalRegistrationGuidance.fertilizerLicense}
             label="Fertilizer license number *"
             required
             disabled={isReadOnly}
@@ -228,6 +238,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
                     render={({ field }) => (
                       <Select
                         id={`license-type-${index}`}
+                        guidance={additionalLicenseGuidance.licenseType}
                         label="License type *"
                         required
                         disabled={isReadOnly}
@@ -243,6 +254,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
                   />
                   <Input
                     id={`license-number-${index}`}
+                    guidance={additionalLicenseGuidance.licenseNumber}
                     label="License number *"
                     required
                     disabled={isReadOnly}
@@ -255,6 +267,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
                 <div>
                   <Input
                     id={`license-authority-${index}`}
+                    guidance={additionalLicenseGuidance.issuingAuthority}
                     label="Issuing authority *"
                     required
                     disabled={isReadOnly}

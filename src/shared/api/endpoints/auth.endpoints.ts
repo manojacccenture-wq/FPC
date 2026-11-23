@@ -11,5 +11,8 @@ export const AUTH_ENDPOINTS = {
   SWITCH_FPC: '/auth/switch-fpc',
   LOGOUT: '/auth/logout',
   CHANGE_PASSWORD: '/auth/change-password',
+  FORGOT_PASSWORD: '/auth/forgot-password',
+  VALIDATE_RESET_TOKEN: '/auth/validate-reset-token',
+  RESET_PASSWORD: '/auth/reset-password',
 } as const;
 

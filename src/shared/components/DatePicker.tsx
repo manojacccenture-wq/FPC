@@ -11,6 +11,7 @@ import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, X } f
 import { cn } from '../utils/cn';
 import { parseDateString, getStartOfToday } from '../utils/date';
 import { FormField } from './FormField';
+import type { FieldGuidance } from '../types/fieldGuidance.types';
 import { Button } from './Button';
 
 export type DatePickerSize = 'sm' | 'md' | 'lg';
@@ -21,6 +22,7 @@ export interface DatePickerProps
   label?: string;
   error?: string;
   helperText?: string;
+  guidance?: FieldGuidance;
   onDateChange?: (date: Date | null, dateString?: string) => void;
   minDate?: string | Date;
   maxDate?: string | Date;
@@ -104,6 +106,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(({
   required,
   error,
   helperText,
+  guidance,
   placeholder = 'dd-mm-yyyy',
   disabled,
   value,
@@ -676,6 +679,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(({
         required={required}
         error={error}
         helperText={helperText}
+        guidance={guidance}
         className={containerClassName}
       >
         {datePickerElement}

@@ -110,6 +110,10 @@ export interface FpcAddressLocationFormData {
   officialEmail: string;
   latitude?: string;
   longitude?: string;
+  /** Which source produced the coordinates: 'gps' | 'geocoding' | 'manual'. */
+  coordinateSource?: 'gps' | 'geocoding' | 'manual' | '';
+  /** Set when the user confirmed device coordinates are the registered office. */
+  coordinatesConfirmed?: boolean;
 }
 
 export interface FpcBusinessActivitiesFormData {

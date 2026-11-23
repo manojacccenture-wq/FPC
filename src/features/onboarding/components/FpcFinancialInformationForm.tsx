@@ -11,6 +11,10 @@ import {
   type FinancialInformationFormValues,
 } from '../schemas/financialInformation.schema';
 import type { FpcFinancialInformationFormData } from '../types';
+import {
+  financialInformationGuidance,
+  bankAccountGuidance,
+} from '../constants/fieldGuidance';
 
 export interface FpcFinancialInformationFormProps {
   initialData?: Partial<FpcFinancialInformationFormData> | null;
@@ -160,6 +164,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
           {/* Row 1: Authorized capital & Paid-up capital */}
           <Input
             id="fpc-auth-capital"
+            guidance={financialInformationGuidance.authorizedCapital}
             label="Authorized capital *"
             required
             disabled={isReadOnly}
@@ -169,6 +174,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
           />
           <Input
             id="fpc-paid-capital"
+            guidance={financialInformationGuidance.paidUpCapital}
             label="Paid-up capital *"
             required
             disabled={isReadOnly}
@@ -180,6 +186,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
           {/* Row 2: Face value per share & Annual turnover */}
           <Input
             id="fpc-face-value"
+            guidance={financialInformationGuidance.faceValuePerShare}
             label="Face value per share *"
             required
             disabled={isReadOnly}
@@ -189,6 +196,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
           />
           <Input
             id="fpc-annual-turnover"
+            guidance={financialInformationGuidance.annualTurnover}
             label="Annual turnover *"
             required
             disabled={isReadOnly}
@@ -204,6 +212,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
             render={({ field }) => (
               <Select
                 id="fpc-fin-year"
+                guidance={financialInformationGuidance.financialYear}
                 label="Financial year *"
                 required
                 disabled={isReadOnly}
@@ -218,6 +227,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
           />
           <Input
             id="fpc-farmers-count"
+            guidance={financialInformationGuidance.farmers}
             label="Farmers *"
             required
             disabled={isReadOnly}
@@ -229,6 +239,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
           {/* Row 4: Shareholders & Employees */}
           <Input
             id="fpc-shareholders-count"
+            guidance={financialInformationGuidance.shareholders}
             label="Shareholders *"
             required
             disabled={isReadOnly}
@@ -238,6 +249,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
           />
           <Input
             id="fpc-employees-count"
+            guidance={financialInformationGuidance.employees}
             label="Employees *"
             required
             disabled={isReadOnly}
@@ -305,6 +317,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
                     render={({ field }) => (
                       <Select
                         id={`bank-name-${index}`}
+                        guidance={bankAccountGuidance.bankName}
                         label="Bank name *"
                         required
                         disabled={isReadOnly}
@@ -320,6 +333,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
                   />
                   <Input
                     id={`bank-account-${index}`}
+                    guidance={bankAccountGuidance.accountNumber}
                     label="Account number *"
                     required
                     disabled={isReadOnly}
@@ -333,6 +347,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                   <Input
                     id={`bank-ifsc-${index}`}
+                    guidance={bankAccountGuidance.ifscCode}
                     label="IFSC code *"
                     required
                     disabled={isReadOnly}
@@ -342,6 +357,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
                   />
                   <Input
                     id={`bank-branch-${index}`}
+                    guidance={bankAccountGuidance.branchName}
                     label="Branch name *"
                     required
                     disabled={isReadOnly}
@@ -359,6 +375,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
                     render={({ field }) => (
                       <Select
                         id={`bank-type-${index}`}
+                        guidance={bankAccountGuidance.accountType}
                         label="Account type *"
                         required
                         disabled={isReadOnly}

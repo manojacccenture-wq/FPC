@@ -1,11 +1,13 @@
 import React, { forwardRef, useId } from 'react';
 import { cn } from '../utils/cn';
 import { FormField } from './FormField';
+import type { FieldGuidance } from '../types/fieldGuidance.types';
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
   helperText?: string;
+  guidance?: FieldGuidance;
   containerClassName?: string;
   showCount?: boolean;
 }
@@ -18,6 +20,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
   required,
   error,
   helperText,
+  guidance,
   disabled,
   maxLength,
   showCount,
@@ -76,6 +79,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
         required={required}
         error={error}
         helperText={helperText}
+        guidance={guidance}
         className={containerClassName}
       >
         {textareaElement}

@@ -15,6 +15,10 @@ import {
 import { OnboardingStepper } from '../../../../../features/onboarding/components/OnboardingStepper';
 import { FpcRegistrationForm } from '../../../../../features/onboarding/components/registration-form/FpcRegistrationForm';
 import { Button, Alert } from '../../../../../shared/components';
+import { ValidationModeToggle } from '../../../../../shared/components/ValidationModeToggle';
+import { ValidationModeProvider } from '../../../../../shared/forms';
+import { selectValidationEnabled } from '../../../../../shared/slices/demoValidationSlice';
+import { VALIDATION_TOGGLE_ENABLED } from '../../../../../shared/config/env';
 import type { LogoDocumentsFileMap } from '../../../../../features/onboarding/components/FpcLogoDocumentsForm';
 import {
   DOCUMENT_TYPE_BY_FIELD,
@@ -27,6 +31,8 @@ export const FpcSelfRegistrationPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { activeFpcId, currentUser } = useAppSelector((state) => state.auth);
+  const storedValidationEnabled = useAppSelector(selectValidationEnabled);
+  const isValidationBypassed = VALIDATION_TOGGLE_ENABLED && !storedValidationEnabled;
 
   const { data: fpcDetails, isLoading } = useGetFpcDetailsQuery(activeFpcId || '', {
     skip: !activeFpcId,
@@ -249,82 +255,97 @@ export const FpcSelfRegistrationPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Navigation header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#E1E8E6] shadow-sm">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/fpc/dashboard')}
-            className="text-[#5b6b63] hover:text-[#0E1B16]"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Back to Dashboard
-          </Button>
-          <div className="h-4 w-px bg-[#E1E8E6]" />
-          <div className="flex items-center gap-2 text-sm font-semibold text-[#0E1B16]">
-            <Building2 className="w-4 h-4 text-[#0F4C36]" />
-            <span>{fpcDetails?.name || currentUser?.activeFpcName || 'FPC Registration'}</span>
+    <ValidationModeProvider>
+      <div className="space-y-6">
+        {/* Navigation header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-[#E1E8E6] shadow-sm">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/fpc/dashboard')}
+              className="text-[#5b6b63] hover:text-[#0E1B16]"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Back to Dashboard
+            </Button>
+            <div className="h-4 w-px bg-[#E1E8E6]" />
+            <div className="flex items-center gap-2 text-sm font-semibold text-[#0E1B16]">
+              <Building2 className="w-4 h-4 text-[#0F4C36]" />
+              <span>{fpcDetails?.name || currentUser?.activeFpcName || 'FPC Registration'}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {VALIDATION_TOGGLE_ENABLED && <ValidationModeToggle />}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSaveAndReturn}
+              disabled={isSavingDraft}
+              className="flex items-center gap-1.5"
+            >
+              <Save className="w-4 h-4" />
+              <span>{isSavingDraft ? 'Saving Draft...' : 'Save & Exit'}</span>
+            </Button>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSaveAndReturn}
-            disabled={isSavingDraft}
-            className="flex items-center gap-1.5"
+        {/* Demo mode: frontend validation enforcement is off */}
+        {isValidationBypassed && (
+          <Alert
+            tone="demo"
+            variant="card"
+            title="Validation paused — demo mode"
           >
-            <Save className="w-4 h-4" />
-            <span>{isSavingDraft ? 'Saving Draft...' : 'Save & Exit'}</span>
-          </Button>
-        </div>
-      </div>
+            Mandatory-field checks are turned off on this browser so every step can be explored freely.
+            Values are still saved, and the server validates everything when the application is submitted.
+          </Alert>
+        )}
 
-      {errorMessage && (
-        <Alert tone="danger" onClose={() => setErrorMessage(null)}>
-          <span>{errorMessage}</span>
-        </Alert>
-      )}
+        {errorMessage && (
+          <Alert tone="danger" onClose={() => setErrorMessage(null)}>
+            <span>{errorMessage}</span>
+          </Alert>
+        )}
 
-      {statusMessage && (
-        <Alert tone="success">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>{statusMessage}</span>
-          </div>
-        </Alert>
-      )}
+        {statusMessage && (
+          <Alert tone="success">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{statusMessage}</span>
+            </div>
+          </Alert>
+        )}
 
-      {/* 8-Step Progress & Navigation */}
-      <OnboardingStepper
-        currentStep={currentStep}
-        completedStepsCount={completedStepsCount}
-        onStepClick={goToStep}
-      />
-
-      {/* The Unified Reusable Registration Form */}
-      <div className="bg-white rounded-xl border border-[#E1E8E6] p-6 shadow-sm">
-        <FpcRegistrationForm
-          mode={isSubmittedOrApproved ? 'readonly' : 'editable'}
+        {/* 8-Step Progress & Navigation */}
+        <OnboardingStepper
           currentStep={currentStep}
-          onStepChange={goToStep}
-          drafts={drafts}
-          fpcDetails={fpcDetails}
-          onStepOneSubmit={handleStepOneSubmit}
-          onStepTwoSubmit={handleStepTwoSubmit}
-          onStepThreeSubmit={handleStepThreeSubmit}
-          onStepFourSubmit={handleStepFourSubmit}
-          onStepFiveSubmit={handleStepFiveSubmit}
-          onStepSixSubmit={handleStepSixSubmit}
-          onStepSevenSubmit={handleStepSevenSubmit}
-          onFinalSubmit={handleFinalSubmit}
-          isSubmitting={isSubmittingFinal}
-          onBackToLogin={() => navigate('/fpc/dashboard')}
+          completedStepsCount={completedStepsCount}
+          onStepClick={goToStep}
         />
+
+        {/* The Unified Reusable Registration Form */}
+        <div className="bg-white rounded-xl border border-[#E1E8E6] p-6 shadow-sm">
+          <FpcRegistrationForm
+            mode={isSubmittedOrApproved ? 'readonly' : 'editable'}
+            currentStep={currentStep}
+            onStepChange={goToStep}
+            drafts={drafts}
+            fpcDetails={fpcDetails}
+            onStepOneSubmit={handleStepOneSubmit}
+            onStepTwoSubmit={handleStepTwoSubmit}
+            onStepThreeSubmit={handleStepThreeSubmit}
+            onStepFourSubmit={handleStepFourSubmit}
+            onStepFiveSubmit={handleStepFiveSubmit}
+            onStepSixSubmit={handleStepSixSubmit}
+            onStepSevenSubmit={handleStepSevenSubmit}
+            onFinalSubmit={handleFinalSubmit}
+            isSubmitting={isSubmittingFinal}
+            onBackToLogin={() => navigate('/fpc/dashboard')}
+          />
+        </div>
       </div>
-    </div>
+    </ValidationModeProvider>
   );
 };

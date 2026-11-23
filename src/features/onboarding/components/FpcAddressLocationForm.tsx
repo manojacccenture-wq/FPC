@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { ChevronRight } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
@@ -11,6 +11,21 @@ import {
   type AddressLocationFormValues,
 } from '../schemas/addressLocation.schema';
 import type { FpcAddressLocationFormData } from '../types';
+import { addressLocationGuidance } from '../constants/fieldGuidance';
+import {
+  CoordinateLocationControl,
+  type CoordinateConflict,
+} from './CoordinateLocationControl';
+import { useDeviceLocation } from '../../../shared/hooks/useDeviceLocation';
+import { useLazyGeocodeAddressQuery } from '../api/geocodingApi';
+import { ADDRESS_GEOCODING_ENABLED } from '../../../shared/config/env';
+import {
+  parseFieldCoordinates,
+  resolveCoordinateAssignment,
+} from '../utils/coordinateAssignment';
+import { addressKey, isCompleteAddress, toGeocodeAddress } from '../utils/geocodeAddress';
+import { formatCoordinate } from '../../../shared/utils/coordinates';
+import type { CoordinateSource, GeoCoordinates } from '../../../shared/types/geolocation.types';
 
 export interface FpcAddressLocationFormProps {
   initialData?: Partial<FpcAddressLocationFormData> | null;
@@ -57,6 +72,9 @@ const VILLAGE_OPTIONS = [
   { value: 'Salijanga', label: 'Salijanga' },
 ];
 
+const GEOCODE_FAILURE_MESSAGE =
+  'Address lookup is unavailable right now. Use your current location or enter the coordinates manually.';
+
 export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
   initialData,
   onSubmit,
@@ -76,6 +94,8 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
     officialEmail: initialData?.officialEmail || '',
     latitude: initialData?.latitude || '',
     longitude: initialData?.longitude || '',
+    coordinateSource: initialData?.coordinateSource || '',
+    coordinatesConfirmed: initialData?.coordinatesConfirmed ?? false,
   };
 
   // ZERO useEffect: initial values populated directly during component mount
@@ -84,6 +104,9 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
     register,
     handleSubmit,
     setError,
+    setValue,
+    getValues,
+    watch,
     formState: { errors, isSubmitting },
   } = useFpcForm<AddressLocationFormValues>({
     schema: addressLocationSchema,
@@ -92,6 +115,133 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
     resetOptions: { keepDirtyValues: true },
   });
 
+  const gps = useDeviceLocation();
+  const [triggerGeocode] = useLazyGeocodeAddressQuery();
+  const [geocoding, setGeocoding] = useState<{ status: 'idle' | 'loading' | 'error'; message: string }>({
+    status: 'idle',
+    message: '',
+  });
+  const [conflict, setConflict] = useState<CoordinateConflict | null>(null);
+
+  /** Values this form wrote itself, so it may replace them later. */
+  const lastAutoFilledRef = useRef<GeoCoordinates | null>(null);
+  /** Guards against an older lookup resolving after a newer one. */
+  const geocodeRequestRef = useRef(0);
+
+  const latitudeValue = watch('latitude') ?? '';
+  const longitudeValue = watch('longitude') ?? '';
+  const coordinateSource = (watch('coordinateSource') ?? '') as CoordinateSource;
+  const coordinatesConfirmed = watch('coordinatesConfirmed') === true;
+
+  const writeCoordinates = (incoming: GeoCoordinates, source: 'gps' | 'geocoding') => {
+    const decision = resolveCoordinateAssignment({
+      latitude: getValues('latitude') ?? '',
+      longitude: getValues('longitude') ?? '',
+      lastAutoFilled: lastAutoFilledRef.current,
+      currentSource: (getValues('coordinateSource') ?? '') as CoordinateSource,
+      incomingSource: source,
+      incoming,
+    });
+
+    if (decision.action === 'noop') {
+      setConflict(null);
+      return;
+    }
+
+    if (decision.action === 'conflict') {
+      setConflict({
+        incoming,
+        incomingSource: source,
+        current:
+          parseFieldCoordinates(getValues('latitude') ?? '', getValues('longitude') ?? '') ?? incoming,
+        currentSource: (getValues('coordinateSource') ?? '') as CoordinateSource,
+      });
+      return;
+    }
+
+    lastAutoFilledRef.current = incoming;
+    setValue('latitude', formatCoordinate(incoming.latitude), { shouldDirty: true });
+    setValue('longitude', formatCoordinate(incoming.longitude), { shouldDirty: true });
+    setValue('coordinateSource', source, { shouldDirty: true });
+    // Device coordinates are the administrator's position, not the office: they
+    // need an explicit confirmation. Address coordinates describe the address itself.
+    setValue('coordinatesConfirmed', source === 'geocoding', { shouldDirty: true });
+    setConflict(null);
+  };
+
+  const handleDetect = async () => {
+    setConflict(null);
+    const outcome = await gps.detect();
+    if (!outcome.ok) return;
+    writeCoordinates(outcome.coordinates, 'gps');
+  };
+
+  const handleResolveConflict = (choice: 'incoming' | 'keep') => {
+    if (!conflict) return;
+
+    if (choice === 'keep') {
+      setConflict(null);
+      return;
+    }
+
+    lastAutoFilledRef.current = conflict.incoming;
+    setValue('latitude', formatCoordinate(conflict.incoming.latitude), { shouldDirty: true });
+    setValue('longitude', formatCoordinate(conflict.incoming.longitude), { shouldDirty: true });
+    setValue('coordinateSource', conflict.incomingSource, { shouldDirty: true });
+    setValue('coordinatesConfirmed', conflict.incomingSource === 'geocoding', { shouldDirty: true });
+    setConflict(null);
+  };
+
+  const handleManualCoordinateChange = () => {
+    lastAutoFilledRef.current = null;
+    setConflict(null);
+    if (getValues('coordinateSource') !== 'manual') {
+      setValue('coordinateSource', 'manual', { shouldDirty: true });
+      setValue('coordinatesConfirmed', true, { shouldDirty: true });
+    }
+  };
+
+  const handleConfirmationChange = (checked: boolean) => {
+    setValue('coordinatesConfirmed', checked, { shouldDirty: true, shouldValidate: true });
+  };
+
+  /** Looks up the entered address; triggered from field blur, never on mount. */
+  const requestAddressGeocoding = async () => {
+    if (!ADDRESS_GEOCODING_ENABLED || isReadOnly) return;
+
+    const address = toGeocodeAddress(getValues());
+    if (!isCompleteAddress(address)) return;
+
+    const requestId = geocodeRequestRef.current + 1;
+    geocodeRequestRef.current = requestId;
+    setGeocoding({ status: 'loading', message: 'Looking up coordinates for this address…' });
+
+    try {
+      const result = await triggerGeocode(address).unwrap();
+
+      // Drop stale responses: a newer lookup started, or the address changed.
+      if (geocodeRequestRef.current !== requestId) return;
+      if (addressKey(toGeocodeAddress(getValues())) !== addressKey(address)) return;
+
+      setGeocoding({ status: 'idle', message: '' });
+      writeCoordinates({ latitude: result.latitude, longitude: result.longitude }, 'geocoding');
+    } catch {
+      if (geocodeRequestRef.current !== requestId) return;
+      setGeocoding({ status: 'error', message: GEOCODE_FAILURE_MESSAGE });
+    }
+  };
+
+  const handleAddressBlur = () => {
+    void requestAddressGeocoding();
+  };
+
+  // Registration is read once per render so the extra handlers below can run after
+  // React Hook Form's own change/blur logic has stored the new value.
+  const streetAddressField = register('streetAddress');
+  const pinCodeField = register('pinCode');
+  const latitudeField = register('latitude');
+  const longitudeField = register('longitude');
+
   const submit = handleSubmit(async (values) => {
     try {
       await onSubmit(values);
@@ -99,6 +249,21 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
       applyServerErrors(err, setError);
     }
   });
+
+  const requiresConfirmation =
+    coordinateSource === 'gps' &&
+    latitudeValue.trim().length > 0 &&
+    longitudeValue.trim().length > 0 &&
+    !coordinatesConfirmed;
+
+  const sourceHelperText =
+    coordinateSource === 'gps'
+      ? 'Optional · From your device location'
+      : coordinateSource === 'geocoding'
+        ? 'Optional · From the registered address'
+        : coordinateSource === 'manual'
+          ? 'Optional · Entered manually'
+          : 'Optional';
 
   return (
     <form onSubmit={submit} className="space-y-6" noValidate>
@@ -137,12 +302,17 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
           {/* Row 1: Street Address & State */}
           <Input
             id="fpc-street-address"
+            guidance={addressLocationGuidance.streetAddress}
             label="Registered office street address *"
             required
             disabled={isReadOnly}
             placeholder="Enter registered office address"
             error={errors.streetAddress?.message}
-            {...register('streetAddress')}
+            {...streetAddressField}
+            onBlur={(event) => {
+              streetAddressField.onBlur(event);
+              handleAddressBlur();
+            }}
           />
           <Controller
             control={control}
@@ -150,6 +320,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             render={({ field }) => (
               <Select
                 id="fpc-state"
+                guidance={addressLocationGuidance.state}
                 label="State *"
                 required
                 disabled={isReadOnly}
@@ -158,7 +329,10 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
                 error={errors.state?.message}
                 value={field.value}
                 onChange={(e) => field.onChange(e.target.value)}
-                onBlur={field.onBlur}
+                onBlur={() => {
+                  field.onBlur();
+                  handleAddressBlur();
+                }}
               />
             )}
           />
@@ -170,6 +344,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             render={({ field }) => (
               <Select
                 id="fpc-district"
+                guidance={addressLocationGuidance.district}
                 label="District *"
                 required
                 disabled={isReadOnly}
@@ -178,7 +353,10 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
                 error={errors.district?.message}
                 value={field.value}
                 onChange={(e) => field.onChange(e.target.value)}
-                onBlur={field.onBlur}
+                onBlur={() => {
+                  field.onBlur();
+                  handleAddressBlur();
+                }}
               />
             )}
           />
@@ -188,6 +366,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             render={({ field }) => (
               <Select
                 id="fpc-block"
+                guidance={addressLocationGuidance.block}
                 label="Block *"
                 required
                 disabled={isReadOnly}
@@ -196,7 +375,10 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
                 error={errors.block?.message}
                 value={field.value}
                 onChange={(e) => field.onChange(e.target.value)}
-                onBlur={field.onBlur}
+                onBlur={() => {
+                  field.onBlur();
+                  handleAddressBlur();
+                }}
               />
             )}
           />
@@ -208,6 +390,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             render={({ field }) => (
               <Select
                 id="fpc-gp"
+                guidance={addressLocationGuidance.gramPanchayat}
                 label="Gram Panchayat *"
                 required
                 disabled={isReadOnly}
@@ -217,7 +400,10 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
                 error={errors.gramPanchayat?.message}
                 value={field.value}
                 onChange={(e) => field.onChange(e.target.value)}
-                onBlur={field.onBlur}
+                onBlur={() => {
+                  field.onBlur();
+                  handleAddressBlur();
+                }}
               />
             )}
           />
@@ -227,6 +413,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             render={({ field }) => (
               <Select
                 id="fpc-village"
+                guidance={addressLocationGuidance.village}
                 label="Village *"
                 required
                 disabled={isReadOnly}
@@ -236,7 +423,10 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
                 error={errors.village?.message}
                 value={field.value}
                 onChange={(e) => field.onChange(e.target.value)}
-                onBlur={field.onBlur}
+                onBlur={() => {
+                  field.onBlur();
+                  handleAddressBlur();
+                }}
               />
             )}
           />
@@ -244,16 +434,22 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
           {/* Row 4: PIN code & Office mobile number */}
           <Input
             id="fpc-pincode"
+            guidance={addressLocationGuidance.pinCode}
             label="PIN code *"
             required
             disabled={isReadOnly}
             placeholder="Enter PIN code"
             helperText="6 digits"
             error={errors.pinCode?.message}
-            {...register('pinCode')}
+            {...pinCodeField}
+            onBlur={(event) => {
+              pinCodeField.onBlur(event);
+              handleAddressBlur();
+            }}
           />
           <Input
             id="fpc-office-mobile"
+            guidance={addressLocationGuidance.officeMobile}
             type="tel"
             label="Office mobile number *"
             required
@@ -266,6 +462,7 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
           {/* Row 5: Official email & Latitude */}
           <Input
             id="fpc-official-email"
+            guidance={addressLocationGuidance.officialEmail}
             type="email"
             label="Official email address *"
             required
@@ -276,24 +473,52 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
           />
           <Input
             id="fpc-latitude"
+            guidance={addressLocationGuidance.latitude}
             label="Latitude"
             disabled={isReadOnly}
             placeholder="Enter latitude"
-            helperText="Optional"
+            helperText={sourceHelperText}
             error={errors.latitude?.message}
-            {...register('latitude')}
+            {...latitudeField}
+            onChange={(event) => {
+              latitudeField.onChange(event);
+              handleManualCoordinateChange();
+            }}
           />
 
-          {/* Row 6: Longitude (full-width) */}
-          <div className="col-span-1 md:col-span-2">
+          {/* Row 6: Longitude (full-width) + location detection */}
+          <div className="col-span-1 md:col-span-2 space-y-3">
             <Input
               id="fpc-longitude"
+              guidance={addressLocationGuidance.longitude}
               label="Longitude"
               disabled={isReadOnly}
               placeholder="Enter longitude"
-              helperText="Optional"
+              helperText={sourceHelperText}
               error={errors.longitude?.message}
-              {...register('longitude')}
+              {...longitudeField}
+              onChange={(event) => {
+                longitudeField.onChange(event);
+                handleManualCoordinateChange();
+              }}
+            />
+            <CoordinateLocationControl
+              isReadOnly={isReadOnly}
+              gpsStatus={gps.status}
+              gpsMessage={gps.message}
+              gpsCoordinates={gps.coordinates}
+              accuracyMeters={gps.accuracyMeters}
+              onDetect={() => {
+                void handleDetect();
+              }}
+              geocodingStatus={geocoding.status}
+              geocodingMessage={geocoding.message}
+              conflict={conflict}
+              onResolveConflict={handleResolveConflict}
+              source={coordinateSource}
+              requiresConfirmation={requiresConfirmation}
+              confirmed={coordinatesConfirmed}
+              onConfirmationChange={handleConfirmationChange}
             />
           </div>
         </div>
@@ -335,4 +560,3 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
     </form>
   );
 };
-

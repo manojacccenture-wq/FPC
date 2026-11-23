@@ -1,6 +1,7 @@
 import React, { forwardRef, useId } from 'react';
 import { cn } from '../utils/cn';
 import { FormField } from './FormField';
+import type { FieldGuidance } from '../types/fieldGuidance.types';
 
 export type InputSize = 'sm' | 'md' | 'lg';
 
@@ -9,6 +10,7 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   label?: string;
   error?: string;
   helperText?: string;
+  guidance?: FieldGuidance;
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
   leftIcon?: React.ReactNode;
@@ -52,6 +54,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   required,
   error,
   helperText,
+  guidance,
   leadingIcon,
   trailingIcon,
   leftIcon,
@@ -120,6 +123,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
         required={required}
         error={error}
         helperText={helperText}
+        guidance={guidance}
         className={containerClassName}
       >
         {inputElement}

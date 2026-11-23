@@ -1,0 +1,141 @@
+@layer components {
+  /* Information tooltip: single source of truth for every field hint in the app.
+     Trigger sizing is deliberate: the 20px box stays inside the label line-height so
+     adding an icon never changes a field's row height. */
+  .info-tooltip-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    color: var(--color-secondary);
+    border-radius: var(--radius-full);
+    transition: color 150ms ease, background-color 150ms ease;
+  }
+
+  .info-tooltip-trigger:hover {
+    color: var(--color-brand);
+    background-color: var(--color-brand-soft);
+  }
+
+  .info-tooltip-trigger:focus-visible {
+    color: var(--color-brand);
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+
+  .info-tooltip-panel {
+    position: fixed;
+    z-index: 80;
+    max-height: 70vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    padding: 12px 14px 16px;
+    border-radius: var(--radius-md);
+    background-color: var(--color-primary);
+    color: #ffffff;
+    box-shadow: var(--shadow-e3);
+    font-size: 0.75rem;
+    line-height: 1.5;
+    text-align: left;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+    animation: info-tooltip-in 120ms ease-out;
+  }
+
+  .info-tooltip-panel::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .info-tooltip-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .info-tooltip-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-full);
+  }
+
+  .info-tooltip-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .info-tooltip-title {
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-forest-300);
+    margin-bottom: 4px;
+  }
+
+  .info-tooltip-description {
+    color: #ffffff;
+  }
+
+  .info-tooltip-section {
+    margin-top: 8px;
+  }
+
+  .info-tooltip-label {
+    display: block;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-forest-300);
+    margin-bottom: 2px;
+  }
+
+  .info-tooltip-value {
+    color: #ffffff;
+  }
+
+  .info-tooltip-example {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.6875rem;
+    color: var(--color-forest-200);
+    word-break: break-word;
+  }
+
+  .info-tooltip-formats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .info-tooltip-chip {
+    border-radius: var(--radius-full);
+    background-color: rgba(255, 255, 255, 0.12);
+    padding: 1px 8px;
+    font-size: 0.625rem;
+    color: #ffffff;
+  }
+
+  @keyframes info-tooltip-in {
+    from {
+      opacity: 0;
+      transform: translateY(2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .info-tooltip-panel {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .info-tooltip-panel {
+      font-size: 0.8125rem;
+      padding: 12px;
+    }
+  }
+}

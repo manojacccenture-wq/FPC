@@ -22,6 +22,14 @@ const FpcRegistrationPage = lazyWithRetry(
   () => import('../../features/onboarding/pages/FpcRegistrationPage'),
   'FpcRegistrationPage'
 );
+const ForgotPasswordPage = lazyWithRetry(
+  () => import('../../pages/ForgotPasswordPage'),
+  'ForgotPasswordPage'
+);
+const ResetPasswordPage = lazyWithRetry(
+  () => import('../../pages/ResetPasswordPage'),
+  'ResetPasswordPage'
+);
 
 /**
  * LoginRoute: Renders the TSF Admin Login page eagerly,
@@ -85,6 +93,24 @@ export const router = createBrowserRouter([
   {
     path: '/login/2fa',
     element: <TwoFactorRoute />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: '/forgot-password',
+    element: (
+      <Suspense fallback={<PageLoadingFallback fullScreen />}>
+        <ForgotPasswordPage />
+      </Suspense>
+    ),
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: '/reset-password',
+    element: (
+      <Suspense fallback={<PageLoadingFallback fullScreen />}>
+        <ResetPasswordPage />
+      </Suspense>
+    ),
     errorElement: <RouteErrorBoundary />,
   },
   {

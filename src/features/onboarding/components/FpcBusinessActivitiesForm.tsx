@@ -13,6 +13,7 @@ import {
   type BusinessActivitiesFormValues,
 } from '../schemas/businessActivities.schema';
 import type { FpcBusinessActivitiesFormData } from '../types';
+import { businessActivitiesGuidance } from '../constants/fieldGuidance';
 
 export interface FpcBusinessActivitiesFormProps {
   initialData?: Partial<FpcBusinessActivitiesFormData> | null;
@@ -167,6 +168,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
             render={({ field }) => (
               <MultiSelect
                 id="fpc-primary-activity"
+                guidance={businessActivitiesGuidance.primaryActivity}
                 label="Primary business activity *"
                 required
                 disabled={isReadOnly}
@@ -186,6 +188,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
             render={({ field }) => (
               <Select
                 id="fpc-operational-status"
+                guidance={businessActivitiesGuidance.operationalStatus}
                 label="Operational status *"
                 required
                 disabled={isReadOnly}
@@ -206,6 +209,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
             render={({ field }) => (
               <DatePicker
                 id="fpc-commencement-date"
+                guidance={businessActivitiesGuidance.commencementDate}
                 label="Date of commencement *"
                 required
                 disabled={isReadOnly}
@@ -223,6 +227,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
             render={({ field }) => (
               <MultiSelect
                 id="fpc-commodities-handled"
+                guidance={businessActivitiesGuidance.commoditiesHandled}
                 label="Commodities handled *"
                 required
                 disabled={isReadOnly}
@@ -241,6 +246,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
           {/* Row 3: Target farmers enrolment & Villages covered */}
           <Input
             id="fpc-target-farmers"
+            guidance={businessActivitiesGuidance.targetFarmers}
             label="Target farmers enrolment *"
             required
             disabled={isReadOnly}
@@ -250,6 +256,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
           />
           <Input
             id="fpc-villages-covered"
+            guidance={businessActivitiesGuidance.villagesCovered}
             label="Villages covered *"
             required
             disabled={isReadOnly}
@@ -262,6 +269,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
           <div className="col-span-1 md:col-span-2">
             <Input
               id="fpc-activity-scope"
+              guidance={businessActivitiesGuidance.activityScope}
               label="Activity scope & operational description *"
               required
               disabled={isReadOnly}

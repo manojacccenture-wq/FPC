@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { FormField } from './FormField';
+import type { FieldGuidance } from '../types/fieldGuidance.types';
 
 export type SelectSize = 'xs' | 'sm' | 'md' | 'lg';
 
@@ -17,6 +18,7 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   label?: string;
   error?: string;
   helperText?: string;
+  guidance?: FieldGuidance;
   options?: SelectOption[];
   placeholder?: string;
   containerClassName?: string;
@@ -55,6 +57,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
   required,
   error,
   helperText,
+  guidance,
   options = [],
   placeholder,
   disabled,
@@ -523,6 +526,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
         required={required}
         error={error}
         helperText={helperText}
+        guidance={guidance}
         className={containerClassName}
       >
         {selectElement}

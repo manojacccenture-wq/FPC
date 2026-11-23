@@ -5,12 +5,16 @@ import { Button } from '../../../shared/components/Button';
 import { Card } from '../../../shared/components/Card';
 import { Alert } from '../../../shared/components/Alert';
 import { NetworkStatusBadge } from '../../../shared/components/NetworkStatusBadge';
+import { ValidationModeToggle } from '../../../shared/components/ValidationModeToggle';
 import { OnboardingStepper } from '../components/OnboardingStepper';
 import { FpcRegistrationForm } from '../components/registration-form/FpcRegistrationForm';
 import { type LogoDocumentsFileMap } from '../components/FpcLogoDocumentsForm';
 import { invitationApi } from '../api/invitation.api';
 import { onboardingSyncService } from '../services/onboardingSyncService';
-import { resolveErrorMessage } from '../../../shared/forms';
+import { resolveErrorMessage, ValidationModeProvider } from '../../../shared/forms';
+import { useSelector } from 'react-redux';
+import { selectValidationEnabled } from '../../../shared/slices/demoValidationSlice';
+import { VALIDATION_TOGGLE_ENABLED } from '../../../shared/config/env';
 import { formatDateToISO } from '../../../shared/utils/date';
 import {
   useValidateFpcInvitationQuery,
@@ -48,6 +52,8 @@ export const FpcRegistrationPage: React.FC = () => {
     stepParam >= 1 && stepParam <= 8 ? stepParam : 1
   );
   const [isFinalSubmitting, setIsFinalSubmitting] = useState(false);
+  const storedValidationEnabled = useSelector(selectValidationEnabled);
+  const isValidationBypassed = VALIDATION_TOGGLE_ENABLED && !storedValidationEnabled;
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [stepSuccessMessage, setStepSuccessMessage] = useState<string | null>(null);
   const [finalErrorMessage, setFinalErrorMessage] = useState<string | null>(null);
@@ -433,165 +439,180 @@ export const FpcRegistrationPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAF9] flex flex-col justify-between py-6 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl w-full mx-auto space-y-6">
-        {/* Top bar */}
-        <header className="flex items-center justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleBackToLogin}
-            className="rounded-full bg-white text-secondary text-xs px-4 py-1.5 border-neutral-200 shadow-2xs hover:bg-neutral-50"
-          >
-            Back to Login
-          </Button>
-          <div className="flex items-center gap-3">
-            <NetworkStatusBadge />
+    <ValidationModeProvider>
+      <div className="min-h-screen bg-[#F8FAF9] flex flex-col justify-between py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl w-full mx-auto space-y-6">
+          {/* Top bar */}
+          <header className="flex items-center justify-between">
             <Button
               type="button"
-              variant="secondary"
-              className="rounded-full bg-brand-soft text-brand text-xs px-4 py-1.5 border-none font-medium"
+              variant="outline"
+              onClick={handleBackToLogin}
+              className="rounded-full bg-white text-secondary text-xs px-4 py-1.5 border-neutral-200 shadow-2xs hover:bg-neutral-50"
             >
-              English
+              Back to Login
             </Button>
-          </div>
-        </header>
+            <div className="flex items-center gap-3">
+              {VALIDATION_TOGGLE_ENABLED && <ValidationModeToggle />}
+              <NetworkStatusBadge />
+              <Button
+                type="button"
+                variant="secondary"
+                className="rounded-full bg-brand-soft text-brand text-xs px-4 py-1.5 border-none font-medium"
+              >
+                English
+              </Button>
+            </div>
+          </header>
 
-        {/* Title block */}
-        <div className="pt-2">
-          <p className="floating-label font-bold text-brand">
-            TATA STEEL FOUNDATION • FPC COMPANY ONBOARDING
-          </p>
-          <h1 className="page-heading text-primary mt-1">
-            Onboard New Producer Company
-          </h1>
-          <p className="text-secondary mt-1">
-            8-Step structured onboarding wizard. Complete company legal, financial, governance, and operational records.
-          </p>
+          {/* Title block */}
+          <div className="pt-2">
+            <p className="floating-label font-bold text-brand">
+              TATA STEEL FOUNDATION • FPC COMPANY ONBOARDING
+            </p>
+            <h1 className="page-heading text-primary mt-1">
+              Onboard New Producer Company
+            </h1>
+            <p className="text-secondary mt-1">
+              8-Step structured onboarding wizard. Complete company legal, financial, governance, and operational records.
+            </p>
+          </div>
+
+          {/* Demo mode: frontend validation enforcement is off */}
+          {isValidationBypassed && (
+            <Alert
+              tone="demo"
+              variant="card"
+              title="Validation paused — demo mode"
+            >
+              Mandatory-field checks are turned off on this browser so every step can be explored freely.
+              Values are still saved, and the server validates everything when the application is submitted.
+            </Alert>
+          )}
+
+          {/* Stepper bar */}
+          <OnboardingStepper
+            currentStep={currentStep}
+            onStepClick={(step) => goToStep(step)}
+          />
+
+          {/* Step Success Feedback */}
+          {stepSuccessMessage && (
+            <Alert
+              tone="success"
+              variant="card"
+              title="Progress Saved"
+              onClose={() => setStepSuccessMessage(null)}
+              icon={<CheckCircle2 className="w-5 h-5 text-success" />}
+            >
+              {stepSuccessMessage}
+            </Alert>
+          )}
+
+          {/* Unified 8-Step Registration Form */}
+          {!isSubmitted && (
+            <>
+              {currentStep === 8 && finalErrorMessage && (
+                <Alert
+                  tone="danger"
+                  variant="card"
+                  title="Submission failed"
+                  onClose={() => setFinalErrorMessage(null)}
+                >
+                  {finalErrorMessage}
+                </Alert>
+              )}
+
+              <FpcRegistrationForm
+                mode="editable"
+                currentStep={currentStep}
+                onStepChange={(step) => goToStep(step)}
+                drafts={drafts}
+                invitation={invitation}
+                onStepOneSubmit={handleStepOneSubmit}
+                onStepTwoSubmit={handleStepTwoSubmit}
+                onStepThreeSubmit={handleStepThreeSubmit}
+                onStepFourSubmit={handleStepFourSubmit}
+                onStepFiveSubmit={handleStepFiveSubmit}
+                onStepSixSubmit={handleStepSixSubmit}
+                onStepSevenSubmit={handleStepSevenSubmit}
+                onFinalSubmit={handleFinalSubmit}
+                onBackToLogin={handleBackToLogin}
+                isSubmitting={isFinalSubmitting}
+              />
+            </>
+          )}
+
+          {/* Final Submission Success Confirmation */}
+          {isSubmitted && (
+            <Card
+              variant="default"
+              className="p-8 sm:p-12 rounded-2xl border-neutral-200/80 shadow-sm text-center max-w-2xl mx-auto space-y-6"
+            >
+              <div className="w-16 h-16 rounded-full bg-emerald-50 text-[#0F4C36] mx-auto flex items-center justify-center">
+                <CheckCircle2 className="w-9 h-9 stroke-[2]" />
+              </div>
+              <div className="space-y-2">
+                <span className="inline-block px-3 py-1 rounded-full font-semibold bg-emerald-50 text-[#0F4C36]">
+                  <small className="font-semibold">Registration Complete</small>
+                </span>
+                <h2 className="modal-title text-primary">
+                  Application Submitted Successfully
+                </h2>
+                <p className="text-secondary max-w-md mx-auto leading-relaxed">
+                  Your onboarding records for{' '}
+                  <strong className="text-primary font-semibold">
+                    {invitation.companyName}
+                  </strong>{' '}
+                  have been securely submitted to the Tata Steel Foundation (TSF) Administrative team for statutory review and verification.
+                </p>
+              </div>
+
+              <div className="bg-[#F8FAF9] rounded-xl p-4 text-xs text-secondary border border-neutral-200/80 space-y-2 text-left max-w-md mx-auto">
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Application Reference:</span>
+                  <span className="font-mono font-semibold text-primary">{activeToken}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Nominated Admin:</span>
+                  <span className="font-semibold text-primary">{invitation.nominatedAdmin}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Official Email:</span>
+                  <span className="font-semibold text-primary">{invitation.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">Status:</span>
+                  <span className="font-semibold text-emerald-700">Pending TSF Review</span>
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsSubmitted(false)}
+                  className="w-full sm:w-auto rounded-full bg-white text-secondary text-xs px-6 py-2.5 border-neutral-200 shadow-2xs hover:bg-neutral-50"
+                >
+                  Review Application Details
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={handleBackToLogin}
+                  className="w-full sm:w-auto rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold shadow-2xs"
+                >
+                  Return to Login
+                </Button>
+              </div>
+            </Card>
+          )}
         </div>
 
-        {/* Stepper bar */}
-        <OnboardingStepper
-          currentStep={currentStep}
-          onStepClick={(step) => goToStep(step)}
-        />
-
-        {/* Step Success Feedback */}
-        {stepSuccessMessage && (
-          <Alert
-            tone="success"
-            variant="card"
-            title="Progress Saved"
-            onClose={() => setStepSuccessMessage(null)}
-            icon={<CheckCircle2 className="w-5 h-5 text-success" />}
-          >
-            {stepSuccessMessage}
-          </Alert>
-        )}
-
-        {/* Unified 8-Step Registration Form */}
-        {!isSubmitted && (
-          <>
-            {currentStep === 8 && finalErrorMessage && (
-              <Alert
-                tone="danger"
-                variant="card"
-                title="Submission failed"
-                onClose={() => setFinalErrorMessage(null)}
-              >
-                {finalErrorMessage}
-              </Alert>
-            )}
-
-            <FpcRegistrationForm
-              mode="editable"
-              currentStep={currentStep}
-              onStepChange={(step) => goToStep(step)}
-              drafts={drafts}
-              invitation={invitation}
-              onStepOneSubmit={handleStepOneSubmit}
-              onStepTwoSubmit={handleStepTwoSubmit}
-              onStepThreeSubmit={handleStepThreeSubmit}
-              onStepFourSubmit={handleStepFourSubmit}
-              onStepFiveSubmit={handleStepFiveSubmit}
-              onStepSixSubmit={handleStepSixSubmit}
-              onStepSevenSubmit={handleStepSevenSubmit}
-              onFinalSubmit={handleFinalSubmit}
-              onBackToLogin={handleBackToLogin}
-              isSubmitting={isFinalSubmitting}
-            />
-          </>
-        )}
-
-        {/* Final Submission Success Confirmation */}
-        {isSubmitted && (
-          <Card
-            variant="default"
-            className="p-8 sm:p-12 rounded-2xl border-neutral-200/80 shadow-sm text-center max-w-2xl mx-auto space-y-6"
-          >
-            <div className="w-16 h-16 rounded-full bg-emerald-50 text-[#0F4C36] mx-auto flex items-center justify-center">
-              <CheckCircle2 className="w-9 h-9 stroke-[2]" />
-            </div>
-            <div className="space-y-2">
-              <span className="inline-block px-3 py-1 rounded-full font-semibold bg-emerald-50 text-[#0F4C36]">
-                <small className="font-semibold">Registration Complete</small>
-              </span>
-              <h2 className="modal-title text-primary">
-                Application Submitted Successfully
-              </h2>
-              <p className="text-secondary max-w-md mx-auto leading-relaxed">
-                Your onboarding records for{' '}
-                <strong className="text-primary font-semibold">
-                  {invitation.companyName}
-                </strong>{' '}
-                have been securely submitted to the Tata Steel Foundation (TSF) Administrative team for statutory review and verification.
-              </p>
-            </div>
-
-            <div className="bg-[#F8FAF9] rounded-xl p-4 text-xs text-secondary border border-neutral-200/80 space-y-2 text-left max-w-md mx-auto">
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Application Reference:</span>
-                <span className="font-mono font-semibold text-primary">{activeToken}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Nominated Admin:</span>
-                <span className="font-semibold text-primary">{invitation.nominatedAdmin}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Official Email:</span>
-                <span className="font-semibold text-primary">{invitation.email}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Status:</span>
-                <span className="font-semibold text-emerald-700">Pending TSF Review</span>
-              </div>
-            </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsSubmitted(false)}
-                className="w-full sm:w-auto rounded-full bg-white text-secondary text-xs px-6 py-2.5 border-neutral-200 shadow-2xs hover:bg-neutral-50"
-              >
-                Review Application Details
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                onClick={handleBackToLogin}
-                className="w-full sm:w-auto rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold shadow-2xs"
-              >
-                Return to Login
-              </Button>
-            </div>
-          </Card>
-        )}
+        <footer className="max-w-5xl w-full mx-auto text-center text-xs text-neutral-400 pt-8 pb-4">
+          © {new Date().getFullYear()} Tata Steel Foundation • All rights reserved
+        </footer>
       </div>
-
-      <footer className="max-w-5xl w-full mx-auto text-center text-xs text-neutral-400 pt-8 pb-4">
-        © {new Date().getFullYear()} Tata Steel Foundation • All rights reserved
-      </footer>
-    </div>
+    </ValidationModeProvider>
   );
 };

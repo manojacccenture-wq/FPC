@@ -5,6 +5,7 @@ import { Card } from '../../../shared/components/Card';
 import { Button } from '../../../shared/components/Button';
 import { Badge } from '../../../shared/components/Badge';
 import { DatePicker } from '../../../shared/components/DatePicker';
+import { InfoTooltip } from '../../../shared/components/InfoTooltip';
 import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import { useLazyGetFpcDocumentContentQuery } from '../../fpc/api/fpcApi';
 import { API_BASE_URL } from '../../../shared/config/env';
@@ -14,6 +15,7 @@ import {
   type LogoDocumentsFormValues,
 } from '../schemas/logoDocuments.schema';
 import type { FpcLogoDocumentsFormData } from '../types';
+import { logoDocumentsGuidance } from '../constants/fieldGuidance';
 
 /** Selected files held in component state only; never persisted to storage. */
 export type LogoDocumentsFileMap = Partial<Record<keyof LogoDocumentsFormValues, File>>;
@@ -242,9 +244,15 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
 
         {/* Company Logo Section */}
         <div className="space-y-2">
-          <label className="text-primary block">
-            Company logo
-          </label>
+          <div className="flex items-center gap-0.5">
+            <label className="text-primary block">
+              Company logo
+            </label>
+            <InfoTooltip
+              guidance={logoDocumentsGuidance.logoFileName}
+              fieldLabel="Company logo"
+            />
+          </div>
           <div className="flex flex-col sm:flex-row items-center gap-4">
             {/* Logo Preview Square */}
             <div className="w-24 h-24 rounded-2xl bg-neutral-100 flex items-center justify-center text-xs text-secondary font-medium select-none shrink-0 border border-neutral-200/60 overflow-hidden">
@@ -327,15 +335,24 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
                   );
                   const effectiveFileName = field.value || matchingDoc?.fileName;
                   const isUploaded = Boolean(effectiveFileName);
+                  const expiryGuidance = doc.expiryKey
+                    ? logoDocumentsGuidance[doc.expiryKey]
+                    : undefined;
                   const docId = matchingDoc?.id || initialData?.documentIds?.[doc.key];
 
                   return (
                     <div className="rounded-2xl border border-neutral-200/80 p-5 bg-white space-y-3.5 shadow-2xs">
                       {/* Card Header: Title & Pending / Uploaded Badge */}
                       <div className="flex items-center justify-between gap-2">
-                        <h5 className="font-semibold text-primary">
-                          {doc.title}
-                        </h5>
+                        <div className="flex items-center gap-0.5 min-w-0">
+                          <h5 className="font-semibold text-primary">
+                            {doc.title}
+                          </h5>
+                          <InfoTooltip
+                            guidance={logoDocumentsGuidance[doc.key]}
+                            fieldLabel={doc.title}
+                          />
+                        </div>
                         <Badge
                           variant={isUploaded ? 'brand' : 'warning'}
                           size="sm"
@@ -417,6 +434,7 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
                             render={({ field: expiryField, fieldState }) => (
                               <DatePicker
                                 id={`expiry-${doc.key}`}
+                                guidance={expiryGuidance}
                                 label={`${doc.expiryLabel ?? 'Expiry Date'}${isUploaded ? ' *' : ''}`}
                                 placeholder="DD-MM-YYYY"
                                 size="md"

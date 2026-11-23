@@ -14,6 +14,7 @@ import {
   type BoardOfDirectorsFormValues,
 } from '../schemas/boardOfDirectors.schema';
 import type { FpcBoardOfDirectorsFormData } from '../types';
+import { directorGuidance } from '../constants/fieldGuidance';
 
 export interface FpcBoardOfDirectorsFormProps {
   initialData?: Partial<FpcBoardOfDirectorsFormData> | null;
@@ -212,6 +213,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <Input
                       id={`director-name-${index}`}
+                      guidance={directorGuidance.fullName}
                       label="Director full name *"
                       required
                       disabled={isReadOnly}
@@ -221,6 +223,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                     />
                     <Input
                       id={`director-din-${index}`}
+                      guidance={directorGuidance.din}
                       label="DIN *"
                       required
                       disabled={isReadOnly}
@@ -239,6 +242,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                       render={({ field }) => (
                         <Select
                           id={`director-desig-${index}`}
+                          guidance={directorGuidance.designation}
                           label="Designation *"
                           required
                           disabled={isReadOnly}
@@ -257,6 +261,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                       render={({ field }) => (
                         <Select
                           id={`director-gender-${index}`}
+                          guidance={directorGuidance.gender}
                           label="Gender *"
                           required
                           disabled={isReadOnly}
@@ -279,6 +284,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                       render={({ field }) => (
                         <DatePicker
                           id={`director-date-${index}`}
+                          guidance={directorGuidance.appointmentDate}
                           label="Appointment date *"
                           required
                           disabled={isReadOnly}
@@ -292,6 +298,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                     />
                     <Input
                       id={`director-mobile-${index}`}
+                      guidance={directorGuidance.mobileNumber}
                       label="Mobile number *"
                       required
                       disabled={isReadOnly}
@@ -306,6 +313,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                     <Input
                       id={`director-email-${index}`}
                       type="email"
+                      guidance={directorGuidance.email}
                       label="Email address"
                       disabled={isReadOnly}
                       placeholder="Enter email address"
@@ -314,6 +322,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                     />
                     <Input
                       id={`director-pan-${index}`}
+                      guidance={directorGuidance.pan}
                       label="Director PAN *"
                       required
                       disabled={isReadOnly}
@@ -332,6 +341,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                       render={({ field }) => (
                         <Select
                           id={`director-social-${index}`}
+                          guidance={directorGuidance.socialCategory}
                           label="Social category"
                           disabled={isReadOnly}
                           options={SOCIAL_CATEGORY_OPTIONS}
@@ -349,6 +359,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                       render={({ field }) => (
                         <Select
                           id={`director-status-${index}`}
+                          guidance={directorGuidance.activeStatus}
                           label="Active status *"
                           required
                           disabled={isReadOnly}
@@ -369,7 +380,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                       control={control}
                       name={`directors.${index}.photographName`}
                       render={({ field }) => (
-                        <FormField label="Photograph">
+                        <FormField label="Photograph" guidance={directorGuidance.photographName}>
                           {isReadOnly ? (
                             <div className="w-full rounded-2xl border border-neutral-200 p-4 bg-neutral-50/50 flex items-center gap-2">
                               <span className="font-semibold text-primary text-xs truncate">
@@ -395,7 +406,10 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                       control={control}
                       name={`directors.${index}.identityDocName`}
                       render={({ field }) => (
-                        <FormField label="Identity document • Aadhaar / PAN">
+                        <FormField
+                          label="Identity document • Aadhaar / PAN"
+                          guidance={directorGuidance.identityDocName}
+                        >
                           {isReadOnly ? (
                             <div className="w-full rounded-2xl border border-neutral-200 p-4 bg-neutral-50/50 flex items-center gap-2">
                               <span className="font-semibold text-primary text-xs truncate">

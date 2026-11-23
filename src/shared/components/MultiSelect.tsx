@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, X, Check, Search } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { FormField } from './FormField';
+import type { FieldGuidance } from '../types/fieldGuidance.types';
 import { Button } from './Button';
 import { Badge } from './Badge';
 
@@ -32,6 +33,7 @@ export interface MultiSelectProps {
   required?: boolean;
   error?: string;
   helperText?: string;
+  guidance?: FieldGuidance;
   options?: MultiSelectOption[];
   value?: string[];
   defaultValue?: string[];
@@ -77,6 +79,7 @@ export const MultiSelect = forwardRef<HTMLInputElement, MultiSelectProps>(({
   required,
   error,
   helperText,
+  guidance,
   options = [],
   value,
   defaultValue = [],
@@ -701,6 +704,7 @@ export const MultiSelect = forwardRef<HTMLInputElement, MultiSelectProps>(({
         required={required}
         error={error}
         helperText={helperText}
+        guidance={guidance}
         className={containerClassName}
       >
         {multiSelectElement}

@@ -9,6 +9,7 @@ import { Button } from '../../../shared/components/Button';
 import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import { basicDetailsSchema, type BasicDetailsFormValues } from '../schemas/basicDetails.schema';
 import type { FpcInvitation, FpcBasicDetailsFormData } from '../types';
+import { basicDetailsGuidance } from '../constants/fieldGuidance';
 
 export interface FpcBasicDetailsFormProps {
   invitation: FpcInvitation;
@@ -119,6 +120,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
           {/* Row 1: Legal Name & CIN */}
           <Input
             id="fpc-legal-name"
+            guidance={basicDetailsGuidance.legalName}
             label="FPC legal name *"
             required
             disabled={isReadOnly}
@@ -128,6 +130,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
           />
           <Input
             id="fpc-cin"
+            guidance={basicDetailsGuidance.cin}
             label="CIN *"
             required
             disabled={isReadOnly}
@@ -140,6 +143,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
           {/* Row 2: Registration Number & ROC Office */}
           <Input
             id="fpc-reg-number"
+            guidance={basicDetailsGuidance.registrationNumber}
             label="FPC registration number *"
             required
             disabled={isReadOnly}
@@ -153,6 +157,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             render={({ field }) => (
               <Select
                 id="fpc-roc-office"
+                guidance={basicDetailsGuidance.rocOffice}
                 label="ROC office *"
                 required
                 disabled={isReadOnly}
@@ -174,6 +179,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             render={({ field }) => (
               <DatePicker
                 id="fpc-date-incorporation"
+                guidance={basicDetailsGuidance.dateOfIncorporation}
                 label="Date of incorporation *"
                 required
                 disabled={isReadOnly}
@@ -191,6 +197,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             render={({ field }) => (
               <Select
                 id="fpc-company-category"
+                guidance={basicDetailsGuidance.companyCategory}
                 label="Company category *"
                 required
                 disabled={isReadOnly}
@@ -209,6 +216,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
           <Input
             id="fpc-contact-email"
             type="email"
+            guidance={basicDetailsGuidance.contactEmail}
             label="Official contact email *"
             required
             readOnly
@@ -220,6 +228,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
           <Input
             id="fpc-contact-mobile"
             type="tel"
+            guidance={basicDetailsGuidance.contactMobile}
             label="Official contact mobile *"
             required
             readOnly
@@ -234,6 +243,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             <Input
               id="fpc-website"
               type="url"
+              guidance={basicDetailsGuidance.website}
               label="Official website"
               disabled={isReadOnly}
               placeholder="https://kalinganagarfpc.in"

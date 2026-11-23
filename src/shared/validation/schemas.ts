@@ -177,6 +177,26 @@ export const pinCodeSchema = z
     'PIN code must contain 6 digits'
   );
 
+/**
+ * Optional decimal-degree coordinate field.
+ * Accepts an empty value, rejects non-numeric input, more than 6 decimals and
+ * anything outside the given axis range.
+ */
+export const coordinateStringSchema = (fieldName: string, min: number, max: number) =>
+  z
+    .string()
+    .trim()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val) return true;
+        if (!/^[+-]?\d{1,3}(\.\d{1,6})?$/.test(val)) return false;
+        const parsed = Number(val);
+        return Number.isFinite(parsed) && parsed >= min && parsed <= max;
+      },
+      { message: `${fieldName} must be a decimal degree value between ${min} and ${max}` }
+    );
+
 export const optionalUrlSchema = z
   .string()
   .trim()
