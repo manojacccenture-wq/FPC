@@ -1,12 +1,16 @@
 import React, { forwardRef, useRef, useState, useId } from 'react';
 import { Upload } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { Button } from './Button';
+import { ProgressBar } from './ProgressBar';
 
 export type FileUploadState = 'idle' | 'ready' | 'uploading' | 'failed' | 'disabled';
+export type FileUploadVariant = 'default' | 'compact' | 'dashed';
 
 export interface FileUploadProps {
   id?: string;
   className?: string;
+  variant?: FileUploadVariant;
   state?: FileUploadState;
   fileName?: string;
   progress?: number; // 0 to 100
@@ -14,6 +18,8 @@ export interface FileUploadProps {
   accept?: string;
   maxSizeMB?: number;
   highlightMint?: boolean;
+  promptText?: string;
+  helperText?: string;
   onFileSelect?: (file: File) => void;
   onRetry?: () => void;
 }
@@ -21,6 +27,7 @@ export interface FileUploadProps {
 export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
   id,
   className,
+  variant = 'default',
   state = 'idle',
   fileName,
   progress = 64,
@@ -28,6 +35,8 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
   accept = "PDF, PNG or JPG",
   maxSizeMB = 15,
   highlightMint = false,
+  promptText,
+  helperText,
   onFileSelect,
   onRetry,
 }, ref) => {
@@ -76,6 +85,8 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
     }
   };
 
+  const isDashed = variant === 'dashed';
+
   return (
     <div
       onClick={handleClick}
@@ -83,13 +94,20 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={cn(
-        "relative w-full rounded-card border p-4 sm:p-5 transition-all duration-150 flex flex-col justify-center min-h-[96px]",
+        "relative w-full transition-all duration-150 flex flex-col justify-center",
+        isDashed
+          ? "rounded-2xl border border-dashed p-4 sm:p-5 items-center text-center min-h-[96px]"
+          : "rounded-card border p-4 sm:p-5 min-h-[96px]",
         // Default border & bg
-        !isFailed && !highlightMint && !isDisabled && "bg-white border-default hover:border-brand",
+        !isFailed && !highlightMint && !isDisabled && (
+          isDashed
+            ? "border-neutral-300 hover:border-neutral-400 bg-white hover:bg-neutral-50/50"
+            : "bg-white border-default hover:border-brand"
+        ),
         // Highlighted / Mint state
         highlightMint && !isFailed && !isDisabled && "bg-brand-soft border-forest-200 hover:border-brand",
         // Drag over / Focus
-        isDragOver && "border-brand bg-brand-soft",
+        isDragOver && (isDashed ? "border-brand bg-brand-soft" : "border-brand bg-brand-soft"),
         // Failed state
         isFailed && "bg-white border-danger",
         // Disabled state
@@ -114,24 +132,40 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
 
       {/* 1. Idle State: Upload Icon, Drag prompt, spec label */}
       {state === 'idle' && (
-        <div className="flex items-center gap-3.5 select-none">
-          <div className="w-9 h-9 rounded-full bg-brand-soft flex items-center justify-center shrink-0 text-brand">
-            <Upload className="w-4 h-4 stroke-[2.2]" />
-          </div>
-          <div className="text-left flex-1 min-w-0">
-            <p className="font-semibold text-primary truncate">
-              Drag file here or <span className="text-brand underline font-semibold">browse</span>
-            </p>
+        isDashed ? (
+          <div className="flex flex-col items-center justify-center text-center select-none w-full">
+            <Upload className="w-4 h-4 text-secondary mb-1" />
+            <span className="font-semibold text-primary">
+              {fileName || promptText || 'Upload file'}
+            </span>
             <small className="text-secondary mt-0.5 block">
-              {accept} up to {maxSizeMB}MB
+              {helperText || `${accept} • Maximum ${maxSizeMB} MB`}
             </small>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center gap-3.5 select-none">
+            <div className="w-9 h-9 rounded-full bg-brand-soft flex items-center justify-center shrink-0 text-brand">
+              <Upload className="w-4 h-4 stroke-[2.2]" />
+            </div>
+            <div className="text-left flex-1 min-w-0">
+              <p className="font-semibold text-primary truncate">
+                {promptText ? (
+                  promptText
+                ) : (
+                  <>Drag file here or <span className="text-brand underline font-semibold">browse</span></>
+                )}
+              </p>
+              <small className="text-secondary mt-0.5 block">
+                {helperText || `${accept} up to ${maxSizeMB}MB`}
+              </small>
+            </div>
+          </div>
+        )
       )}
 
       {/* 2. Ready to upload state */}
       {isReady && (
-        <div className="flex items-center justify-between gap-3 text-left">
+        <div className="flex items-center justify-between gap-3 text-left w-full">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-full bg-brand-soft flex items-center justify-center text-brand shrink-0">
               <Upload className="w-4 h-4 stroke-[2]" />
@@ -150,23 +184,18 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
 
       {/* 3. Uploading state with progress bar */}
       {isUploading && (
-        <div className="space-y-2 select-none text-left">
+        <div className="space-y-2 select-none text-left w-full">
           <div className="flex items-center justify-between font-semibold text-primary">
             <span className="truncate">{fileName || "Uploading..."}</span>
             <span className="text-brand tabular-nums">{progress}%</span>
           </div>
-          <div className="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden">
-            <div
-              className="bg-brand h-full transition-all duration-200 rounded-full"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          <ProgressBar percent={progress} size="xs" />
         </div>
       )}
 
       {/* 4. Failed state with error and retry action */}
       {isFailed && (
-        <div className="flex items-center justify-between gap-3 text-left">
+        <div className="flex items-center justify-between gap-3 text-left w-full">
           <div className="min-w-0">
             <p className="font-semibold text-danger">
               Upload failed
@@ -175,22 +204,24 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
               {errorMessage}
             </small>
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="xs"
             onClick={(e) => {
               e.stopPropagation();
               onRetry?.();
             }}
-            className="font-semibold text-brand hover:underline shrink-0"
+            className="font-semibold text-brand hover:underline shrink-0 p-0 h-auto"
           >
             Retry
-          </button>
+          </Button>
         </div>
       )}
 
       {/* 5. Disabled state */}
       {isDisabled && (
-        <div className="flex items-center gap-3.5 select-none opacity-60">
+        <div className="flex items-center gap-3.5 select-none opacity-60 w-full">
           <div className="w-9 h-9 rounded-full bg-neutral-200 flex items-center justify-center shrink-0 text-neutral-400">
             <Upload className="w-4 h-4" />
           </div>

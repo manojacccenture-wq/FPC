@@ -1,13 +1,27 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, CheckCircle2, Building2 } from 'lucide-react';
-import { Badge, Card, Button } from '../../../../../shared/components';
-import { useGetFpcsQuery } from '../../../../../features/fpc/api/fpcApi';
+import { Badge, Card, Button, Pagination } from '../../../../../shared/components';
+import { usePaginationState } from '../../../../../shared/hooks/usePaginationState';
+import { useGetFpcsPagedQuery } from '../../../../../features/fpc/api/fpcApi';
 
 export const PendingApprovalsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { data: fpcs = [], isLoading } = useGetFpcsQuery();
-  const pendingFpcs = fpcs.filter((f) => f.statusLabel === 'Pending Review');
+
+  const {
+    pageNumber,
+    pageSize,
+    setPage,
+    changePageSize,
+    paginationParams,
+  } = usePaginationState({ initialPage: 1, initialPageSize: 10 });
+
+  const { data: pagedData, isLoading } = useGetFpcsPagedQuery({
+    ...paginationParams,
+    status: 'PendingReview',
+  });
+
+  const pendingFpcs = pagedData?.items ?? [];
 
   return (
     <div className="section-flow text-left">
@@ -28,10 +42,10 @@ export const PendingApprovalsPage: React.FC = () => {
           <div>
             <h2 className="text-sm font-bold text-primary">Verification Queue</h2>
             <p className="text-xs text-secondary mt-0.5">
-              {pendingFpcs.length} Submitted Applications in Queue
+              {pagedData?.totalCount ?? 0} Submitted Applications in Queue
             </p>
           </div>
-          {pendingFpcs.length > 0 && (
+          {(pagedData?.totalCount ?? 0) > 0 && (
             <Badge variant="warning" dot>Action Required</Badge>
           )}
         </div>
@@ -96,6 +110,19 @@ export const PendingApprovalsPage: React.FC = () => {
             ))}
           </div>
         )}
+
+        {/* Pagination Controls */}
+        <div className="pt-2 border-t border-neutral-100">
+          <Pagination
+            pageNumber={pageNumber}
+            pageSize={pageSize}
+            totalCount={pagedData?.totalCount ?? 0}
+            totalPages={pagedData?.totalPages ?? 0}
+            onPageChange={setPage}
+            onPageSizeChange={changePageSize}
+            isLoading={isLoading}
+          />
+        </div>
       </Card>
     </div>
   );

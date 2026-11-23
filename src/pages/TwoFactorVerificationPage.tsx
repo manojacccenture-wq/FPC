@@ -1,5 +1,5 @@
 import { useState, useEffect, type FC } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ShieldCheck, ArrowLeft, RefreshCw, KeyRound } from 'lucide-react';
@@ -34,22 +34,7 @@ export const TwoFactorVerificationPage: FC = () => {
   );
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_SECONDS);
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      const target = activeRole === 'FpcAdmin' ? '/fpc/dashboard' : '/admin/onboard';
-      navigate(target, { replace: true });
-    }
-  }, [isAuthenticated, activeRole, navigate]);
-
-  // Redirect to login if no pending 2FA challenge is present
-  useEffect(() => {
-    if (!pendingTwoFactor) {
-      navigate('/login', { replace: true });
-    }
-  }, [pendingTwoFactor, navigate]);
-
-  // Cooldown countdown timer
+  // Cooldown countdown timer (External Timer API with cleanup)
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setInterval(() => {
@@ -171,8 +156,13 @@ export const TwoFactorVerificationPage: FC = () => {
     navigate('/login', { replace: true });
   };
 
+  if (isAuthenticated) {
+    const target = activeRole === 'FpcAdmin' ? '/fpc/dashboard' : '/admin/onboard';
+    return <Navigate to={target} replace />;
+  }
+
   if (!pendingTwoFactor) {
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   return (

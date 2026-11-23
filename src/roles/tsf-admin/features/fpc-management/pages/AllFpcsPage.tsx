@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Search, Building2, MapPin, Users, CheckCircle2 } from 'lucide-react';
-import { Badge, Card, Input, Button } from '../../../../../shared/components';
-import { useGetFpcsQuery } from '../../../../../features/fpc/api/fpcApi';
+import { Badge, Card, Input, Button, Pagination } from '../../../../../shared/components';
+import { usePaginationState } from '../../../../../shared/hooks/usePaginationState';
+import { useGetFpcsPagedQuery } from '../../../../../features/fpc/api/fpcApi';
 
 interface FpcDirectoryItem {
   id: string;
@@ -14,13 +15,38 @@ interface FpcDirectoryItem {
   status: 'Approved' | 'Review' | 'Audited';
 }
 
+const COMMON_STATES = ['All', 'Jharkhand', 'Odisha', 'Maharashtra', 'West Bengal', 'Bihar'];
+
 export const AllFpcsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedState, setSelectedState] = useState<string>('All');
 
-  const { data: liveFpcs = [], isLoading } = useGetFpcsQuery();
+  const {
+    pageNumber,
+    pageSize,
+    setPage,
+    changePageSize,
+    resetPagination,
+    paginationParams,
+  } = usePaginationState({ initialPage: 1, initialPageSize: 10 });
 
-  const directoryItems: FpcDirectoryItem[] = liveFpcs.map((fpc) => ({
+  const { data: pagedData, isLoading } = useGetFpcsPagedQuery({
+    ...paginationParams,
+    search: searchQuery,
+    state: selectedState === 'All' ? undefined : selectedState,
+  });
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    resetPagination();
+  };
+
+  const handleStateChange = (st: string) => {
+    setSelectedState(st);
+    resetPagination();
+  };
+
+  const directoryItems: FpcDirectoryItem[] = (pagedData?.items ?? []).map((fpc) => ({
     id: fpc.id,
     cin: fpc.cin ?? '',
     name: fpc.name,
@@ -30,17 +56,6 @@ export const AllFpcsPage: React.FC = () => {
     incorporationYear: fpc.createdAtUtc ? new Date(fpc.createdAtUtc).getFullYear() : new Date().getFullYear(),
     status: fpc.status === 'Active' ? 'Approved' : 'Review',
   }));
-
-  const availableStates = ['All', ...Array.from(new Set(liveFpcs.map((f) => f.state).filter(Boolean)))];
-
-  const filteredItems = directoryItems.filter((fpc) => {
-    const matchesSearch =
-      fpc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      fpc.cin.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      fpc.district.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesState = selectedState === 'All' || fpc.state === selectedState;
-    return matchesSearch && matchesState;
-  });
 
   return (
     <div className="section-flow text-left">
@@ -62,7 +77,7 @@ export const AllFpcsPage: React.FC = () => {
           <div>
             <h2 className="text-sm font-bold text-primary">Directory Index</h2>
             <p className="text-xs text-secondary mt-0.5">
-              {filteredItems.length} Enterprises in Network
+              {pagedData?.totalCount ?? 0} Enterprises in Network
             </p>
           </div>
           <Badge variant="brand" dot>Active Sync</Badge>
@@ -75,19 +90,19 @@ export const AllFpcsPage: React.FC = () => {
               size="sm"
               placeholder="Search by company or district"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               leadingIcon={<Search className="w-4 h-4 text-secondary" />}
               className="h-9 text-xs"
             />
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-            {availableStates.map((st) => (
+            {COMMON_STATES.map((st) => (
               <Button
                 key={st}
                 size="xs"
                 variant={selectedState === st ? 'secondary' : 'outline'}
-                onClick={() => setSelectedState(st)}
+                onClick={() => handleStateChange(st)}
                 className={`text-xs h-7 px-3 rounded-full ${
                   selectedState === st ? 'bg-brand-soft text-brand font-semibold' : ''
                 }`}
@@ -104,7 +119,7 @@ export const AllFpcsPage: React.FC = () => {
             <div className="w-8 h-8 border-3 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-2" />
             <p className="text-xs">Loading enterprise directory...</p>
           </div>
-        ) : filteredItems.length === 0 ? (
+        ) : directoryItems.length === 0 ? (
           <div className="py-10 text-center text-secondary">
             <CheckCircle2 className="w-8 h-8 text-neutral-400 mx-auto mb-2 stroke-[1.5]" />
             <p className="text-sm font-medium text-primary">No directory entries found</p>
@@ -114,7 +129,7 @@ export const AllFpcsPage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
-            {filteredItems.map((fpc) => (
+            {directoryItems.map((fpc) => (
               <div
                 key={fpc.id}
                 className="p-3.5 rounded-xl border border-neutral-200/80 hover:border-brand/40 bg-white transition-all space-y-2 text-left shadow-2xs"
@@ -155,6 +170,19 @@ export const AllFpcsPage: React.FC = () => {
             ))}
           </div>
         )}
+
+        {/* Pagination Controls */}
+        <div className="pt-4 border-t border-neutral-100 mt-4">
+          <Pagination
+            pageNumber={pageNumber}
+            pageSize={pageSize}
+            totalCount={pagedData?.totalCount ?? 0}
+            totalPages={pagedData?.totalPages ?? 0}
+            onPageChange={setPage}
+            onPageSizeChange={changePageSize}
+            isLoading={isLoading}
+          />
+        </div>
       </Card>
     </div>
   );

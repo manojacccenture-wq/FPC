@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '../../../shared/components/Card';
 import { Button } from '../../../shared/components/Button';
+import { ProgressBar } from '../../../shared/components/ProgressBar';
 import type {
   FpcBasicDetailsFormData,
   FpcLegalRegistrationFormData,
@@ -142,30 +143,33 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
                 </div>
               </div>
 
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="xs"
                 onClick={() => onEditStep(section.step)}
-                className="rounded-full bg-[#E8F5E9] hover:bg-[#D7EEDF] text-[#0F4C36] px-4 py-1.5 font-semibold select-none flex items-center gap-1 cursor-pointer transition-colors shrink-0 text-xs"
+                className="rounded-full px-4 py-1.5 font-semibold shrink-0 text-xs shadow-2xs"
               >
                 <span>{isReadOnly ? 'View' : 'Edit'}</span>
                 <span>→</span>
-              </button>
+              </Button>
             </div>
           ))}
         </div>
 
-        {/* Onboarding Readiness Warm Banner */}
-        <div className="bg-[#FEF9EE] border border-[#FDE68A]/60 rounded-2xl p-5 sm:p-6 space-y-3 shadow-2xs">
+        {/* Onboarding Readiness Warm Banner Reusing Shared Card and ProgressBar */}
+        <Card
+          padding="none"
+          className="bg-[#FEF9EE] border border-[#FDE68A]/70 rounded-2xl p-5 sm:p-6 space-y-3 shadow-2xs"
+        >
           <h4 className="font-bold text-primary">
             Onboarding Readiness • 92%
           </h4>
-          <div className="w-full h-2 bg-neutral-200/80 rounded-full overflow-hidden">
-            <div className="h-full bg-[#0F4C36] rounded-full w-[92%] transition-all duration-500" />
-          </div>
+          <ProgressBar percent={92} size="sm" />
           <small className="text-secondary font-medium block">
             2 of 8 sections verified
           </small>
-        </div>
+        </Card>
       </Card>
 
       {/* Bottom Action Bar */}
@@ -174,7 +178,7 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
           type="button"
           variant="secondary"
           onClick={onPreviousStep}
-          className="rounded-full bg-brand-soft text-brand hover:bg-forest-100 px-6 py-2.5 text-xs font-semibold"
+          className="rounded-full px-6 py-2.5 text-xs font-semibold"
         >
           ← Previous Step
         </Button>
@@ -185,7 +189,7 @@ export const FpcFinalReviewForm: React.FC<FpcFinalReviewFormProps> = ({
             onClick={onSubmit}
             isLoading={isSubmitting}
             loadingText="Submitting..."
-            className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+            className="rounded-full px-7 py-2.5 text-xs font-semibold shadow-2xs"
           >
             Submit Onboarding
           </Button>

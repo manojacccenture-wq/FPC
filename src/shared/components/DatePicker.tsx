@@ -11,6 +11,7 @@ import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, X } f
 import { cn } from '../utils/cn';
 import { parseDateString, getStartOfToday } from '../utils/date';
 import { FormField } from './FormField';
+import { Button } from './Button';
 
 export type DatePickerSize = 'sm' | 'md' | 'lg';
 
@@ -124,14 +125,28 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(({
   // Resolve controlled vs uncontrolled value
   const isControlled = value !== undefined;
   const [internalValue, setInternalValue] = useState<string>(() => {
+    if (defaultValue instanceof Date) return formatDateToDMY(defaultValue);
     if (defaultValue !== undefined) return String(defaultValue);
     return '';
   });
+  const defaultValPrimitive = defaultValue instanceof Date ? defaultValue.getTime() : defaultValue;
+  const [prevDefaultValue, setPrevDefaultValue] = useState(defaultValPrimitive);
+  if (!isControlled && defaultValPrimitive !== prevDefaultValue) {
+    setPrevDefaultValue(defaultValPrimitive);
+    if (defaultValue !== undefined) {
+      setInternalValue(defaultValue instanceof Date ? formatDateToDMY(defaultValue) : String(defaultValue));
+    }
+  }
 
-  const displayValue = isControlled ? String(value ?? '') : internalValue;
+  const displayValue = isControlled
+    ? (value instanceof Date ? formatDateToDMY(value) : String(value ?? ''))
+    : internalValue;
 
   // Selected date object derived from display string
   const selectedDate = useMemo(() => parseDateString(displayValue), [displayValue]);
+
+  // Primitive timestamp comparison for selected date to prevent reference-identity instability
+  const selectedTimestamp = selectedDate ? selectedDate.getTime() : null;
 
   // Today reference
   const today = useMemo(() => new Date(), []);
@@ -143,6 +158,14 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(({
   const [viewMonth, setViewMonth] = useState<number>(() => {
     return selectedDate ? selectedDate.getMonth() : today.getMonth();
   });
+  const [prevSelectedTimestamp, setPrevSelectedTimestamp] = useState<number | null>(selectedTimestamp);
+  if (selectedTimestamp !== prevSelectedTimestamp) {
+    setPrevSelectedTimestamp(selectedTimestamp);
+    if (selectedDate) {
+      setViewYear(selectedDate.getFullYear());
+      setViewMonth(selectedDate.getMonth());
+    }
+  }
 
   // Calendar popup open state
   const [isOpen, setIsOpen] = useState(false);
@@ -182,21 +205,6 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(({
     },
     [ref, isControlled, internalValue]
   );
-
-  // Sync internal value if defaultValue changes dynamically
-  useEffect(() => {
-    if (!isControlled && defaultValue !== undefined) {
-      setInternalValue(String(defaultValue));
-    }
-  }, [defaultValue, isControlled]);
-
-  // Synchronize calendar view if selected date changes externally
-  useEffect(() => {
-    if (selectedDate) {
-      setViewYear(selectedDate.getFullYear());
-      setViewMonth(selectedDate.getMonth());
-    }
-  }, [selectedDate]);
 
   // Close popup on click outside
   useEffect(() => {
@@ -517,25 +525,31 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(({
         {/* Trailing Icon (Clear button or Calendar icon) */}
         <div className="absolute right-3.5 flex items-center gap-1.5">
           {clearable && displayValue && !disabled && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
+              iconOnly
               aria-label="Clear date"
               onClick={handleClear}
-              className="text-neutral-400 hover:text-neutral-600 transition-colors p-0.5 rounded cursor-pointer"
+              className="text-neutral-400 hover:text-neutral-600 transition-colors p-0.5 rounded cursor-pointer w-6 h-6 min-w-6 min-h-6 border-0"
             >
               <X className="w-3.5 h-3.5" />
-            </button>
+            </Button>
           )}
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="xs"
+            iconOnly
             aria-label="Toggle calendar"
             disabled={disabled}
             onClick={() => !disabled && setIsOpen((prev) => !prev)}
-            className="text-neutral-400 hover:text-neutral-600 transition-colors flex items-center justify-center cursor-pointer"
+            className="text-neutral-400 hover:text-neutral-600 transition-colors flex items-center justify-center cursor-pointer w-6 h-6 min-w-6 min-h-6 border-0"
           >
             {trailingIcon || <CalendarIcon className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -549,15 +563,18 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(({
         >
           {/* Header Row: Prev Month Button, Direct Month & Year Selectors, Next Month Button */}
           <div className="flex items-center justify-between mb-5">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
+              iconOnly
               aria-label="Previous month"
               onClick={handlePrevMonth}
               disabled={isPrevMonthDisabled}
-              className="p-1.5 rounded-full hover:bg-[#F4F6F5] text-[#0F4C36] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              className="rounded-full hover:bg-[#F4F6F5] text-[#0F4C36] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed w-8 h-8 min-w-8 min-h-8 border-0"
             >
               <ChevronLeft className="w-5 h-5 stroke-[2.2]" />
-            </button>
+            </Button>
 
             <div className="flex items-center gap-1.5">
               {/* Direct Month Selector */}
@@ -595,15 +612,18 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(({
               </div>
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
+              iconOnly
               aria-label="Next month"
               onClick={handleNextMonth}
               disabled={isNextMonthDisabled}
-              className="p-1.5 rounded-full hover:bg-[#F4F6F5] text-[#0F4C36] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              className="rounded-full hover:bg-[#F4F6F5] text-[#0F4C36] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed w-8 h-8 min-w-8 min-h-8 border-0"
             >
               <ChevronRight className="w-5 h-5 stroke-[2.2]" />
-            </button>
+            </Button>
           </div>
 
           {/* Weekday Row: Mo, Tu, We, Th, Fr, Sa, Su (Monday-first) */}

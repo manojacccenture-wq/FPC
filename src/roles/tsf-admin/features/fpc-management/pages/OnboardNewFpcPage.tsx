@@ -1,28 +1,29 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, MoreHorizontal, HelpCircle, ExternalLink, Copy, Check, Eye, Trash2, AlertTriangle } from 'lucide-react';
+import { Search, MoreHorizontal, ExternalLink, Copy, Check, Eye, Trash2, AlertTriangle } from 'lucide-react';
 import {
   Button,
   Input,
-  Badge,
   type BadgeVariant,
   Alert,
   Card,
   Table,
   type TableColumn,
   Modal,
+  Pagination,
 } from '../../../../../shared/components';
+import { usePaginationState } from '../../../../../shared/hooks/usePaginationState';
 import { InviteFpcModal, type InviteFpcFormData } from '../components/InviteFpcModal';
 import { FpcStatusBadge, type FpcStatus } from '../components/FpcStatusBadge';
 import { calculateRegistrationProgress } from '../utils/registrationProgress';
 import {
   useCreateFpcInvitationMutation,
-  useGetFpcInvitationsQuery,
+  useGetOnboardRecordsQuery,
+  useLazyGetOnboardRecordsQuery,
   useRevokeFpcInvitationMutation,
 } from '../../../../../features/onboarding/api/fpcInvitationApi';
 import {
-  useGetFpcsQuery,
   useDeleteFpcMutation,
 } from '../../../../../features/fpc/api/fpcApi';
 import { useAppSelector } from '../../../../../app/store/hooks';
@@ -70,80 +71,68 @@ export const OnboardNewFpcPage: React.FC = () => {
 
   const currentUser = useAppSelector((state) => state.auth.currentUser);
 
-  // RTK Query: Live backend registered FPCs & invitations
+  // Centralized reusable zero-useEffect pagination state
   const {
-    data: liveFpcs = [],
-    isLoading: isLoadingFpcs,
-  } = useGetFpcsQuery();
+    pageNumber,
+    pageSize,
+    setPage,
+    changePageSize,
+    resetPagination,
+    paginationParams,
+  } = usePaginationState({ initialPage: 1, initialPageSize: 10 });
 
+  // RTK Query: Unified backend onboarding records (PostgreSQL UNION ALL pagination)
   const {
-    data: liveInvitations = [],
-    isLoading: isLoadingInvitations,
-  } = useGetFpcInvitationsQuery();
+    data: onboardPaged,
+    isLoading: isLoadingRecords,
+  } = useGetOnboardRecordsQuery({
+    ...paginationParams,
+    search: searchQuery,
+    status: selectedFilter,
+  });
+
+  const [triggerExport, { isFetching: isExporting }] = useLazyGetOnboardRecordsQuery();
 
   const [createFpcInvitation] = useCreateFpcInvitationMutation();
   const [revokeFpcInvitation] = useRevokeFpcInvitationMutation();
   const [deleteFpc, { isLoading: isDeletingFpc }] = useDeleteFpcMutation();
 
-  // Map live registered FPCs from PostgreSQL backend
-  const registeredRecords: FpcRecord[] = liveFpcs.map((fpc) => {
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    resetPagination();
+  };
+
+  const handleFilterChange = (filter: 'All' | 'Active' | 'Onboarding') => {
+    setSelectedFilter(filter);
+    resetPagination();
+  };
+
+  // Map unified records from backend
+  const tableRecords: FpcRecord[] = (onboardPaged?.items ?? []).map((row) => {
     const progress = calculateRegistrationProgress({
-      status: fpc.status,
-      isRegisteredFpc: true,
+      status: row.status,
+      isRegisteredFpc: row.recordType === 'fpc',
+      token: row.token,
+      invitationId: row.invitationId,
+      companyName: row.name,
     });
+
     return {
-      id: fpc.code || fpc.cin || fpc.id,
-      recordType: 'fpc',
-      fpcId: fpc.id,
-      cin: fpc.cin ?? '',
-      name: fpc.name,
-      location: fpc.location,
-      farmers: fpc.farmersCount,
-      shareholders: fpc.shareholdersCount > 0 ? fpc.shareholdersCount : '-',
-      status: fpc.status,
-      statusLabel: progress.label,
+      id: row.id,
+      recordType: row.recordType as 'fpc' | 'invitation',
+      fpcId: row.fpcId ?? undefined,
+      invitationId: row.invitationId ?? undefined,
+      token: row.token ?? undefined,
+      cin: row.cin ?? undefined,
+      name: row.name,
+      location: row.location,
+      farmers: row.farmers,
+      shareholders: row.shareholders > 0 ? row.shareholders : '-',
+      status: row.status as FpcStatus,
+      statusLabel: row.statusLabel,
       badgeVariant: progress.badgeVariant,
       progressPercentage: progress.percentage,
     };
-  });
-
-  // Map live dispatched invitations from PostgreSQL backend
-  const invitationRecords: FpcRecord[] = liveInvitations.map((inv, idx) => {
-    const progress = calculateRegistrationProgress({
-      status: inv.status,
-      isRegisteredFpc: false,
-      token: inv.token,
-      invitationId: inv.id,
-      companyName: inv.companyName,
-      email: inv.email,
-    });
-    return {
-      id: `INV-${(inv.state || 'IND').substring(0, 3).toUpperCase()}-${String(idx + 1).padStart(3, '0')}`,
-      recordType: 'invitation',
-      invitationId: inv.id,
-      token: inv.token,
-      name: inv.companyName,
-      location: `${inv.district}, ${inv.state}`,
-      farmers: 0,
-      shareholders: '-',
-      status: inv.status === 'Expired' ? ('Overdue' as const) : ('Onboarding' as const),
-      statusLabel: progress.label,
-      badgeVariant: progress.badgeVariant,
-      progressPercentage: progress.percentage,
-    };
-  });
-
-  // Complete backend-driven records (Single Source of Truth)
-  const allRecords = [...invitationRecords, ...registeredRecords];
-
-  const filteredRecords = allRecords.filter((r) => {
-    const matchesSearch =
-      r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.location.toLowerCase().includes(searchQuery.toLowerCase());
-
-    if (selectedFilter === 'All') return matchesSearch;
-    return matchesSearch && r.status === selectedFilter;
   });
 
   const handleDelete = async (record: FpcRecord) => {
@@ -233,33 +222,45 @@ export const OnboardNewFpcPage: React.FC = () => {
     notify(`Invitation dispatched to ${result.nominatedAdmin} (${result.email})`, 'success');
   };
 
-  const handleDownloadCsv = () => {
-    if (filteredRecords.length === 0) {
-      notify('No records available to download.', 'warning');
-      return;
+  const handleDownloadCsv = async () => {
+    try {
+      const exportResult = await triggerExport({
+        search: searchQuery,
+        status: selectedFilter,
+        all: true,
+      }).unwrap();
+
+      const items = exportResult.items ?? [];
+      if (items.length === 0) {
+        notify('No records available to download.', 'warning');
+        return;
+      }
+
+      const headers = ['ID', 'Type', 'Name', 'Location', 'Farmers', 'Shareholders', 'Status'];
+      const rows = items.map((r) => [
+        `"${r.id.replace(/"/g, '""')}"`,
+        `"${r.recordType}"`,
+        `"${r.name.replace(/"/g, '""')}"`,
+        `"${r.location.replace(/"/g, '""')}"`,
+        r.farmers,
+        r.shareholders,
+        `"${r.statusLabel.replace(/"/g, '""')}"`,
+      ]);
+
+      const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `fpc_onboarding_records_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      notify('Records exported successfully.', 'success');
+    } catch (err: unknown) {
+      notify(resolveErrorMessage(err, 'We could not export records. Please try again.'), 'danger', 'Export failed');
     }
-
-    const headers = ['ID', 'Name', 'Location', 'Farmers', 'Shareholders', 'Status'];
-    const rows = filteredRecords.map((r) => [
-      `"${r.id.replace(/"/g, '""')}"`,
-      `"${r.name.replace(/"/g, '""')}"`,
-      `"${r.location.replace(/"/g, '""')}"`,
-      r.farmers,
-      r.shareholders === '-' ? '0' : r.shareholders,
-      `"${r.statusLabel.replace(/"/g, '""')}"`,
-    ]);
-
-    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `fpc_onboarding_records_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    notify('Records exported successfully.', 'success');
   };
 
   const handleRowClick = (record: FpcRecord) => {
@@ -283,6 +284,7 @@ export const OnboardNewFpcPage: React.FC = () => {
           onClick={() => {
             setSearchQuery('');
             setSelectedFilter('All');
+            resetPagination();
           }}
           className="mt-3 text-xs"
         >
@@ -389,71 +391,21 @@ export const OnboardNewFpcPage: React.FC = () => {
   ];
 
   const paginationFooter = (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-secondary pt-2 px-1">
-      <div>
-        {allRecords.length === 0
-          ? 'Showing 0 of 0 records'
-          : `Showing 1-${filteredRecords.length} of ${allRecords.length} records`}
-      </div>
-      <div className="flex items-center gap-2 select-none">
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          className="font-medium h-auto p-1"
-        >
-          &larr; Previous
-        </Button>
-        <span className="w-7 h-7 rounded-lg bg-brand-soft text-brand font-bold flex items-center justify-center">
-          1
-        </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          className="font-medium h-auto p-1"
-        >
-          Next &rarr;
-        </Button>
-      </div>
-    </div>
+    <Pagination
+      pageNumber={pageNumber}
+      pageSize={pageSize}
+      totalCount={onboardPaged?.totalCount ?? 0}
+      totalPages={onboardPaged?.totalPages ?? 0}
+      onPageChange={setPage}
+      onPageSizeChange={changePageSize}
+      isLoading={isLoadingRecords}
+    />
   );
 
   const orgName = currentUser?.activeFpcName || 'Tata Steel Foundation';
 
   return (
     <div className="section-flow text-left">
-      {/* 1. Page Header & Action Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <div className="page-eyebrow mb-1">
-            FPC MANAGEMENT
-          </div>
-          <h1 className="page-title">
-            Onboard New FPC
-          </h1>
-          <p className="page-subtitle mt-1">
-            A clearer view of delivery across partner FPCs.
-          </p>
-        </div>
-
-        {/* Right Actions: Reusing shared Badge & Button */}
-        <div className="flex items-center gap-3 shrink-0 pt-1">
-          <Badge variant="brand" dot size="md" className="h-8 px-3.5 text-xs font-semibold">
-            Online
-          </Badge>
-
-          <Button
-            variant="outline"
-            size="sm"
-            leadingIcon={<HelpCircle className="w-3.5 h-3.5 text-secondary" />}
-            className="h-8 px-4 text-xs font-medium"
-          >
-            Help
-          </Button>
-        </div>
-      </div>
-
       {/* Success Notification: Reusing shared Alert */}
       {invitationSuccess && (
         <Alert
@@ -506,7 +458,7 @@ export const OnboardNewFpcPage: React.FC = () => {
             FPC onboarding
           </h3>
           <p className="text-secondary mt-1">
-            {filteredRecords.length} records · {orgName}
+            {onboardPaged?.totalCount ?? 0} records · {orgName}
           </p>
         </div>
 
@@ -518,7 +470,7 @@ export const OnboardNewFpcPage: React.FC = () => {
               size="sm"
               placeholder="Search records"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               leadingIcon={<Search className="w-4 h-4 text-secondary" />}
               className="h-10"
             />
@@ -529,7 +481,7 @@ export const OnboardNewFpcPage: React.FC = () => {
             <Button
               variant={selectedFilter === 'All' ? 'secondary' : 'outline'}
               size="sm"
-              onClick={() => setSelectedFilter('All')}
+              onClick={() => handleFilterChange('All')}
               className={`h-10 px-5 font-semibold rounded-control transition-colors ${
                 selectedFilter === 'All'
                   ? 'border-forest-200'
@@ -542,7 +494,7 @@ export const OnboardNewFpcPage: React.FC = () => {
             <Button
               variant={selectedFilter === 'Active' ? 'secondary' : 'outline'}
               size="sm"
-              onClick={() => setSelectedFilter('Active')}
+              onClick={() => handleFilterChange('Active')}
               className={`h-10 px-5 font-semibold rounded-control transition-colors ${
                 selectedFilter === 'Active'
                   ? 'border-forest-200'
@@ -555,7 +507,7 @@ export const OnboardNewFpcPage: React.FC = () => {
             <Button
               variant={selectedFilter === 'Onboarding' ? 'secondary' : 'outline'}
               size="sm"
-              onClick={() => setSelectedFilter('Onboarding')}
+              onClick={() => handleFilterChange('Onboarding')}
               className={`h-10 px-5 font-semibold rounded-control transition-colors ${
                 selectedFilter === 'Onboarding'
                   ? 'border-forest-200'
@@ -577,20 +529,21 @@ export const OnboardNewFpcPage: React.FC = () => {
               variant="secondary"
               size="sm"
               onClick={handleDownloadCsv}
+              disabled={isExporting}
               className="h-10 px-5 border-forest-200"
             >
-              Download
+              {isExporting ? 'Exporting...' : 'Download'}
             </Button>
           </div>
         </div>
 
         {/* Responsive Data Table: Reusing centralized shared Table */}
         <Table
-          data={filteredRecords}
+          data={tableRecords}
           columns={fpcColumns}
           getRowKey={(item) => item.invitationId || item.fpcId || item.id}
           ariaLabel="FPC onboarding records"
-          isLoading={isLoadingFpcs || isLoadingInvitations}
+          isLoading={isLoadingRecords}
           emptyState={emptyState}
           footer={paginationFooter}
           onRowClick={handleRowClick}

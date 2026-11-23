@@ -7,6 +7,8 @@ import { Badge } from '../../../shared/components/Badge';
 import { DatePicker } from '../../../shared/components/DatePicker';
 import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import { useLazyGetFpcDocumentContentQuery } from '../../fpc/api/fpcApi';
+import { API_BASE_URL } from '../../../shared/config/env';
+import { FPC_ENDPOINTS } from '../../../shared/api/endpoints/fpc.endpoints';
 import {
   logoDocumentsSchema,
   type LogoDocumentsFormValues,
@@ -174,7 +176,7 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
     (d) => d.documentType.toLowerCase() === 'companylogo' || d.documentType.toLowerCase() === 'logo'
   );
   const logoDocId = matchingLogoDoc?.id || initialData?.documentIds?.logoFileName;
-  const serverLogoUrl = fpcId && logoDocId ? `/api/v1/fpcs/${fpcId}/documents/${logoDocId}/content` : null;
+  const serverLogoUrl = fpcId && logoDocId ? `${API_BASE_URL}${FPC_ENDPOINTS.DOCUMENT_CONTENT(fpcId, logoDocId)}` : null;
   const displayLogoUrl = logoPreview || (!logoLoadFailed ? serverLogoUrl : null);
 
   const formValues: LogoDocumentsFormValues = {

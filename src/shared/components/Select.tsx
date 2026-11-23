@@ -4,7 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { FormField } from './FormField';
 
-export type SelectSize = 'sm' | 'md' | 'lg';
+export type SelectSize = 'xs' | 'sm' | 'md' | 'lg';
 
 export interface SelectOption {
   value: string | number;
@@ -27,6 +27,10 @@ const sizeClasses: Record<SelectSize, {
   select: string;
   icon: string;
 }> = {
+  xs: {
+    select: "h-7 min-h-7 pl-2.5 pr-7 text-xs rounded-lg",
+    icon: "w-3 h-3 right-2",
+  },
   sm: {
     select: "h-9 min-h-9 pl-3 pr-8 text-xs sm:text-sm",
     icon: "w-3.5 h-3.5 right-2.5",
@@ -91,6 +95,13 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
     if (defaultValue !== undefined) return defaultValue as string | number;
     return '';
   });
+  const [prevDefaultValue, setPrevDefaultValue] = useState(defaultValue);
+  if (!isControlled && defaultValue !== prevDefaultValue) {
+    setPrevDefaultValue(defaultValue);
+    if (defaultValue !== undefined) {
+      setInternalValue(defaultValue as string | number);
+    }
+  }
 
   const selectedValue = isControlled ? value : internalValue;
 
@@ -148,7 +159,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
       if (next) {
         updatePosition();
         const curIdx = effectiveOptions.findIndex(opt => String(opt.value) === String(selectedValue));
-        setHighlightedIndex(curIdx >= 0 ? curIdx : 0);
+        const initIdx = curIdx >= 0 ? curIdx : 0;
+        setHighlightedIndex(initIdx);
+        requestAnimationFrame(() => {
+          optionRefs.current[initIdx]?.scrollIntoView({ block: 'nearest' });
+        });
       }
       return next;
     });
@@ -238,13 +253,6 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
     }
   };
 
-  // Sync internal value if defaultValue changes dynamically
-  useEffect(() => {
-    if (!isControlled && defaultValue !== undefined) {
-      setInternalValue(defaultValue as string | number);
-    }
-  }, [defaultValue, isControlled]);
-
   // Click outside to close & scroll/resize reposition handlers
   useEffect(() => {
     if (!isOpen) return;
@@ -286,13 +294,6 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
       window.removeEventListener('scroll', handleScrollOrResize, true);
     };
   }, [isOpen, onBlur, updatePosition]);
-
-  // Scroll highlighted item into view
-  useEffect(() => {
-    if (isOpen && highlightedIndex >= 0 && optionRefs.current[highlightedIndex]) {
-      optionRefs.current[highlightedIndex]?.scrollIntoView({ block: 'nearest' });
-    }
-  }, [highlightedIndex, isOpen]);
 
   // Handle option selection
   const handleSelect = (optValue: string | number) => {
@@ -344,7 +345,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
         while (next < effectiveOptions.length && effectiveOptions[next].disabled) {
           next++;
         }
-        return next < effectiveOptions.length ? next : prev;
+        const target = next < effectiveOptions.length ? next : prev;
+        optionRefs.current[target]?.scrollIntoView({ block: 'nearest' });
+        return target;
       });
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
@@ -353,7 +356,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
         while (next >= 0 && effectiveOptions[next].disabled) {
           next--;
         }
-        return next >= 0 ? next : prev;
+        const target = next >= 0 ? next : prev;
+        optionRefs.current[target]?.scrollIntoView({ block: 'nearest' });
+        return target;
       });
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();

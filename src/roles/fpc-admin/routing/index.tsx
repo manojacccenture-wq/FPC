@@ -1,8 +1,17 @@
 import { Navigate, type RouteObject } from 'react-router-dom';
 import { FpcAdminLayout } from '../layout/FpcAdminLayout';
 import { RoleGuard } from '../../../shared/guards/RoleGuard';
-import { FpcAdminDashboardPage } from '../features/dashboard/pages/FpcAdminDashboardPage';
-import { FpcSelfRegistrationPage } from '../features/registration/pages/FpcSelfRegistrationPage';
+import { RouteErrorBoundary } from '../../../shared/components/RouteErrorBoundary';
+import { lazyWithRetry } from '../../../shared/utils/lazyWithRetry';
+
+const FpcAdminDashboardPage = lazyWithRetry(
+  () => import('../features/dashboard/pages/FpcAdminDashboardPage'),
+  'FpcAdminDashboardPage'
+);
+const FpcSelfRegistrationPage = lazyWithRetry(
+  () => import('../features/registration/pages/FpcSelfRegistrationPage'),
+  'FpcSelfRegistrationPage'
+);
 
 export const fpcAdminRoutes: RouteObject = {
   path: 'fpc',
@@ -11,6 +20,7 @@ export const fpcAdminRoutes: RouteObject = {
       <FpcAdminLayout />
     </RoleGuard>
   ),
+  errorElement: <RouteErrorBoundary />,
   children: [
     {
       index: true,

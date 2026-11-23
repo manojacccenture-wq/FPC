@@ -11,6 +11,8 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, X, Check, Search } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { FormField } from './FormField';
+import { Button } from './Button';
+import { Badge } from './Badge';
 
 export type MultiSelectSize = 'sm' | 'md' | 'lg';
 
@@ -97,6 +99,13 @@ export const MultiSelect = forwardRef<HTMLInputElement, MultiSelectProps>(({
   const [internalValue, setInternalValue] = useState<string[]>(() => {
     return Array.isArray(defaultValue) ? defaultValue : [];
   });
+  const [prevDefaultValue, setPrevDefaultValue] = useState(defaultValue);
+  if (!isControlled && defaultValue !== prevDefaultValue) {
+    setPrevDefaultValue(defaultValue);
+    if (defaultValue !== undefined) {
+      setInternalValue(Array.isArray(defaultValue) ? defaultValue : []);
+    }
+  }
 
   const selectedValues = useMemo(() => {
     return isControlled ? (Array.isArray(value) ? value : []) : internalValue;
@@ -271,13 +280,6 @@ export const MultiSelect = forwardRef<HTMLInputElement, MultiSelectProps>(({
     }
   };
 
-  // Sync internal value if defaultValue changes dynamically
-  useEffect(() => {
-    if (!isControlled && defaultValue !== undefined) {
-      setInternalValue(Array.isArray(defaultValue) ? defaultValue : []);
-    }
-  }, [defaultValue, isControlled]);
-
   // Outside click & ancestor scroll handlers
   useEffect(() => {
     if (!isOpen) return;
@@ -316,20 +318,6 @@ export const MultiSelect = forwardRef<HTMLInputElement, MultiSelectProps>(({
       window.removeEventListener('scroll', handleScrollOrResize, true);
     };
   }, [isOpen, onBlur, updatePosition]);
-
-  // Focus search input when popover opens
-  useEffect(() => {
-    if (isOpen && searchable && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [isOpen, searchable]);
-
-  // Scroll highlighted item into view
-  useEffect(() => {
-    if (isOpen && highlightedIndex >= 0 && optionRefs.current[highlightedIndex]) {
-      optionRefs.current[highlightedIndex]?.scrollIntoView({ block: 'nearest' });
-    }
-  }, [highlightedIndex, isOpen]);
 
   // Emit value change to parent and dispatch native event
   const emitChange = useCallback(
@@ -425,7 +413,9 @@ export const MultiSelect = forwardRef<HTMLInputElement, MultiSelectProps>(({
         while (next < filteredOptions.length && filteredOptions[next].disabled) {
           next++;
         }
-        return next < filteredOptions.length ? next : prev;
+        const target = next < filteredOptions.length ? next : prev;
+        optionRefs.current[target]?.scrollIntoView({ block: 'nearest' });
+        return target;
       });
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
@@ -434,7 +424,9 @@ export const MultiSelect = forwardRef<HTMLInputElement, MultiSelectProps>(({
         while (next >= 0 && filteredOptions[next].disabled) {
           next--;
         }
-        return next >= 0 ? next : prev;
+        const target = next >= 0 ? next : prev;
+        optionRefs.current[target]?.scrollIntoView({ block: 'nearest' });
+        return target;
       });
     } else if (e.key === 'Enter' || e.key === ' ') {
       // Toggle highlighted option
@@ -514,24 +506,26 @@ export const MultiSelect = forwardRef<HTMLInputElement, MultiSelectProps>(({
             </span>
           ) : (
             selectedOptions.map((opt) => (
-              <span
+              <Badge
                 key={opt.value}
-                className={cn(
-                  // Pill styling matching exact visual reference: soft sage pill with deep forest green text
-                  "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-[#E8F5EF] text-[#0F4C36] text-xs sm:text-sm font-medium select-none shadow-2xs transition-colors"
-                )}
+                variant="brand"
+                pill
+                className="gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-medium shadow-2xs transition-colors"
               >
                 <span className="truncate max-w-[200px]">{opt.label}</span>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="xs"
+                  iconOnly
                   aria-label={`Remove ${opt.label}`}
                   disabled={disabled}
                   onClick={(e) => handleRemoveChip(e, opt.value)}
-                  className="text-[#0F4C36]/70 hover:text-[#0F4C36] transition-colors p-0.5 rounded cursor-pointer flex items-center justify-center shrink-0"
+                  className="text-brand/70 hover:text-brand transition-colors p-0.5 rounded cursor-pointer flex items-center justify-center shrink-0 w-4 h-4 min-w-4 min-h-4 border-0"
                 >
                   <X className="w-3.5 h-3.5 stroke-[2.2]" />
-                </button>
-              </span>
+                </Button>
+              </Badge>
             ))
           )}
         </div>
@@ -539,14 +533,17 @@ export const MultiSelect = forwardRef<HTMLInputElement, MultiSelectProps>(({
         {/* Trailing Icon Actions: Clear All button & ChevronDown */}
         <div className="absolute right-3.5 flex items-center gap-1.5 pointer-events-auto">
           {clearable && selectedValues.length > 0 && !disabled && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
+              iconOnly
               aria-label="Clear all selections"
               onClick={handleClearAll}
-              className="text-neutral-400 hover:text-neutral-600 transition-colors p-0.5 rounded cursor-pointer flex items-center justify-center"
+              className="text-neutral-400 hover:text-neutral-600 transition-colors p-0.5 rounded cursor-pointer flex items-center justify-center w-6 h-6 min-w-6 min-h-6 border-0"
             >
               <X className="w-3.5 h-3.5 stroke-[2]" />
-            </button>
+            </Button>
           )}
 
           <span
@@ -589,6 +586,7 @@ export const MultiSelect = forwardRef<HTMLInputElement, MultiSelectProps>(({
                 <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
                 <input
                   ref={searchInputRef}
+                  autoFocus
                   type="text"
                   value={searchTerm}
                   placeholder="Search options..."
@@ -600,33 +598,40 @@ export const MultiSelect = forwardRef<HTMLInputElement, MultiSelectProps>(({
                   className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-neutral-200 bg-[#F8FAF9] focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand text-primary placeholder:text-neutral-400"
                 />
                 {searchTerm && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="xs"
+                    iconOnly
                     onClick={() => setSearchTerm('')}
-                    className="absolute right-2 text-neutral-400 hover:text-neutral-600"
+                    className="absolute right-2 text-neutral-400 hover:text-neutral-600 w-5 h-5 min-w-5 min-h-5 border-0 p-0"
                   >
                     <X className="w-3 h-3" />
-                  </button>
+                  </Button>
                 )}
               </div>
 
               {/* Select All / Clear All Action */}
               <div className="flex items-center gap-1.5 text-[11px] font-semibold">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="xs"
                   onClick={handleSelectAll}
-                  className="text-[#0F4C36] hover:underline cursor-pointer"
+                  className="text-[#0F4C36] hover:underline cursor-pointer p-0 h-auto border-0 font-semibold text-[11px]"
                 >
                   All
-                </button>
+                </Button>
                 <span className="text-neutral-300">|</span>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="xs"
                   onClick={handleClearAll}
-                  className="text-neutral-500 hover:text-neutral-700 cursor-pointer"
+                  className="text-neutral-500 hover:text-neutral-700 cursor-pointer p-0 h-auto border-0 font-semibold text-[11px]"
                 >
                   None
-                </button>
+                </Button>
               </div>
             </div>
           )}

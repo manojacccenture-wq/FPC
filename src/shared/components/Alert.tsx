@@ -1,6 +1,7 @@
 import React, { forwardRef } from 'react';
 import { ShieldCheck, CheckCircle2, Clock, CircleHelp, X } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { Button } from './Button';
 
 export type AlertTone = 'info' | 'success' | 'warning' | 'danger' | 'demo';
 export type AlertVariant = 'soft' | 'bordered' | 'card';
@@ -140,17 +141,20 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(({
       </div>
 
       {onClose && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="xs"
+          iconOnly
           onClick={onClose}
           aria-label="Close notification"
           className={cn(
-            "shrink-0 p-1 rounded-sm hover:bg-black/5 transition-colors cursor-pointer -mr-1 -mt-0.5",
+            "-mr-1 -mt-0.5 rounded-sm hover:bg-black/5 transition-colors p-1 w-6 h-6 min-w-6 min-h-6 border-0",
             currentTone.text
           )}
         >
           <X className="w-3.5 h-3.5" />
-        </button>
+        </Button>
       )}
     </div>
   );

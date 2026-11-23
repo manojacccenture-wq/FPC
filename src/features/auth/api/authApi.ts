@@ -1,5 +1,6 @@
 import { baseApi } from '../../../app/api/baseApi';
-import type { CurrentUserProfile } from '../slices/authSlice';
+import { setCredentials, loggedOut, type CurrentUserProfile } from '../slices/authSlice';
+import { AUTH_ENDPOINTS } from '../../../shared/api/endpoints/auth.endpoints';
 
 export interface LoginRequest {
   email: string;
@@ -45,7 +46,7 @@ export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation<ApiResponse<LoginResponseData>, LoginRequest>({
       query: (credentials) => ({
-        url: '/auth/login',
+        url: AUTH_ENDPOINTS.LOGIN,
         method: 'POST',
         body: credentials,
       }),
@@ -61,7 +62,7 @@ export const authApi = baseApi.injectEndpoints({
 
     verifyTwoFactor: builder.mutation<ApiResponse<CurrentUserProfile>, VerifyTwoFactorRequest>({
       query: (body) => ({
-        url: '/auth/verify-2fa',
+        url: AUTH_ENDPOINTS.VERIFY_2FA,
         method: 'POST',
         body,
       }),
@@ -70,7 +71,7 @@ export const authApi = baseApi.injectEndpoints({
 
     resendTwoFactor: builder.mutation<ApiResponse<TwoFactorChallengeResponse>, ResendTwoFactorRequest>({
       query: (body) => ({
-        url: '/auth/2fa/resend',
+        url: AUTH_ENDPOINTS.RESEND_2FA,
         method: 'POST',
         body,
       }),
@@ -78,15 +79,32 @@ export const authApi = baseApi.injectEndpoints({
 
     getCurrentUser: builder.query<ApiResponse<CurrentUserProfile>, void>({
       query: () => ({
-        url: '/auth/me',
+        url: AUTH_ENDPOINTS.ME,
         method: 'GET',
       }),
       providesTags: ['Auth'],
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data?.data) {
+            dispatch(
+              setCredentials({
+                user: data.data,
+                activeFpcId: data.data.activeFpcId ?? undefined,
+                activeRole: data.data.activeRoleCode ?? undefined,
+                memberships: data.data.memberships,
+              })
+            );
+          }
+        } catch {
+          dispatch(loggedOut());
+        }
+      },
     }),
 
     refreshToken: builder.mutation<ApiResponse<CurrentUserProfile>, void>({
       query: () => ({
-        url: '/auth/refresh',
+        url: AUTH_ENDPOINTS.REFRESH,
         method: 'POST',
       }),
       invalidatesTags: ['Auth'],
@@ -94,7 +112,7 @@ export const authApi = baseApi.injectEndpoints({
 
     switchFpc: builder.mutation<ApiResponse<CurrentUserProfile>, SwitchFpcRequest>({
       query: (body) => ({
-        url: '/auth/switch-fpc',
+        url: AUTH_ENDPOINTS.SWITCH_FPC,
         method: 'POST',
         body,
       }),
@@ -103,7 +121,7 @@ export const authApi = baseApi.injectEndpoints({
 
     logout: builder.mutation<ApiResponse<null>, void>({
       query: () => ({
-        url: '/auth/logout',
+        url: AUTH_ENDPOINTS.LOGOUT,
         method: 'POST',
       }),
       invalidatesTags: ['Auth'],
@@ -111,7 +129,7 @@ export const authApi = baseApi.injectEndpoints({
 
     changePassword: builder.mutation<ApiResponse<CurrentUserProfile>, ChangePasswordRequest>({
       query: (body) => ({
-        url: '/auth/change-password',
+        url: AUTH_ENDPOINTS.CHANGE_PASSWORD,
         method: 'POST',
         body,
       }),

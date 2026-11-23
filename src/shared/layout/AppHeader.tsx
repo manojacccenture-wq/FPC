@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Bell, Menu } from 'lucide-react';
-import { Button, NetworkStatusBadge } from '../components';
+import { Bell, Menu, HelpCircle } from 'lucide-react';
+import { Button, Modal, NetworkStatusBadge } from '../components';
+import { APP_CONFIG } from '../config/appConfig';
 import { useAppSelector } from '../../app/store/hooks';
 
 export interface AppHeaderProps {
@@ -11,6 +12,7 @@ export interface AppHeaderProps {
 export const AppHeader: React.FC<AppHeaderProps> = ({
   onToggleMobileMenu,
 }) => {
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const location = useLocation();
   const activeRole = useAppSelector((state) => state.auth.activeRole);
 
@@ -136,17 +138,30 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
       </div>
 
-      {/* Right: Actions (Connectivity Status + English Pill + Notification Bell) */}
-      <div className="flex items-center gap-3 sm:gap-4">
+      {/* Right: Actions (Connectivity Status + Help + English Pill + Notification Bell) */}
+      <div className="flex items-center gap-2.5 sm:gap-3.5">
         {/* Global Connectivity Indicator (Offline persistent / Online 4s transient) */}
         <NetworkStatusBadge />
+
+        {/* Global Help & Support Action */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          leadingIcon={<HelpCircle className="w-3.5 h-3.5 text-secondary" />}
+          onClick={() => setIsHelpModalOpen(true)}
+          className="h-8 px-3 sm:px-3.5 text-xs font-medium rounded-control border-default hover:bg-neutral-50 shadow-2xs"
+          aria-label="Help and Support"
+        >
+          Help
+        </Button>
 
         {/* English Pill Button */}
         <Button
           type="button"
           variant="secondary"
           size="sm"
-          className="h-8 px-4 sm:px-5 bg-brand-soft hover:bg-forest-100 text-brand rounded-control transition-colors shadow-2xs border-transparent"
+          className="h-8 px-4 sm:px-5 bg-brand-soft hover:bg-forest-100 text-brand rounded-control transition-colors shadow-2xs border-transparent font-medium"
         >
           English
         </Button>
@@ -167,8 +182,64 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           />
         </Button>
       </div>
+
+      {/* Centralized Help & Support Dialog */}
+      <Modal
+        isOpen={isHelpModalOpen}
+        onClose={() => setIsHelpModalOpen(false)}
+        title="Help & Support Desk"
+        description="Operational assistance and technical support for FPC administrators."
+        size="md"
+        footer={
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setIsHelpModalOpen(false)}
+            className="text-xs"
+          >
+            Close
+          </Button>
+        }
+      >
+        <div className="space-y-4 text-xs text-left">
+          <div className="p-3 bg-brand-soft/40 border border-brand/20 rounded-control">
+            <h4 className="font-semibold text-brand text-sm mb-1">{APP_CONFIG.organization} Support</h4>
+            <p className="text-secondary leading-relaxed">
+              For queries regarding FPC onboarding, statutory documentation review, or technical issues, reach our dedicated operations desk.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-3 border border-default rounded-control bg-neutral-50">
+              <span className="text-secondary block font-medium mb-1">Toll-Free Helpline</span>
+              <a
+                href={`tel:${APP_CONFIG.tollFreeHelpline}`}
+                className="text-brand font-semibold hover:underline text-sm block"
+              >
+                {APP_CONFIG.tollFreeHelpline}
+              </a>
+              <span className="text-secondary text-[11px] block mt-0.5">Mon–Sat (9:00 AM – 6:00 PM)</span>
+            </div>
+
+            <div className="p-3 border border-default rounded-control bg-neutral-50">
+              <span className="text-secondary block font-medium mb-1">Support Email</span>
+              <a
+                href={`mailto:${APP_CONFIG.supportEmail}`}
+                className="text-brand font-semibold hover:underline text-sm block"
+              >
+                {APP_CONFIG.supportEmail}
+              </a>
+              <span className="text-secondary text-[11px] block mt-0.5">Response within 24 business hours</span>
+            </div>
+          </div>
+
+          <div className="text-secondary text-[11px] leading-relaxed pt-1">
+            Documentation guidelines, license validity rules, and user guides are aligned with the Ministry of Corporate Affairs (MCA) and Tata Steel Foundation compliance frameworks.
+          </div>
+        </div>
+      </Modal>
     </header>
   );
 };
-export default AppHeader;
 
+export default AppHeader;

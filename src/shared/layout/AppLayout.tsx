@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { AppHeader } from './AppHeader';
+import { PageLoadingFallback } from '../components/PageLoadingFallback';
 import { useLogoutMutation } from '../../features/auth/api/authApi';
 import { useAppDispatch, useAppSelector } from '../../app/store/hooks';
 import { loggedOut } from '../../features/auth/slices/authSlice';
@@ -49,7 +50,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
         {/* 3. Dynamic Center Content Area: Centralized Page Padding & Viewport-Adaptive Max-Width */}
         <main className="flex-1 page-container max-w-[1440px] w-full mx-auto md:min-h-0 md:overflow-y-auto">
-          {children || <Outlet />}
+          {children || (
+            <Suspense fallback={<PageLoadingFallback />}>
+              <Outlet />
+            </Suspense>
+          )}
         </main>
       </div>
     </div>

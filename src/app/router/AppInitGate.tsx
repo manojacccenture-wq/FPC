@@ -1,26 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useGetCurrentUserQuery } from '../../features/auth/api/authApi';
-import { useAppDispatch } from '../store/hooks';
-import { setCredentials, loggedOut } from '../../features/auth/slices/authSlice';
 
 export const AppInitGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const dispatch = useAppDispatch();
-  const { data, isLoading, isSuccess, isError } = useGetCurrentUserQuery();
-
-  useEffect(() => {
-    if (isSuccess && data?.data) {
-      dispatch(
-        setCredentials({
-          user: data.data,
-          activeFpcId: data.data.activeFpcId ?? undefined,
-          activeRole: data.data.activeRoleCode ?? undefined,
-          memberships: data.data.memberships,
-        })
-      );
-    } else if (isError) {
-      dispatch(loggedOut());
-    }
-  }, [isSuccess, isError, data, dispatch]);
+  const { isLoading } = useGetCurrentUserQuery();
 
   if (isLoading) {
     return (

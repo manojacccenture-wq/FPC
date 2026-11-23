@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React from 'react';
 import { cn } from '../../../../../shared/utils/cn';
-import { Badge, Card } from '../../../../../shared/components';
+import { Badge, Card, ProgressBar } from '../../../../../shared/components';
 
 export interface WizardStepItem {
   step: number;
@@ -157,12 +157,7 @@ export const FpcWizardStepSidebar: React.FC<FpcWizardStepSidebarProps> = ({
         <h4 className="font-bold text-primary text-base">
           Onboarding Readiness • {readinessPercentage}%
         </h4>
-        <div className="w-full h-2 bg-neutral-200/80 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#0F4C36] rounded-full transition-all duration-500"
-            style={{ width: `${readinessPercentage}%` }}
-          />
-        </div>
+        <ProgressBar percent={readinessPercentage} size="sm" />
         <p className="text-secondary font-medium text-xs">
           {sectionsVerifiedText}
         </p>

@@ -1,12 +1,13 @@
 import React from 'react';
 import { useFieldArray, useWatch, Controller } from 'react-hook-form';
-import { ChevronRight, Plus, Upload } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
 import { Select } from '../../../shared/components/Select';
 import { DatePicker } from '../../../shared/components/DatePicker';
 import { Button } from '../../../shared/components/Button';
 import { FormField } from '../../../shared/components/FormField';
+import { FileUpload } from '../../../shared/components/FileUpload';
 import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import {
   boardOfDirectorsSchema,
@@ -198,7 +199,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                       variant="destructive"
                       size="sm"
                       onClick={() => remove(index)}
-                      className="h-8 px-5 rounded-lg text-xs font-semibold bg-[#8B2323] hover:bg-[#721C1C] text-white shadow-2xs"
+                      className="h-8 px-5 rounded-lg text-xs font-semibold shadow-2xs"
                     >
                       Delete
                     </Button>
@@ -243,7 +244,6 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                           disabled={isReadOnly}
                           options={DESIGNATION_OPTIONS}
                           placeholder="Select designation"
-                          trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
                           error={directorErrors?.designation?.message}
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
@@ -262,7 +262,6 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                           disabled={isReadOnly}
                           options={GENDER_OPTIONS}
                           placeholder="Select gender"
-                          trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
                           error={directorErrors?.gender?.message}
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
@@ -337,7 +336,6 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                           disabled={isReadOnly}
                           options={SOCIAL_CATEGORY_OPTIONS}
                           placeholder="Select social category"
-                          trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
                           error={directorErrors?.socialCategory?.message}
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
@@ -356,7 +354,6 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                           disabled={isReadOnly}
                           options={ACTIVE_STATUS_OPTIONS}
                           placeholder="Select status"
-                          trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
                           error={directorErrors?.activeStatus?.message}
                           value={field.value}
                           onChange={(e) => field.onChange(e.target.value)}
@@ -380,21 +377,15 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                               </span>
                             </div>
                           ) : (
-                            <label className="w-full rounded-2xl border border-dashed border-neutral-300 hover:border-neutral-400 p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-neutral-50/50 transition-colors">
-                              <input
-                                type="file"
-                                accept="image/*,application/pdf"
-                                className="hidden"
-                                onChange={(e) => field.onChange(e.target.files?.[0]?.name ?? '')}
-                              />
-                              <Upload className="w-4 h-4 text-secondary mb-1" />
-                              <span className="font-semibold text-primary">
-                                {field.value || 'Upload photograph'}
-                              </span>
-                              <small className="text-secondary mt-0.5 block">
-                                PDF, PNG or JPG • Maximum 5 MB (or password-protected)
-                              </small>
-                            </label>
+                            <FileUpload
+                              variant="dashed"
+                              accept="image/*,application/pdf"
+                              maxSizeMB={5}
+                              fileName={field.value}
+                              promptText="Upload photograph"
+                              helperText="PDF, PNG or JPG • Maximum 5 MB (or password-protected)"
+                              onFileSelect={(file) => field.onChange(file.name)}
+                            />
                           )}
                         </FormField>
                       )}
@@ -412,21 +403,15 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                               </span>
                             </div>
                           ) : (
-                            <label className="w-full rounded-2xl border border-dashed border-neutral-300 hover:border-neutral-400 p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-neutral-50/50 transition-colors">
-                              <input
-                                type="file"
-                                accept="image/*,application/pdf"
-                                className="hidden"
-                                onChange={(e) => field.onChange(e.target.files?.[0]?.name ?? '')}
-                              />
-                              <Upload className="w-4 h-4 text-secondary mb-1" />
-                              <span className="font-semibold text-primary">
-                                {field.value || 'Attach identity document'}
-                              </span>
-                              <small className="text-secondary mt-0.5 block">
-                                PDF, PNG or JPG • Maximum 5 MB (or password-protected)
-                              </small>
-                            </label>
+                            <FileUpload
+                              variant="dashed"
+                              accept="image/*,application/pdf"
+                              maxSizeMB={5}
+                              fileName={field.value}
+                              promptText="Attach identity document"
+                              helperText="PDF, PNG or JPG • Maximum 5 MB (or password-protected)"
+                              onFileSelect={(file) => field.onChange(file.name)}
+                            />
                           )}
                         </FormField>
                       )}
@@ -443,14 +428,15 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
 
           {/* Add Director Dashed Button */}
           {!isReadOnly && (
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={handleAddDirector}
-              className="w-full py-3.5 px-4 rounded-xl border border-dashed border-neutral-300 hover:border-neutral-400 bg-white hover:bg-neutral-50/50 text-secondary hover:text-primary text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              className="w-full py-3.5 px-4 rounded-xl border-dashed border-neutral-300 hover:border-neutral-400 bg-white hover:bg-neutral-50/50 text-secondary hover:text-primary text-xs sm:text-sm font-semibold shadow-2xs"
+              leadingIcon={<Plus className="w-4 h-4" />}
             >
-              <Plus className="w-4 h-4" />
-              <span> Add Director</span>
-            </button>
+              Add Director
+            </Button>
           )}
         </div>
       </Card>
@@ -461,7 +447,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
           type="button"
           variant="secondary"
           onClick={onPreviousStep}
-          className="rounded-full bg-brand-soft text-brand hover:bg-forest-100 px-6 py-2.5 text-xs font-semibold"
+          className="rounded-full px-6 py-2.5 text-xs font-semibold"
         >
           ← Previous Step
         </Button>
@@ -471,7 +457,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
               type="button"
               variant="primary"
               onClick={onNextStep}
-              className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+              className="rounded-full px-7 py-2.5 text-xs font-semibold shadow-2xs"
             >
               Next: Logo & Documents →
             </Button>
@@ -482,7 +468,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
             variant="primary"
             isLoading={isSubmitting}
             loadingText="Saving directors..."
-            className="rounded-full bg-[#0F4C36] hover:bg-[#0B3B2A] text-white px-7 py-2.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+            className="rounded-full px-7 py-2.5 text-xs font-semibold shadow-2xs"
           >
             Save and Continue →
           </Button>

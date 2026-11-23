@@ -1,6 +1,7 @@
 import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { API_BASE_URL } from '../../shared/config/env';
+import { AUTH_ENDPOINTS } from '../../shared/api/endpoints/auth.endpoints';
 
 /**
  * Utility to extract cookie value by name (used for non-HttpOnly XSRF-TOKEN)
@@ -29,6 +30,7 @@ const rawBaseQuery = fetchBaseQuery({
       endpoint === 'validateFpcInvitation' ||
       endpoint === 'createFpcInvitation' ||
       endpoint === 'getFpcInvitations' ||
+      endpoint === 'getOnboardRecords' ||
       endpoint === 'getFpcInvitationById' ||
       endpoint === 'revokeFpcInvitation' ||
       endpoint === 'uploadDocument';
@@ -81,15 +83,15 @@ export const baseQueryWithReauth: BaseQueryFn<
   if (result.error && result.error.status === 401) {
     const isAuthEndpoint =
       typeof args === 'string'
-        ? args.includes('/auth/login') || args.includes('/auth/refresh')
-        : args.url.includes('/auth/login') || args.url.includes('/auth/refresh');
+        ? args.includes(AUTH_ENDPOINTS.LOGIN) || args.includes(AUTH_ENDPOINTS.REFRESH)
+        : args.url.includes(AUTH_ENDPOINTS.LOGIN) || args.url.includes(AUTH_ENDPOINTS.REFRESH);
 
     if (!isAuthEndpoint) {
       // If the browser has no session indicator (XSRF-TOKEN cookie) during initial /auth/me check,
       // skip the doomed refresh request to keep network tab clean for unauthenticated visitors.
       const hasSessionIndicator = Boolean(getCookie('XSRF-TOKEN'));
       const isMeEndpoint =
-        typeof args === 'string' ? args.includes('/auth/me') : args.url.includes('/auth/me');
+        typeof args === 'string' ? args.includes(AUTH_ENDPOINTS.ME) : args.url.includes(AUTH_ENDPOINTS.ME);
 
       if (!hasSessionIndicator && isMeEndpoint) {
         api.dispatch({ type: 'auth/loggedOut' });
@@ -99,7 +101,7 @@ export const baseQueryWithReauth: BaseQueryFn<
       // Attempt to refresh the access token via HttpOnly refresh cookie
       const refreshResult = await rawBaseQuery(
         {
-          url: '/auth/refresh',
+          url: AUTH_ENDPOINTS.REFRESH,
           method: 'POST',
         },
         api,

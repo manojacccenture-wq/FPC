@@ -1,5 +1,10 @@
 import { baseApi } from '../../../app/api/baseApi';
 import { TAG_TYPES } from '../../../app/api/tagTypes';
+import type { PagedResult } from '../../../shared/types/pagination.types';
+import type { GetFpcsPagedArgs } from '../../../shared/types/api.types';
+import { FPC_ENDPOINTS } from '../../../shared/api/endpoints/fpc.endpoints';
+
+export type { GetFpcsPagedArgs };
 
 export interface FpcSummaryDto {
   id: string;
@@ -110,19 +115,25 @@ export interface ApiResponse<T> {
 export const fpcApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getFpcs: builder.query<FpcSummaryDto[], void>({
-      query: () => '/fpcs',
+      query: () => FPC_ENDPOINTS.ROOT,
       transformResponse: (response: ApiResponse<FpcSummaryDto[]>) => response.data,
       providesTags: [TAG_TYPES.Fpc],
     }),
 
+    getFpcsPaged: builder.query<PagedResult<FpcSummaryDto>, GetFpcsPagedArgs | void>({
+      query: (args) => FPC_ENDPOINTS.PAGED(args),
+      transformResponse: (response: ApiResponse<PagedResult<FpcSummaryDto>>) => response.data,
+      providesTags: [TAG_TYPES.Fpc],
+    }),
+
     getFpcById: builder.query<FpcSummaryDto, string>({
-      query: (id) => `/fpcs/${id}`,
+      query: (id) => FPC_ENDPOINTS.BY_ID(id),
       transformResponse: (response: ApiResponse<FpcSummaryDto>) => response.data,
       providesTags: (_result, _error, id) => [{ type: TAG_TYPES.Fpc, id }],
     }),
 
     getFpcDetails: builder.query<FpcDetailsDto, string>({
-      query: (id) => `/fpcs/${id}/details`,
+      query: (id) => FPC_ENDPOINTS.DETAILS(id),
       transformResponse: (response: ApiResponse<FpcDetailsDto>) => response.data,
       providesTags: (_result, _error, id) => [{ type: TAG_TYPES.Fpc, id }],
     }),
@@ -136,8 +147,7 @@ export const fpcApi = baseApi.injectEndpoints({
       { fpcId: string; documentId: string; download?: boolean }
     >({
       query: ({ fpcId, documentId, download }) => ({
-        url: `/fpcs/${fpcId}/documents/${documentId}/content`,
-        params: download ? { download: true } : undefined,
+        url: FPC_ENDPOINTS.DOCUMENT_CONTENT(fpcId, documentId, download),
         responseHandler: (response) => response.blob(),
       }),
       keepUnusedDataFor: 5,
@@ -145,7 +155,7 @@ export const fpcApi = baseApi.injectEndpoints({
 
     deleteFpc: builder.mutation<{ success: boolean; message?: string }, string>({
       query: (id) => ({
-        url: `/fpcs/${id}`,
+        url: FPC_ENDPOINTS.BY_ID(id),
         method: 'DELETE',
       }),
       invalidatesTags: [TAG_TYPES.Fpc],
@@ -153,7 +163,7 @@ export const fpcApi = baseApi.injectEndpoints({
 
     saveFpcDraft: builder.mutation<ApiResponse<FpcDetailsDto>, SaveFpcRegistrationDraftRequest>({
       query: ({ id, ...body }) => ({
-        url: `/fpcs/${id}/draft`,
+        url: FPC_ENDPOINTS.DRAFT(id),
         method: 'PATCH',
         body,
       }),
@@ -162,7 +172,7 @@ export const fpcApi = baseApi.injectEndpoints({
 
     submitFpcRegistration: builder.mutation<ApiResponse<FpcDetailsDto>, SubmitFpcRegistrationRequest>({
       query: ({ id, ...body }) => ({
-        url: `/fpcs/${id}/submit-registration`,
+        url: FPC_ENDPOINTS.SUBMIT_REGISTRATION(id),
         method: 'POST',
         body,
       }),
@@ -171,7 +181,7 @@ export const fpcApi = baseApi.injectEndpoints({
 
     approveFpc: builder.mutation<ApiResponse<FpcDetailsDto>, ApproveFpcRequest>({
       query: ({ id, ...body }) => ({
-        url: `/fpcs/${id}/approve`,
+        url: FPC_ENDPOINTS.APPROVE(id),
         method: 'POST',
         body,
       }),
@@ -180,7 +190,7 @@ export const fpcApi = baseApi.injectEndpoints({
 
     rejectFpc: builder.mutation<ApiResponse<FpcDetailsDto>, RejectFpcRequest>({
       query: ({ id, ...body }) => ({
-        url: `/fpcs/${id}/reject`,
+        url: FPC_ENDPOINTS.REJECT(id),
         method: 'POST',
         body,
       }),
@@ -189,7 +199,7 @@ export const fpcApi = baseApi.injectEndpoints({
 
     uploadFpcDocument: builder.mutation<ApiResponse<UploadedFpcDocumentDto>, UploadFpcDocumentRequest>({
       query: ({ fpcId, formData }) => ({
-        url: `/fpcs/${fpcId}/documents`,
+        url: FPC_ENDPOINTS.DOCUMENTS(fpcId),
         method: 'POST',
         body: formData,
       }),
@@ -205,6 +215,7 @@ export const fpcApi = baseApi.injectEndpoints({
 
 export const {
   useGetFpcsQuery,
+  useGetFpcsPagedQuery,
   useGetFpcByIdQuery,
   useGetFpcDetailsQuery,
   useLazyGetFpcDocumentContentQuery,

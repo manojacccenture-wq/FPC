@@ -1,5 +1,7 @@
 import React from 'react';
 import { cn } from '../../../shared/utils/cn';
+import { Button } from '../../../shared/components/Button';
+import { ProgressBar } from '../../../shared/components/ProgressBar';
 import type { OnboardingWizardStep } from '../types';
 
 export interface OnboardingStepperProps {
@@ -58,16 +60,18 @@ export const OnboardingStepper: React.FC<OnboardingStepperProps> = ({
 
             return (
               <div key={step.id} className="flex flex-col items-center">
-                <button
+                <Button
                   type="button"
+                  variant={isActive ? "primary" : isCompleted ? "secondary" : "ghost"}
+                  size="xs"
                   disabled={!isClickable}
                   onClick={() => onStepClick?.(step.number)}
                   className={cn(
-                    "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all select-none",
+                    "rounded-full text-xs font-semibold select-none border-0 transition-all px-3.5 py-1.5 h-auto",
                     isActive
-                      ? "bg-[#0F4C36] text-white shadow-2xs"
+                      ? "shadow-2xs"
                       : isCompleted
-                      ? "bg-[#F3F5F4] text-neutral-700 hover:text-primary hover:bg-neutral-200 cursor-pointer"
+                      ? "bg-[#F3F5F4] text-neutral-700 hover:text-primary hover:bg-neutral-200"
                       : "bg-[#F3F5F4] text-neutral-400 cursor-not-allowed opacity-60"
                   )}
                 >
@@ -77,7 +81,7 @@ export const OnboardingStepper: React.FC<OnboardingStepperProps> = ({
                     </span>
                   )}
                   <span>{step.label}</span>
-                </button>
+                </Button>
               </div>
             );
           })}
@@ -85,12 +89,7 @@ export const OnboardingStepper: React.FC<OnboardingStepperProps> = ({
       </div>
 
       {/* Active step progress indicator bar extending across completed + current steps */}
-      <div className="mt-3 w-full bg-neutral-100 h-1 rounded-full overflow-hidden">
-        <div
-          style={{ width: `${percentComplete}%` }}
-          className="h-full bg-[#0F4C36] rounded-full transition-all duration-300"
-        />
-      </div>
+      <ProgressBar percent={percentComplete} size="xs" className="mt-3" />
     </div>
   );
 };

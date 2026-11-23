@@ -1,5 +1,28 @@
 import { baseApi } from '../../../app/api/baseApi';
 import { TAG_TYPES } from '../../../app/api/tagTypes';
+import type { PagedResult } from '../../../shared/types/pagination.types';
+import type { GetOnboardRecordsArgs } from '../../../shared/types/api.types';
+import { INVITATION_ENDPOINTS } from '../../../shared/api/endpoints/invitations.endpoints';
+
+export type { GetOnboardRecordsArgs };
+
+export interface OnboardRecordDto {
+  id: string;
+  recordType: 'invitation' | 'fpc';
+  invitationId?: string | null;
+  fpcId?: string | null;
+  cin?: string | null;
+  token?: string | null;
+  name: string;
+  location: string;
+  state: string;
+  district: string;
+  farmers: number;
+  shareholders: number;
+  status: string;
+  statusLabel: string;
+  createdAtUtc: string;
+}
 
 export interface CreateFpcInvitationRequest {
   companyName: string;
@@ -96,25 +119,31 @@ export interface ApiResponse<T> {
 export const fpcInvitationApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getFpcInvitations: builder.query<FpcInvitationDto[], void>({
-      query: () => '/fpc-invitations',
+      query: () => INVITATION_ENDPOINTS.ROOT,
       transformResponse: (response: ApiResponse<FpcInvitationDto[]>) => response.data,
       providesTags: [TAG_TYPES.FpcInvitation],
     }),
 
+    getOnboardRecords: builder.query<PagedResult<OnboardRecordDto>, GetOnboardRecordsArgs | void>({
+      query: (args) => INVITATION_ENDPOINTS.ONBOARD_RECORDS(args),
+      transformResponse: (response: ApiResponse<PagedResult<OnboardRecordDto>>) => response.data,
+      providesTags: [TAG_TYPES.FpcInvitation, TAG_TYPES.Fpc],
+    }),
+
     getFpcInvitationById: builder.query<FpcInvitationDto, string>({
-      query: (id) => `/fpc-invitations/${id}`,
+      query: (id) => INVITATION_ENDPOINTS.BY_ID(id),
       transformResponse: (response: ApiResponse<FpcInvitationDto>) => response.data,
       providesTags: (_result, _error, id) => [{ type: TAG_TYPES.FpcInvitation, id }],
     }),
 
     validateFpcInvitation: builder.query<InvitationValidationResult, string>({
-      query: (token) => `/fpc-invitations/validate?token=${encodeURIComponent(token)}`,
+      query: (token) => INVITATION_ENDPOINTS.VALIDATE(token),
       transformResponse: (response: ApiResponse<InvitationValidationResult>) => response.data,
     }),
 
     createFpcInvitation: builder.mutation<FpcInvitationDto, CreateFpcInvitationRequest>({
       query: (body) => ({
-        url: '/fpc-invitations',
+        url: INVITATION_ENDPOINTS.ROOT,
         method: 'POST',
         body,
       }),
@@ -124,7 +153,7 @@ export const fpcInvitationApi = baseApi.injectEndpoints({
 
     revokeFpcInvitation: builder.mutation<{ success: boolean; message?: string }, string>({
       query: (id) => ({
-        url: `/fpc-invitations/${id}`,
+        url: INVITATION_ENDPOINTS.BY_ID(id),
         method: 'DELETE',
       }),
       invalidatesTags: [TAG_TYPES.FpcInvitation],
@@ -144,7 +173,7 @@ export const fpcInvitationApi = baseApi.injectEndpoints({
         }
 
         return {
-          url: `/fpc-invitations/${encodeURIComponent(token)}/documents`,
+          url: INVITATION_ENDPOINTS.DOCUMENTS(token),
           method: 'POST',
           body,
         };
@@ -157,7 +186,7 @@ export const fpcInvitationApi = baseApi.injectEndpoints({
       CompleteFpcInvitationRequest
     >({
       query: (body) => ({
-        url: '/fpc-invitations/complete',
+        url: INVITATION_ENDPOINTS.COMPLETE,
         method: 'POST',
         body,
       }),
@@ -169,6 +198,8 @@ export const fpcInvitationApi = baseApi.injectEndpoints({
 
 export const {
   useGetFpcInvitationsQuery,
+  useGetOnboardRecordsQuery,
+  useLazyGetOnboardRecordsQuery,
   useGetFpcInvitationByIdQuery,
   useValidateFpcInvitationQuery,
   useCreateFpcInvitationMutation,
