@@ -7,7 +7,7 @@ import {
   ChevronRight,
   User,
 } from 'lucide-react';
-import { Button, Input } from '../components';
+import { Button, Input, OrganizationSwitcher } from '../components';
 import { useAppDispatch, useAppSelector } from '../../app/store/hooks';
 import { setSidebarCollapsed, toggleSidebar } from '../slices/uiSlice';
 import { useGetFpcsQuery } from '../../features/fpc/api/fpcApi';
@@ -241,9 +241,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             />
             <div className="sidebar-brand-text">
               <h1 className="sidebar-brand-title">{brandTitle}</h1>
-              <p className="sidebar-brand-subtitle" title={brandSubtitle}>
-                {brandSubtitle}
-              </p>
+              <OrganizationSwitcher isCollapsed={isCollapsed} />
             </div>
           </div>
 

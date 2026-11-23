@@ -22,6 +22,10 @@ export interface FpcSummaryDto {
   createdAtUtc: string;
   registrationProgressPercentage?: number;
   completedStepsCount?: number;
+  canApprove?: boolean;
+  canReject?: boolean;
+  approvalEligibilityReason?: string | null;
+  rejectionEligibilityReason?: string | null;
 }
 
 export interface FpcDocumentDto {
@@ -66,6 +70,10 @@ export interface FpcDetailsDto {
   registrationDataJson?: string | null;
   registrationProgressPercentage?: number;
   completedStepsCount?: number;
+  canApprove?: boolean;
+  canReject?: boolean;
+  approvalEligibilityReason?: string | null;
+  rejectionEligibilityReason?: string | null;
 }
 
 export interface SaveFpcRegistrationDraftRequest {

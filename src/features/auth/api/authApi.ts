@@ -27,7 +27,7 @@ export interface ResendTwoFactorRequest {
 }
 
 export interface SwitchFpcRequest {
-  targetFpcId: string;
+  targetFpcId: string | null;
 }
 
 export interface ChangePasswordRequest {
@@ -136,6 +136,27 @@ export const authApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data?.data) {
+            // 1. Purge ALL cached queries across all feature APIs and abort in-flight requests
+            dispatch(baseApi.util.resetApiState());
+
+            // 2. Set updated profile in Redux store
+            dispatch(
+              setCredentials({
+                user: data.data,
+                activeFpcId: data.data.activeFpcId ?? undefined,
+                activeRole: data.data.activeRoleCode ?? undefined,
+                memberships: data.data.memberships,
+              })
+            );
+          }
+        } catch {
+          // Error handled in UI component
+        }
+      },
       invalidatesTags: ['Auth', 'Tenant'],
     }),
 

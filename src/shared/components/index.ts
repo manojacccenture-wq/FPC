@@ -22,5 +22,6 @@ export * from './PageLoadingFallback';
 export * from './RouteErrorBoundary';
 export * from './Pagination';
 export * from './ProgressBar';
+export * from './OrganizationSwitcher';
 
 

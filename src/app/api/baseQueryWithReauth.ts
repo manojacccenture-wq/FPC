@@ -33,7 +33,15 @@ const rawBaseQuery = fetchBaseQuery({
       endpoint === 'getOnboardRecords' ||
       endpoint === 'getFpcInvitationById' ||
       endpoint === 'revokeFpcInvitation' ||
-      endpoint === 'uploadDocument';
+      endpoint === 'uploadDocument' ||
+      endpoint === 'approveFpc' ||
+      endpoint === 'rejectFpc' ||
+      endpoint === 'deleteFpc' ||
+      endpoint === 'getFpcs' ||
+      endpoint === 'getFpcsPaged' ||
+      endpoint === 'getFpcById' ||
+      endpoint === 'getFpcDetails' ||
+      endpoint === 'getFpcDocumentContent';
 
     if (activeFpcId && !isPlatformOrInvitation) {
       headers.set('X-Active-Fpc-Id', activeFpcId);
@@ -72,6 +80,16 @@ export const baseQueryWithReauth: BaseQueryFn<
     'body' in args &&
     typeof FormData !== 'undefined' &&
     args.body instanceof FormData;
+
+  const endpoint = typeof args === 'string' ? args : args.url;
+  const isPlatformOrAuth =
+    endpoint.includes('/auth/') ||
+    endpoint.includes('/fpcs/invitations') ||
+    endpoint.includes('/onboard') ||
+    endpoint.includes('/approve') ||
+    endpoint.includes('/reject');
+
+  const requestWorkspace = (api.getState() as { auth?: { activeFpcId?: string | null } }).auth?.activeFpcId;
 
   const mergedExtra = isFormData
     ? { ...((extraOptions as Record<string, unknown>) || {}), isFormData: true }
@@ -122,6 +140,20 @@ export const baseQueryWithReauth: BaseQueryFn<
         api.dispatch({ type: 'auth/loggedOut' });
       }
     }
+  }
+
+  // In-flight workspace drift protection: discard tenant response if active workspace changed while request was in-flight
+  const currentWorkspace = (api.getState() as { auth?: { activeFpcId?: string | null } }).auth?.activeFpcId;
+  if (!isPlatformOrAuth && requestWorkspace !== currentWorkspace) {
+    if (import.meta.env.DEV) {
+      console.warn('[TenantIsolation] Workspace switched during in-flight request; discarded stale tenant response for:', endpoint);
+    }
+    return {
+      error: {
+        status: 'CUSTOM_ERROR',
+        error: 'Tenant context changed during request; stale response discarded.',
+      },
+    };
   }
 
   return result;
