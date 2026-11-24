@@ -61,6 +61,7 @@ export interface FpcDetailsDto {
   location: string;
   farmersCount: number;
   shareholdersCount: number;
+  totalEquitySharesAllotted?: number | null;
   status: 'Active' | 'Onboarding' | 'Overdue' | 'Inactive' | 'Compliance';
   statusLabel: string;
   isActive: boolean;

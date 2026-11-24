@@ -3,6 +3,7 @@ import {
   requiredString,
   ifscSchema,
   bankAccountSchema,
+  positiveIntegerStringSchema,
 } from '../../../shared/validation/schemas';
 
 export const bankAccountItemSchema = z.object({
@@ -23,6 +24,9 @@ export const financialInformationSchema = z.object({
   farmers: requiredString('Farmers'),
   shareholders: requiredString('Shareholders'),
   employees: requiredString('Employees'),
+  totalEquitySharesAllotted: positiveIntegerStringSchema(
+    'Total Number of Equity Shares Allotted'
+  ),
   bankAccounts: z.array(bankAccountItemSchema).min(1, 'At least one bank account is required'),
 });
 

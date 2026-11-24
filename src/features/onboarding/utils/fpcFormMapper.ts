@@ -186,6 +186,12 @@ export function mapFpcToRegistrationDrafts(
       parsedJsonb?.step3?.employees ||
       localDrafts?.step3?.employees ||
       '',
+    totalEquitySharesAllotted:
+      parsedJsonb?.step3?.totalEquitySharesAllotted ||
+      localDrafts?.step3?.totalEquitySharesAllotted ||
+      (fpcDetails?.totalEquitySharesAllotted != null
+        ? String(fpcDetails.totalEquitySharesAllotted)
+        : ''),
     bankAccounts:
       (parsedJsonb?.step3?.bankAccounts && parsedJsonb.step3.bankAccounts.length > 0
         ? parsedJsonb.step3.bankAccounts

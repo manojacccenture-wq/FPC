@@ -11,6 +11,24 @@ export const requiredString = (fieldName: string, minLength = 1) =>
     .trim()
     .min(minLength, `${fieldName} is required`);
 
+/**
+ * Positive whole-number string validation for integer-backed database columns.
+ * Digits only: rejects zero, negatives, decimals, exponents and separators, and
+ * caps the value at the PostgreSQL `integer` maximum so it always fits the column.
+ */
+export const positiveIntegerStringSchema = (fieldName: string) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${fieldName} is required`)
+    .regex(/^[0-9]+$/, `${fieldName} must be a whole number`)
+    .refine((val) => Number(val) > 0, {
+      message: `${fieldName} must be greater than zero`,
+    })
+    .refine((val) => Number(val) <= 2_147_483_647, {
+      message: `${fieldName} cannot exceed 2,147,483,647`,
+    });
+
 export const emailSchema = z
   .string()
   .trim()

@@ -325,6 +325,9 @@ export const FpcRegistrationPage: React.FC = () => {
             pincode: step6?.pinCode,
             district: step6?.district,
             state: step6?.state,
+            totalEquitySharesAllotted: step3?.totalEquitySharesAllotted
+              ? Number(step3.totalEquitySharesAllotted)
+              : undefined,
             documents: documents.length > 0 ? documents : undefined,
             registrationDataJson: JSON.stringify(fullRegistrationPayload),
           },

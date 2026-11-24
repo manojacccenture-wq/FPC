@@ -8,6 +8,7 @@ import { DatePicker } from '../../../shared/components/DatePicker';
 import { Button } from '../../../shared/components/Button';
 import { FormField } from '../../../shared/components/FormField';
 import { FileUpload } from '../../../shared/components/FileUpload';
+import { useFilePreviews } from '../../../shared/hooks/useFilePreviews';
 import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import {
   boardOfDirectorsSchema,
@@ -102,6 +103,12 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
     name: 'directors',
   });
 
+  // Thumbnails for image uploads (photograph / identity document), keyed per director row.
+  const { previews: filePreviews, setFile: setFilePreview, clearFile } = useFilePreviews();
+
+  const previewKey = (directorId: string, field: 'photographName' | 'identityDocName') =>
+    `${directorId}:${field}`;
+
   const submit = handleSubmit(async (values) => {
     try {
       await onSubmit(values);
@@ -166,14 +173,14 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
 
         {/* Directors List */}
         <div className="space-y-6">
-          {fields.map((field, index) => {
+          {fields.map((directorRow, index) => {
             const directorErrors = errors.directors?.[index];
-            const liveDirector = watchedDirectors?.[index] || field;
+            const liveDirector = watchedDirectors?.[index] || directorRow;
             const initials = getInitials(liveDirector.fullName);
 
             return (
               <div
-                key={field.id}
+                key={directorRow.id}
                 className="rounded-2xl border border-neutral-200/80 p-5 sm:p-6 bg-white space-y-5 shadow-2xs"
               >
                 {/* Director Card Header */}
@@ -199,7 +206,11 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                       type="button"
                       variant="destructive"
                       size="sm"
-                      onClick={() => remove(index)}
+                      onClick={() => {
+                        clearFile(previewKey(directorRow.id, 'photographName'));
+                        clearFile(previewKey(directorRow.id, 'identityDocName'));
+                        remove(index);
+                      }}
                       className="h-8 px-5 rounded-lg text-xs font-semibold shadow-2xs"
                     >
                       Delete
@@ -395,7 +406,12 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                               fileName={field.value}
                               promptText="Upload photograph"
                               helperText="PDF, PNG or JPG • Maximum 5 MB (or password-protected)"
-                              onFileSelect={(file) => field.onChange(file.name)}
+                              previewUrl={filePreviews[previewKey(directorRow.id, 'photographName')]}
+                              previewAlt="Director photograph"
+                              onFileSelect={(file) => {
+                                field.onChange(file.name);
+                                setFilePreview(previewKey(directorRow.id, 'photographName'), file);
+                              }}
                             />
                           )}
                         </FormField>
@@ -424,7 +440,12 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                               fileName={field.value}
                               promptText="Attach identity document"
                               helperText="PDF, PNG or JPG • Maximum 5 MB (or password-protected)"
-                              onFileSelect={(file) => field.onChange(file.name)}
+                              previewUrl={filePreviews[previewKey(directorRow.id, 'identityDocName')]}
+                              previewAlt="Director identity document"
+                              onFileSelect={(file) => {
+                                field.onChange(file.name);
+                                setFilePreview(previewKey(directorRow.id, 'identityDocName'), file);
+                              }}
                             />
                           )}
                         </FormField>

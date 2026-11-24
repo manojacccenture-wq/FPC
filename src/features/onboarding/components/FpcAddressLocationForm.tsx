@@ -459,9 +459,10 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             {...register('officeMobile')}
           />
 
-          {/* Row 5: Official email & Latitude */}
+          {/* Row 5: Official email (full-width) */}
           <Input
             id="fpc-official-email"
+            containerClassName="col-span-1 md:col-span-2"
             guidance={addressLocationGuidance.officialEmail}
             type="email"
             label="Official email address *"
@@ -471,6 +472,8 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             error={errors.officialEmail?.message}
             {...register('officialEmail')}
           />
+
+          {/* Row 6: Latitude & Longitude (side by side) */}
           <Input
             id="fpc-latitude"
             guidance={addressLocationGuidance.latitude}
@@ -486,22 +489,23 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
             }}
           />
 
-          {/* Row 6: Longitude (full-width) + location detection */}
-          <div className="col-span-1 md:col-span-2 space-y-3">
-            <Input
-              id="fpc-longitude"
-              guidance={addressLocationGuidance.longitude}
-              label="Longitude"
-              disabled={isReadOnly}
-              placeholder="Enter longitude"
-              helperText={sourceHelperText}
-              error={errors.longitude?.message}
-              {...longitudeField}
-              onChange={(event) => {
-                longitudeField.onChange(event);
-                handleManualCoordinateChange();
-              }}
-            />
+          <Input
+            id="fpc-longitude"
+            guidance={addressLocationGuidance.longitude}
+            label="Longitude"
+            disabled={isReadOnly}
+            placeholder="Enter longitude"
+            helperText={sourceHelperText}
+            error={errors.longitude?.message}
+            {...longitudeField}
+            onChange={(event) => {
+              longitudeField.onChange(event);
+              handleManualCoordinateChange();
+            }}
+          />
+
+          {/* Row 7: location detection (full-width) */}
+          <div className="col-span-1 md:col-span-2">
             <CoordinateLocationControl
               isReadOnly={isReadOnly}
               gpsStatus={gps.status}

@@ -58,6 +58,7 @@ export interface FpcFinancialInformationFormData {
   farmers: string;
   shareholders: string;
   employees: string;
+  totalEquitySharesAllotted: string;
   bankAccounts: FpcBankAccount[];
 }
 

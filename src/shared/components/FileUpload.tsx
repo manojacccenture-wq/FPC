@@ -3,6 +3,7 @@ import { Upload } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Button } from './Button';
 import { ProgressBar } from './ProgressBar';
+import { ImagePreview } from './ImagePreview';
 
 export type FileUploadState = 'idle' | 'ready' | 'uploading' | 'failed' | 'disabled';
 export type FileUploadVariant = 'default' | 'compact' | 'dashed';
@@ -20,6 +21,9 @@ export interface FileUploadProps {
   highlightMint?: boolean;
   promptText?: string;
   helperText?: string;
+  /** Thumbnail for image uploads: local object URL or saved document URL. */
+  previewUrl?: string | null;
+  previewAlt?: string;
   onFileSelect?: (file: File) => void;
   onRetry?: () => void;
 }
@@ -37,6 +41,8 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
   highlightMint = false,
   promptText,
   helperText,
+  previewUrl,
+  previewAlt,
   onFileSelect,
   onRetry,
 }, ref) => {
@@ -134,7 +140,11 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
       {state === 'idle' && (
         isDashed ? (
           <div className="flex flex-col items-center justify-center text-center select-none w-full">
-            <Upload className="w-4 h-4 text-secondary mb-1" />
+            {previewUrl ? (
+              <ImagePreview src={previewUrl} alt={previewAlt} size="sm" className="mb-1.5" />
+            ) : (
+              <Upload className="w-4 h-4 text-secondary mb-1" />
+            )}
             <span className="font-semibold text-primary">
               {fileName || promptText || 'Upload file'}
             </span>
@@ -167,9 +177,13 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
       {isReady && (
         <div className="flex items-center justify-between gap-3 text-left w-full">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-brand-soft flex items-center justify-center text-brand shrink-0">
-              <Upload className="w-4 h-4 stroke-[2]" />
-            </div>
+            {previewUrl ? (
+              <ImagePreview src={previewUrl} alt={previewAlt} size="xs" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-brand-soft flex items-center justify-center text-brand shrink-0">
+                <Upload className="w-4 h-4 stroke-[2]" />
+              </div>
+            )}
             <div className="min-w-0">
               <p className="font-semibold text-primary truncate">
                 {fileName || "Document_Verified.pdf"}

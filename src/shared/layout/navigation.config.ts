@@ -79,7 +79,7 @@ export const NAVIGATION_CONFIG: Record<'TsfAdmin' | 'FpcAdmin', RoleNavigationCo
         items: [
           {
             id: 'fpc-dashboard',
-            name: 'Dashboard',
+            name: 'Profile',
             path: '/fpc/dashboard',
             icon: LayoutGrid,
           },

@@ -215,6 +215,13 @@ export const financialInformationGuidance: Record<
     expectedFormat: 'A whole number, including field and office staff.',
     example: '12',
   },
+  totalEquitySharesAllotted: {
+    description: 'The total number of equity shares allotted to shareholders.',
+    purpose:
+      'Records the issued share capital in shares, alongside the paid-up capital and face value entered above.',
+    expectedFormat: 'A whole number greater than zero, as shown in the share allotment records.',
+    example: '6000',
+  },
 };
 
 /** Step 3 — Repeatable bank account rows */

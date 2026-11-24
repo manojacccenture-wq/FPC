@@ -100,6 +100,7 @@ export interface CompleteFpcInvitationRequest {
   bankIfsc?: string;
   addressLine1?: string;
   addressLine2?: string;
+  totalEquitySharesAllotted?: number;
   pincode?: string;
   district?: string;
   state?: string;

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { Upload, Eye, Download } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
@@ -6,6 +6,8 @@ import { Button } from '../../../shared/components/Button';
 import { Badge } from '../../../shared/components/Badge';
 import { DatePicker } from '../../../shared/components/DatePicker';
 import { InfoTooltip } from '../../../shared/components/InfoTooltip';
+import { ImagePreview } from '../../../shared/components/ImagePreview';
+import { useFilePreviews } from '../../../shared/hooks/useFilePreviews';
 import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import { useLazyGetFpcDocumentContentQuery } from '../../fpc/api/fpcApi';
 import { API_BASE_URL } from '../../../shared/config/env';
@@ -134,10 +136,9 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
     }
   };
 
-  // Preview URL is UI-only state; the file name itself lives in React Hook Form.
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [logoLoadFailed, setLogoLoadFailed] = useState(false);
-  const logoPreviewRef = useRef<string | null>(null);
+  // Preview URLs are UI-only state; the file names themselves live in React Hook Form.
+  // The hook owns every object URL and revokes them on unmount, so no step keeps its own.
+  const { previews, setFile: setPreviewFile } = useFilePreviews();
 
   // The actual File objects stay in memory and are uploaded on submit. They are never
   // written to Redux persistence, localStorage or IndexedDB.
@@ -155,31 +156,15 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
     });
   };
 
-  useEffect(
-    () => () => {
-      if (logoPreviewRef.current) {
-        URL.revokeObjectURL(logoPreviewRef.current);
-      }
-    },
-    []
-  );
-
-  const applyLogoPreview = (url: string | null) => {
-    if (logoPreviewRef.current) {
-      URL.revokeObjectURL(logoPreviewRef.current);
-    }
-    logoPreviewRef.current = url;
-    setLogoLoadFailed(false);
-    setLogoPreview(url);
-  };
-
   // Synchronous derivation of server logo URL without useEffect
   const matchingLogoDoc = storedDocuments?.find(
     (d) => d.documentType.toLowerCase() === 'companylogo' || d.documentType.toLowerCase() === 'logo'
   );
   const logoDocId = matchingLogoDoc?.id || initialData?.documentIds?.logoFileName;
   const serverLogoUrl = fpcId && logoDocId ? `${API_BASE_URL}${FPC_ENDPOINTS.DOCUMENT_CONTENT(fpcId, logoDocId)}` : null;
-  const displayLogoUrl = logoPreview || (!logoLoadFailed ? serverLogoUrl : null);
+  // A freshly selected file wins over the saved document; both render through the
+  // shared ImagePreview, which handles a failed/unreachable saved image itself.
+  const displayLogoUrl = previews.logo || serverLogoUrl;
 
   const formValues: LogoDocumentsFormValues = {
     logoFileName: initialData?.logoFileName || '',
@@ -255,18 +240,12 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-4">
             {/* Logo Preview Square */}
-            <div className="w-24 h-24 rounded-2xl bg-neutral-100 flex items-center justify-center text-xs text-secondary font-medium select-none shrink-0 border border-neutral-200/60 overflow-hidden">
-              {displayLogoUrl ? (
-                <img
-                  src={displayLogoUrl}
-                  alt="Company Logo"
-                  className="w-full h-full object-contain p-1"
-                  onError={() => setLogoLoadFailed(true)}
-                />
-              ) : (
-                <span>No logo</span>
-              )}
-            </div>
+            <ImagePreview
+              src={displayLogoUrl}
+              alt="Company Logo"
+              size="lg"
+              fallbackText="No logo"
+            />
 
             {/* Logo Upload Dropzone or Readonly Display */}
             {isReadOnly ? (
@@ -293,7 +272,7 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
                         if (!file) return;
                         field.onChange(file.name);
                         rememberFile('logoFileName', file);
-                        applyLogoPreview(URL.createObjectURL(file));
+                        setPreviewFile('logo', file);
                       }}
                     />
                     <div className="flex items-center gap-2.5 font-semibold text-primary">

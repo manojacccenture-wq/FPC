@@ -84,6 +84,7 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
         ? initialData.shareholders
         : '10',
     employees: initialData?.employees || '',
+    totalEquitySharesAllotted: initialData?.totalEquitySharesAllotted || '',
     bankAccounts: initialData?.bankAccounts && initialData.bankAccounts.length > 0
       ? initialData.bankAccounts
       : defaultBankAccounts,
@@ -256,6 +257,21 @@ export const FpcFinancialInformationForm: React.FC<FpcFinancialInformationFormPr
             placeholder="6"
             error={errors.employees?.message}
             {...register('employees')}
+          />
+
+          {/* Row 5: Total number of equity shares allotted */}
+          <Input
+            id="fpc-total-equity-shares-allotted"
+            guidance={financialInformationGuidance.totalEquitySharesAllotted}
+            label="Total Number of Equity Shares Allotted"
+            required
+            disabled={isReadOnly}
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="Enter total number of equity shares"
+            helperText="Enter the total number of equity shares allotted to shareholders."
+            error={errors.totalEquitySharesAllotted?.message}
+            {...register('totalEquitySharesAllotted')}
           />
         </div>
 
