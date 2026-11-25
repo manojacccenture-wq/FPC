@@ -9,7 +9,6 @@ export const businessActivitiesSchema = z.object({
     z.array(z.string().trim()).min(1, 'Select at least one primary business activity'),
     z.string().trim().min(1, 'Primary business activity is required'),
   ]),
-  operationalStatus: requiredString('Operational status'),
   commencementDate: dateStringSchema('Date of commencement'),
   commoditiesHandled: z.union([
     z.array(z.string().trim()).min(1, 'Select at least one commodity handled'),

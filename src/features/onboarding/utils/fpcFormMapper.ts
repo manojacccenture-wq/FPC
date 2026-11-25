@@ -6,6 +6,7 @@ import type { FinancialInformationFormValues } from '../schemas/financialInforma
 import type { BoardOfDirectorsFormValues } from '../schemas/boardOfDirectors.schema';
 import type { AddressLocationFormValues } from '../schemas/addressLocation.schema';
 import type { BusinessActivitiesFormValues } from '../schemas/businessActivities.schema';
+import { getLastCompletedFinancialYears } from '../../../shared/utils/financialYear';
 
 export interface RegistrationStepDrafts {
   step1: Partial<BasicDetailsFormValues> | null;
@@ -15,6 +16,36 @@ export interface RegistrationStepDrafts {
   step5: Partial<FpcLogoDocumentsFormData> | null;
   step6: Partial<AddressLocationFormValues> | null;
   step7: Partial<BusinessActivitiesFormValues> | null;
+}
+
+/** Headcount values as persisted by Step 3 drafts created before the Step 1 relocation. */
+export interface LegacyHeadcountDraft {
+  farmers?: string;
+  employees?: string;
+}
+
+function readHeadcounts(source: object | null | undefined): Required<LegacyHeadcountDraft> {
+  const legacy = (source ?? {}) as Partial<LegacyHeadcountDraft>;
+  return {
+    farmers: typeof legacy.farmers === 'string' ? legacy.farmers : '',
+    employees: typeof legacy.employees === 'string' ? legacy.employees : '',
+  };
+}
+
+/**
+ * Carries headcount values saved by pre-relocation Step 3 drafts into Step 1.
+ * A value already captured in Step 1 always wins, so nothing is overwritten.
+ */
+export function withLegacyHeadcounts(
+  step1: Partial<BasicDetailsFormValues> | null | undefined,
+  step3: object | null | undefined
+): Partial<BasicDetailsFormValues> {
+  const legacy = readHeadcounts(step3);
+  return {
+    ...(step1 ?? {}),
+    farmers: step1?.farmers || legacy.farmers,
+    employees: step1?.employees || legacy.employees,
+  };
 }
 
 export interface InvitationLike {
@@ -78,6 +109,18 @@ export function mapFpcToRegistrationDrafts(
       parsedJsonb?.step1?.companyCategory ||
       localDrafts?.step1?.companyCategory ||
       'Producer Company under Section 378A of CA 2013',
+    farmers:
+      parsedJsonb?.step1?.farmers ||
+      localDrafts?.step1?.farmers ||
+      readHeadcounts(parsedJsonb?.step3).farmers ||
+      readHeadcounts(localDrafts?.step3).farmers ||
+      (fpcDetails?.farmersCount ? String(fpcDetails.farmersCount) : ''),
+    employees:
+      parsedJsonb?.step1?.employees ||
+      localDrafts?.step1?.employees ||
+      readHeadcounts(parsedJsonb?.step3).employees ||
+      readHeadcounts(localDrafts?.step3).employees ||
+      '',
     contactEmail:
       parsedJsonb?.step1?.contactEmail ||
       localDrafts?.step1?.contactEmail ||
@@ -144,10 +187,45 @@ export function mapFpcToRegistrationDrafts(
           accountNumber: fpcDetails.bankAccountNumber || '',
           ifscCode: fpcDetails.bankIfsc || '',
           branchName: '',
+          bankAddress: '',
           accountType: 'Current' as const,
         },
       ]
     : [];
+
+  const completedYears = getLastCompletedFinancialYears(5);
+  const savedTurnoverList =
+    parsedJsonb?.step3?.turnoverHistory ||
+    localDrafts?.step3?.turnoverHistory;
+
+  let mappedTurnoverHistory: Array<{ financialYear: string; turnover: string }>;
+  if (Array.isArray(savedTurnoverList) && savedTurnoverList.length > 0) {
+    const map = new Map<string, string>();
+    for (const item of savedTurnoverList) {
+      if (item?.financialYear) {
+        map.set(item.financialYear, item.turnover ?? '');
+      }
+    }
+    mappedTurnoverHistory = completedYears.map((fy) => ({
+      financialYear: fy.key,
+      turnover: map.get(fy.key) ?? '',
+    }));
+  } else {
+    // Legacy migration from single annualTurnover & financialYear
+    const legacyTurnover =
+      parsedJsonb?.step3?.annualTurnover ||
+      localDrafts?.step3?.annualTurnover ||
+      '';
+    const legacyYear =
+      parsedJsonb?.step3?.financialYear ||
+      localDrafts?.step3?.financialYear ||
+      '';
+
+    mappedTurnoverHistory = completedYears.map((fy) => ({
+      financialYear: fy.key,
+      turnover: legacyYear === fy.key ? legacyTurnover : '',
+    }));
+  }
 
   const step3: Partial<FinancialInformationFormValues> = {
     authorizedCapital:
@@ -165,15 +243,14 @@ export function mapFpcToRegistrationDrafts(
     annualTurnover:
       parsedJsonb?.step3?.annualTurnover ||
       localDrafts?.step3?.annualTurnover ||
+      mappedTurnoverHistory[mappedTurnoverHistory.length - 1]?.turnover ||
       '',
     financialYear:
       parsedJsonb?.step3?.financialYear ||
       localDrafts?.step3?.financialYear ||
+      mappedTurnoverHistory[mappedTurnoverHistory.length - 1]?.financialYear ||
       '2025-26',
-    farmers:
-      parsedJsonb?.step3?.farmers ||
-      localDrafts?.step3?.farmers ||
-      (fpcDetails?.farmersCount ? String(fpcDetails.farmersCount) : ''),
+    turnoverHistory: mappedTurnoverHistory,
     shareholders:
       (parsedJsonb?.step3?.shareholders && parsedJsonb.step3.shareholders.trim() !== ''
         ? parsedJsonb.step3.shareholders
@@ -182,10 +259,6 @@ export function mapFpcToRegistrationDrafts(
         ? localDrafts.step3.shareholders
         : undefined) ||
       (fpcDetails?.shareholdersCount ? String(fpcDetails.shareholdersCount) : '10'),
-    employees:
-      parsedJsonb?.step3?.employees ||
-      localDrafts?.step3?.employees ||
-      '',
     totalEquitySharesAllotted:
       parsedJsonb?.step3?.totalEquitySharesAllotted ||
       localDrafts?.step3?.totalEquitySharesAllotted ||
@@ -200,18 +273,61 @@ export function mapFpcToRegistrationDrafts(
         ? localDrafts.step3.bankAccounts
         : undefined) ||
       defaultBankAccounts,
+    otherIncomeSources:
+      (parsedJsonb?.step3?.otherIncomeSources && parsedJsonb.step3.otherIncomeSources.length > 0
+        ? parsedJsonb.step3.otherIncomeSources
+        : undefined) ||
+      (localDrafts?.step3?.otherIncomeSources && localDrafts.step3.otherIncomeSources.length > 0
+        ? localDrafts.step3.otherIncomeSources
+        : undefined) ||
+      [],
   };
 
   // 5. Map Step 4: Board of Directors
+  const rawDirectors =
+    (parsedJsonb?.step4?.directors && parsedJsonb.step4.directors.length > 0
+      ? parsedJsonb.step4.directors
+      : undefined) ||
+    (localDrafts?.step4?.directors && localDrafts.step4.directors.length > 0
+      ? localDrafts.step4.directors
+      : undefined) ||
+    [];
+
+  // Identity-document metadata lives in fpc_documents and is associated by directorKey.
+  const storedDirectorDocuments = (fpcDetails?.documents ?? []).filter(
+    (doc) => doc.documentType?.toLowerCase().startsWith('director') && doc.directorKey
+  );
+
+  const findDirectorDocument = (directorKey: string, documentType: string) =>
+    storedDirectorDocuments.find(
+      (doc) =>
+        doc.directorKey?.toLowerCase() === directorKey.toLowerCase() &&
+        doc.documentType.toLowerCase() === documentType.toLowerCase()
+    );
+
   const step4: Partial<BoardOfDirectorsFormValues> = {
-    directors:
-      (parsedJsonb?.step4?.directors && parsedJsonb.step4.directors.length > 0
-        ? parsedJsonb.step4.directors
-        : undefined) ||
-      (localDrafts?.step4?.directors && localDrafts.step4.directors.length > 0
-        ? localDrafts.step4.directors
-        : undefined) ||
-      [],
+    directors: rawDirectors.map((director) => {
+      const directorKey = director.directorKey || director.id || '';
+      const aadhaarDoc = directorKey
+        ? findDirectorDocument(directorKey, 'DirectorAadhaarCard')
+        : undefined;
+      const panDoc = directorKey ? findDirectorDocument(directorKey, 'DirectorPanCard') : undefined;
+      const voterIdDoc = directorKey
+        ? findDirectorDocument(directorKey, 'DirectorVoterId')
+        : undefined;
+
+      return {
+        ...director,
+        directorKey,
+        dateOfBirth: director.dateOfBirth || '',
+        aadhaarDocName: director.aadhaarDocName || aadhaarDoc?.fileName || '',
+        aadhaarDocumentId: director.aadhaarDocumentId || aadhaarDoc?.id || '',
+        panDocName: director.panDocName || panDoc?.fileName || '',
+        panDocumentId: director.panDocumentId || panDoc?.id || '',
+        voterIdDocName: director.voterIdDocName || voterIdDoc?.fileName || '',
+        voterIdDocumentId: director.voterIdDocumentId || voterIdDoc?.id || '',
+      };
+    }),
   };
 
   // 6. Map Step 5: Logo & Documents
@@ -364,10 +480,6 @@ export function mapFpcToRegistrationDrafts(
         ? localDrafts.step7.primaryActivity
         : undefined) ||
       [],
-    operationalStatus:
-      parsedJsonb?.step7?.operationalStatus ||
-      localDrafts?.step7?.operationalStatus ||
-      'Operational',
     commencementDate:
       parsedJsonb?.step7?.commencementDate ||
       localDrafts?.step7?.commencementDate ||

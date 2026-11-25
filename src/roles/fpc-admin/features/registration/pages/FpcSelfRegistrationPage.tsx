@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Save, Building2, CheckCircle2 } from 'lucide-react';
 import { useAppSelector } from '../../../../../app/store/hooks';
@@ -13,7 +13,10 @@ import {
   type RegistrationStepDrafts,
 } from '../../../../../features/onboarding/utils/fpcFormMapper';
 import { OnboardingStepper } from '../../../../../features/onboarding/components/OnboardingStepper';
-import { FpcRegistrationForm } from '../../../../../features/onboarding/components/registration-form/FpcRegistrationForm';
+import {
+  FpcRegistrationForm,
+  type FpcRegistrationFormHandle,
+} from '../../../../../features/onboarding/components/registration-form/FpcRegistrationForm';
 import { Button, Alert } from '../../../../../shared/components';
 import { ValidationModeToggle } from '../../../../../shared/components/ValidationModeToggle';
 import { ValidationModeProvider } from '../../../../../shared/forms';
@@ -23,12 +26,20 @@ import type { LogoDocumentsFileMap } from '../../../../../features/onboarding/co
 import {
   DOCUMENT_TYPE_BY_FIELD,
   EXPIRY_FIELD_BY_FIELD,
+  type DirectorDocumentsFileMap,
 } from '../../../../../features/onboarding/constants/documentTypes';
 import { formatDateToISO } from '../../../../../shared/utils/date';
+import type { BasicDetailsFormValues } from '../../../../../features/onboarding/schemas/basicDetails.schema';
+import type { LegalRegistrationFormValues } from '../../../../../features/onboarding/schemas/legalRegistration.schema';
+import type { FinancialInformationFormValues } from '../../../../../features/onboarding/schemas/financialInformation.schema';
+import type { BoardOfDirectorsFormValues } from '../../../../../features/onboarding/schemas/boardOfDirectors.schema';
 import type { LogoDocumentsFormValues } from '../../../../../features/onboarding/schemas/logoDocuments.schema';
+import type { AddressLocationFormValues } from '../../../../../features/onboarding/schemas/addressLocation.schema';
+import type { BusinessActivitiesFormValues } from '../../../../../features/onboarding/schemas/businessActivities.schema';
 
 export const FpcSelfRegistrationPage: React.FC = () => {
   const navigate = useNavigate();
+  const formRef = useRef<FpcRegistrationFormHandle>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const { activeFpcId, currentUser } = useAppSelector((state) => state.auth);
   const storedValidationEnabled = useAppSelector(selectValidationEnabled);
@@ -144,8 +155,54 @@ export const FpcSelfRegistrationPage: React.FC = () => {
     if (ok) goToStep(4);
   };
 
-  const handleStepFourSubmit = async (values: typeof drafts.step4) => {
-    const updated = { ...drafts, step4: values };
+  const handleStepFourSubmit = async (
+    values: typeof drafts.step4,
+    files: DirectorDocumentsFileMap
+  ) => {
+    if (!activeFpcId) {
+      setErrorMessage('Cannot upload director documents: No active FPC identifier resolved.');
+      return;
+    }
+
+    setErrorMessage(null);
+    const directors = (values?.directors ?? []).map((director) => ({ ...director }));
+
+    for (const upload of Object.values(files)) {
+      const formData = new FormData();
+      formData.append('documentType', upload.documentType);
+      formData.append('file', upload.file, upload.file.name);
+      formData.append('directorKey', upload.directorKey);
+
+      try {
+        const uploadResult = await uploadFpcDocument({ fpcId: activeFpcId, formData }).unwrap();
+        const uploadedDocId = uploadResult?.data?.documentId;
+        const director = directors.find((d) => d.directorKey === upload.directorKey);
+
+        if (uploadedDocId && director) {
+          if (upload.field === 'aadhaarDocName') {
+            director.aadhaarDocName = uploadResult.data.fileName;
+            director.aadhaarDocumentId = uploadedDocId;
+          } else if (upload.field === 'panDocName') {
+            director.panDocName = uploadResult.data.fileName;
+            director.panDocumentId = uploadedDocId;
+          } else if (upload.field === 'voterIdDocName') {
+            director.voterIdDocName = uploadResult.data.fileName;
+            director.voterIdDocumentId = uploadedDocId;
+          }
+        }
+      } catch (uploadErr: unknown) {
+        const apiMsg =
+          (uploadErr as { data?: { detail?: string; message?: string } })?.data?.detail ||
+          (uploadErr as { data?: { message?: string } })?.data?.message ||
+          (uploadErr as { message?: string })?.message ||
+          `Failed to upload ${upload.field}.`;
+
+        setErrorMessage(`Upload failed for ${upload.file.name}: ${apiMsg}`);
+        return;
+      }
+    }
+
+    const updated = { ...drafts, step4: { ...(values ?? {}), directors } };
     setLocalDrafts(updated);
     const ok = await persistDraft(updated, 4);
     if (ok) goToStep(5);
@@ -248,7 +305,150 @@ export const FpcSelfRegistrationPage: React.FC = () => {
   };
 
   const handleSaveAndReturn = async () => {
-    const ok = await persistDraft(drafts, currentStep);
+    let currentStepDrafts: RegistrationStepDrafts = { ...drafts };
+    const activeData = formRef.current?.getActiveStepData();
+
+    if (activeData && activeData.values) {
+      if (currentStep === 1) {
+        currentStepDrafts = {
+          ...currentStepDrafts,
+          step1: activeData.values as BasicDetailsFormValues,
+        };
+      } else if (currentStep === 2) {
+        currentStepDrafts = {
+          ...currentStepDrafts,
+          step2: activeData.values as LegalRegistrationFormValues,
+        };
+      } else if (currentStep === 3) {
+        currentStepDrafts = {
+          ...currentStepDrafts,
+          step3: activeData.values as FinancialInformationFormValues,
+        };
+      } else if (currentStep === 4) {
+        const step4Values = activeData.values as BoardOfDirectorsFormValues;
+        const directors = (step4Values?.directors ?? []).map((director) => ({ ...director }));
+        const files = activeData.files as DirectorDocumentsFileMap | undefined;
+
+        if (files && activeFpcId) {
+          for (const upload of Object.values(files)) {
+            const director = directors.find((d) => d.directorKey === upload.directorKey);
+            if (director) {
+              if (upload.field === 'aadhaarDocName' && director.aadhaarDocumentId) continue;
+              if (upload.field === 'panDocName' && director.panDocumentId) continue;
+              if (upload.field === 'voterIdDocName' && director.voterIdDocumentId) continue;
+            }
+
+            const formData = new FormData();
+            formData.append('documentType', upload.documentType);
+            formData.append('file', upload.file, upload.file.name);
+            formData.append('directorKey', upload.directorKey);
+
+            try {
+              const uploadResult = await uploadFpcDocument({ fpcId: activeFpcId, formData }).unwrap();
+              const uploadedDocId = uploadResult?.data?.documentId;
+
+              if (uploadedDocId && director) {
+                if (upload.field === 'aadhaarDocName') {
+                  director.aadhaarDocName = uploadResult.data.fileName;
+                  director.aadhaarDocumentId = uploadedDocId;
+                } else if (upload.field === 'panDocName') {
+                  director.panDocName = uploadResult.data.fileName;
+                  director.panDocumentId = uploadedDocId;
+                } else if (upload.field === 'voterIdDocName') {
+                  director.voterIdDocName = uploadResult.data.fileName;
+                  director.voterIdDocumentId = uploadedDocId;
+                }
+              }
+            } catch (uploadErr: unknown) {
+              const apiMsg =
+                (uploadErr as { data?: { detail?: string; message?: string } })?.data?.detail ||
+                (uploadErr as { data?: { message?: string } })?.data?.message ||
+                (uploadErr as { message?: string })?.message ||
+                `Failed to upload ${upload.field}.`;
+
+              setErrorMessage(`Upload failed for ${upload.file.name}: ${apiMsg}`);
+              return;
+            }
+          }
+        }
+
+        currentStepDrafts = {
+          ...currentStepDrafts,
+          step4: { ...(step4Values ?? {}), directors },
+        };
+      } else if (currentStep === 5) {
+        const step5Values = activeData.values as LogoDocumentsFormValues;
+        const documentIds: Record<string, string> = { ...(drafts.step5?.documentIds ?? {}) };
+        const files = activeData.files as LogoDocumentsFileMap | undefined;
+
+        if (files && activeFpcId) {
+          for (const [fieldKey, file] of Object.entries(files) as Array<
+            [keyof LogoDocumentsFormValues, File | undefined]
+          >) {
+            if (!file) continue;
+            if (documentIds[fieldKey]) continue;
+
+            const canonicalDocType = DOCUMENT_TYPE_BY_FIELD[fieldKey];
+            if (!canonicalDocType) continue;
+
+            const formData = new FormData();
+            formData.append('documentType', canonicalDocType);
+            formData.append('file', file, file.name);
+
+            const expiryField = EXPIRY_FIELD_BY_FIELD[fieldKey];
+            if (expiryField && step5Values) {
+              const rawDate = step5Values[expiryField as keyof typeof step5Values] as string | undefined;
+              const formattedExpiry = formatDateToISO(rawDate);
+              if (formattedExpiry) {
+                formData.append('expiryDate', formattedExpiry);
+              }
+            }
+
+            try {
+              const uploadResult = await uploadFpcDocument({ fpcId: activeFpcId, formData }).unwrap();
+              const uploadedDocId = uploadResult?.data?.documentId;
+              if (uploadedDocId) {
+                documentIds[fieldKey] = uploadedDocId;
+              }
+            } catch (uploadErr: unknown) {
+              const apiMsg =
+                (uploadErr as { data?: { detail?: string; message?: string } })?.data?.detail ||
+                (uploadErr as { data?: { message?: string } })?.data?.message ||
+                (uploadErr as { message?: string })?.message ||
+                `Failed to upload file for ${canonicalDocType}.`;
+
+              const partialUpdated = {
+                ...drafts,
+                step5: { ...(step5Values || {}), documentIds },
+              };
+              setLocalDrafts(partialUpdated);
+              setErrorMessage(`Upload failed for ${file.name}: ${apiMsg}`);
+              return;
+            }
+          }
+        }
+
+        currentStepDrafts = {
+          ...currentStepDrafts,
+          step5: { ...(step5Values || {}), documentIds },
+        };
+      } else if (currentStep === 6) {
+        currentStepDrafts = {
+          ...currentStepDrafts,
+          step6: activeData.values as AddressLocationFormValues,
+        };
+      } else if (currentStep === 7) {
+        currentStepDrafts = {
+          ...currentStepDrafts,
+          step7: activeData.values as BusinessActivitiesFormValues,
+        };
+      }
+
+      setLocalDrafts(currentStepDrafts);
+    }
+
+    const completedStepNumber = Math.max(completedStepsCount, currentStep);
+    const ok = await persistDraft(currentStepDrafts, completedStepNumber);
     if (ok) {
       navigate('/fpc/dashboard');
     }
@@ -328,6 +528,7 @@ export const FpcSelfRegistrationPage: React.FC = () => {
         {/* The Unified Reusable Registration Form */}
         <div className="bg-white rounded-xl border border-[#E1E8E6] p-6 shadow-sm">
           <FpcRegistrationForm
+            ref={formRef}
             mode={isSubmittedOrApproved ? 'readonly' : 'editable'}
             currentStep={currentStep}
             onStepChange={goToStep}

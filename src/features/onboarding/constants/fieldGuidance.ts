@@ -1,8 +1,10 @@
 import type { FieldGuidance } from '../../../shared/types/fieldGuidance.types';
 import type { BasicDetailsFormValues } from '../schemas/basicDetails.schema';
 import type { LegalRegistrationFormValues } from '../schemas/legalRegistration.schema';
-import type { FinancialInformationFormValues } from '../schemas/financialInformation.schema';
-import type { BoardOfDirectorsFormValues } from '../schemas/boardOfDirectors.schema';
+import type {
+  FinancialInformationFormValues,
+  OtherIncomeSourceFormValues,
+} from '../schemas/financialInformation.schema';
 import type { LogoDocumentsFormValues } from '../schemas/logoDocuments.schema';
 import type { AddressLocationFormValues } from '../schemas/addressLocation.schema';
 import type { BusinessActivitiesFormValues } from '../schemas/businessActivities.schema';
@@ -21,7 +23,24 @@ import type { BusinessActivitiesFormValues } from '../schemas/businessActivities
  * lives inside a form component.
  */
 
-type DirectorGuidanceKey = Exclude<keyof BoardOfDirectorsFormValues['directors'][number], 'id'>;
+type DirectorGuidanceKey =
+  | 'fullName'
+  | 'din'
+  | 'designation'
+  | 'gender'
+  | 'appointmentDate'
+  | 'dateOfBirth'
+  | 'mobileNumber'
+  | 'email'
+  | 'pan'
+  | 'socialCategory'
+  | 'activeStatus'
+  | 'photographName'
+  | 'identityDocName'
+  | 'aadhaarDocName'
+  | 'panDocName'
+  | 'voterIdDocName';
+type OtherIncomeGuidanceKey = Exclude<keyof OtherIncomeSourceFormValues, 'id'>;
 type BankAccountGuidanceKey = Exclude<
   keyof FinancialInformationFormValues['bankAccounts'][number],
   'id'
@@ -50,10 +69,10 @@ export const basicDetailsGuidance: Record<keyof BasicDetailsFormValues, FieldGui
     example: 'U01100OD2026PTC000001',
   },
   registrationNumber: {
-    description: 'The registration number printed on the incorporation certificate.',
-    purpose: 'The reference the TSF review team matches against the incorporation certificate.',
-    expectedFormat: 'Exactly as printed on the certificate, including any letter prefixes.',
-    example: 'PTC-000001',
+    description: 'The system-managed registration number assigned to this FPC.',
+    purpose: 'Acts as the unique system identifier across the portal and administrative records.',
+    expectedFormat: 'System-generated identifier (e.g., FPC-ODI-001). Read-only.',
+    example: 'FPC-ODI-001',
   },
   rocOffice: {
     description: 'The Registrar of Companies office that registered the FPC.',
@@ -72,6 +91,18 @@ export const basicDetailsGuidance: Record<keyof BasicDetailsFormValues, FieldGui
     purpose: 'Determines which producer-company rules apply to the FPC.',
     expectedFormat: 'Select the category stated in the MOA / AOA.',
     example: 'Producer Company Limited',
+  },
+  farmers: {
+    description: 'The number of farmer members associated with the FPC.',
+    purpose: 'Measures farmer participation, which is central to the producer-company model.',
+    expectedFormat: 'A whole number.',
+    example: '250',
+  },
+  employees: {
+    description: 'The number of people employed by the FPC.',
+    purpose: 'Records the operating capacity of the company.',
+    expectedFormat: 'A whole number, including field and office staff.',
+    example: '12',
   },
   contactEmail: {
     description: 'The official email address registered with the FPC.',
@@ -164,7 +195,7 @@ export const additionalLicenseGuidance: Record<AdditionalLicenseGuidanceKey, Fie
 
 /** Step 3 — Financial information */
 export const financialInformationGuidance: Record<
-  Exclude<keyof FinancialInformationFormValues, 'bankAccounts'>,
+  Exclude<keyof FinancialInformationFormValues, 'bankAccounts' | 'otherIncomeSources'>,
   FieldGuidance
 > = {
   authorizedCapital: {
@@ -186,34 +217,28 @@ export const financialInformationGuidance: Record<
     example: '100',
   },
   annualTurnover: {
-    description: 'The annual turnover of the FPC for the selected financial year.',
-    purpose: 'Indicates the scale of operations for review and reporting.',
-    expectedFormat: 'The turnover in Indian rupees for the financial year selected alongside.',
-    example: '42,50,000',
+    description: 'The annual turnover of the FPC for the latest completed financial year.',
+    purpose: 'Indicates the scale of operations for statutory review and reporting.',
+    expectedFormat: 'The turnover in Indian rupees for the latest financial year.',
+    example: '30,00,000',
   },
   financialYear: {
     description: 'The financial year the turnover figure belongs to.',
     purpose: 'Ensures turnover is compared against the correct reporting period.',
     expectedFormat: 'Select the completed financial year being reported.',
-    example: '2024-25',
+    example: '2025-26',
   },
-  farmers: {
-    description: 'The number of farmer members associated with the FPC.',
-    purpose: 'Measures farmer participation, which is central to the producer-company model.',
-    expectedFormat: 'A whole number.',
-    example: '250',
+  turnoverHistory: {
+    description: 'Annual turnover records for the last five completed financial years.',
+    purpose: 'Enables financial trend analysis and statutory compliance verification over the past 5 reporting periods.',
+    expectedFormat: 'Enter annual turnover in Indian rupees for each completed financial year. Newly incorporated FPCs or inactive periods can be entered as ₹0 or left blank.',
+    example: 'FY 2021–22: ₹10,00,000; FY 2022–23: ₹15,00,000; FY 2023–24: ₹20,00,000; FY 2024–25: ₹25,00,000; FY 2025–26: ₹30,00,000',
   },
   shareholders: {
     description: 'The number of shareholders of the company.',
     purpose: 'Used to reconcile membership against the paid-up capital recorded above.',
     expectedFormat: 'A whole number.',
     example: '250',
-  },
-  employees: {
-    description: 'The number of people employed by the FPC.',
-    purpose: 'Records the operating capacity of the company.',
-    expectedFormat: 'A whole number, including field and office staff.',
-    example: '12',
   },
   totalEquitySharesAllotted: {
     description: 'The total number of equity shares allotted to shareholders.',
@@ -250,11 +275,46 @@ export const bankAccountGuidance: Record<BankAccountGuidanceKey, FieldGuidance> 
     expectedFormat: 'The branch name as printed in the passbook.',
     example: 'Rourkela Main Branch',
   },
+  bankAddress: {
+    description: 'The postal address of the bank branch.',
+    purpose: 'Printed on the passbook and used to verify the branch when a settlement fails.',
+    expectedFormat:
+      'Optional. Filled in from the IFSC code when the branch details are available; edit it to match the passbook.',
+    example: 'Main Branch, Rourkela, Odisha, PIN 769001',
+  },
   accountType: {
     description: 'The type of bank account.',
     purpose: 'Records how the account is held, which affects settlement processing.',
     expectedFormat: 'Select the type shown in the passbook or statement.',
     example: 'Current Account',
+  },
+};
+
+/** Step 3 — Repeatable other-source-of-income rows */
+export const otherIncomeGuidance: Record<OtherIncomeGuidanceKey, FieldGuidance> = {
+  organization: {
+    description: 'The organisation that provided this income.',
+    purpose: 'Identifies the counterparty behind income that is not from core trading activity.',
+    expectedFormat: 'The organisation name as stated in the sanction letter or receipt.',
+    example: 'Tata Steel Foundation',
+  },
+  financialYear: {
+    description: 'The financial year in which this income was received.',
+    purpose: 'Places the receipt in the correct reporting period.',
+    expectedFormat: 'Select the financial year the amount relates to.',
+    example: '2025-26',
+  },
+  scheme: {
+    description: 'The scheme or programme under which the income was received.',
+    purpose: 'Groups receipts by scheme so reviewers can compare them against sanctioned amounts.',
+    expectedFormat: 'The scheme name as stated in the sanction letter.',
+    example: 'FPO Strengthening Scheme',
+  },
+  totalAmount: {
+    description: 'The total amount received under this scheme for the selected year.',
+    purpose: 'Records the value of the receipt alongside the FPC’s own financial figures.',
+    expectedFormat: 'The amount in Indian rupees, as stated in the receipt or sanction letter.',
+    example: '2,50,000',
   },
 };
 
@@ -289,6 +349,12 @@ export const directorGuidance: Record<DirectorGuidanceKey, FieldGuidance> = {
     purpose: 'Records tenure for governance and compliance checks.',
     expectedFormat: 'DD-MM-YYYY, the date of the board or shareholder resolution appointing the director.',
     example: '15-06-2022',
+  },
+  dateOfBirth: {
+    description: 'The director’s individual date of birth.',
+    purpose: 'Verifies the director’s identity and records board demographics.',
+    expectedFormat: 'DD-MM-YYYY. The date cannot be in the future.',
+    example: '15-05-1985',
   },
   mobileNumber: {
     description: 'The director’s mobile number.',
@@ -332,6 +398,27 @@ export const directorGuidance: Record<DirectorGuidanceKey, FieldGuidance> = {
     expectedFormat: 'An Aadhaar or PAN copy. Images up to 2 MB, or a PDF up to 5 MB.',
     documentRequirement: 'Attach a copy of the director’s Aadhaar or PAN.',
     acceptedFormats: ['PNG up to 2 MB', 'JPG up to 2 MB', 'WebP up to 2 MB', 'PDF up to 5 MB'],
+  },
+  aadhaarDocName: {
+    description: 'The director’s Aadhaar card.',
+    purpose: 'Confirms the director’s identity and address record.',
+    expectedFormat: 'PDF, PNG or JPG, up to 5 MB.',
+    documentRequirement: 'Attach the director’s own Aadhaar card. Required for every director.',
+    acceptedFormats: ['PDF up to 5 MB', 'PNG up to 5 MB', 'JPG up to 5 MB'],
+  },
+  panDocName: {
+    description: 'The director’s personal PAN card.',
+    purpose: 'Matches the director to the personal PAN entered above.',
+    expectedFormat: 'PDF, PNG or JPG, up to 5 MB.',
+    documentRequirement: 'Attach the director’s own PAN card. Required for every director.',
+    acceptedFormats: ['PDF up to 5 MB', 'PNG up to 5 MB', 'JPG up to 5 MB'],
+  },
+  voterIdDocName: {
+    description: 'The director’s Voter ID card.',
+    purpose: 'Provides a second government-issued identity record for verification.',
+    expectedFormat: 'PDF, PNG or JPG, up to 5 MB.',
+    documentRequirement: 'Attach the director’s own Voter ID. Required for every director.',
+    acceptedFormats: ['PDF up to 5 MB', 'PNG up to 5 MB', 'JPG up to 5 MB'],
   },
 };
 
@@ -472,16 +559,16 @@ export const addressLocationGuidance: Record<
   },
   latitude: {
     description: 'The latitude of the registered office.',
-    purpose: 'Optional; helps field teams locate the office precisely.',
+    purpose: 'Helps field teams locate the office precisely.',
     expectedFormat:
-      'Optional. Decimal degrees between -90 and 90. Can be filled from your device location or the entered address; device coordinates are your current position, so confirm they match the registered office.',
+      'Mandatory. Decimal degrees between -90 and 90. Can be filled from your device location or entered manually; device coordinates are your current position, so confirm they match the registered office.',
     example: '22.2604',
   },
   longitude: {
     description: 'The longitude of the registered office.',
-    purpose: 'Optional; helps field teams locate the office precisely.',
+    purpose: 'Helps field teams locate the office precisely.',
     expectedFormat:
-      'Optional. Decimal degrees between -180 and 180. Enter both latitude and longitude, or leave both blank.',
+      'Mandatory. Decimal degrees between -180 and 180.',
     example: '84.8536',
   },
 };
@@ -493,12 +580,6 @@ export const businessActivitiesGuidance: Record<keyof BusinessActivitiesFormValu
     purpose: 'Defines how the FPC operates and which procurement categories it can be mapped to.',
     expectedFormat: 'Select at least one activity; select every activity the FPC actually performs.',
     example: 'Input Supply, Procurement & Aggregation',
-  },
-  operationalStatus: {
-    description: 'The current operating stage of the FPC.',
-    purpose: 'Tells reviewers whether the FPC is already trading or still being set up.',
-    expectedFormat: 'Select the stage that matches the FPC today.',
-    example: 'Operational',
   },
   commencementDate: {
     description: 'The date the FPC began business operations.',
@@ -549,6 +630,7 @@ export const FPC_FIELD_GUIDANCE = {
 
 export const ADDITIONAL_LICENSE_GUIDANCE = additionalLicenseGuidance;
 export const BANK_ACCOUNT_GUIDANCE = bankAccountGuidance;
+export const OTHER_INCOME_GUIDANCE = otherIncomeGuidance;
 
 export type FpcGuidanceStep = keyof typeof FPC_FIELD_GUIDANCE;
 

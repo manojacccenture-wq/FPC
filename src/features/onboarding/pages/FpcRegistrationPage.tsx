@@ -32,6 +32,7 @@ import type { BusinessActivitiesFormValues } from '../schemas/businessActivities
 import {
   DOCUMENT_TYPE_BY_FIELD,
   EXPIRY_FIELD_BY_FIELD,
+  type DirectorDocumentsFileMap,
 } from '../constants/documentTypes';
 
 export const FpcRegistrationPage: React.FC = () => {
@@ -58,7 +59,7 @@ export const FpcRegistrationPage: React.FC = () => {
   const [stepSuccessMessage, setStepSuccessMessage] = useState<string | null>(null);
   const [finalErrorMessage, setFinalErrorMessage] = useState<string | null>(null);
 
-  // Synchronous pre-read of stored step data for zero useEffect render
+  // Synchronous pre-read of stored step data in a single key resolution pass
   const [drafts, setDrafts] = useState<{
     step1: Partial<BasicDetailsFormValues> | null;
     step2: Partial<LegalRegistrationFormValues> | null;
@@ -67,15 +68,7 @@ export const FpcRegistrationPage: React.FC = () => {
     step5: Partial<FpcLogoDocumentsFormData> | null;
     step6: Partial<AddressLocationFormValues> | null;
     step7: Partial<BusinessActivitiesFormValues> | null;
-  }>(() => ({
-    step1: invitationApi.getStepOneData(activeToken),
-    step2: invitationApi.getStepTwoData(activeToken),
-    step3: invitationApi.getStepThreeData(activeToken),
-    step4: invitationApi.getStepFourData(activeToken),
-    step5: invitationApi.getStepFiveData(activeToken),
-    step6: invitationApi.getStepSixData(activeToken),
-    step7: invitationApi.getStepSevenData(activeToken),
-  }));
+  }>(() => invitationApi.getAllDrafts(activeToken));
 
   // Asynchronous Dexie IndexedDB hydration on page refresh/mount
   useEffect(() => {
@@ -85,15 +78,18 @@ export const FpcRegistrationPage: React.FC = () => {
       try {
         const dexieDrafts = await invitationApi.loadAllDraftsFromDexie(activeToken);
         if (!isCancelled) {
-          setDrafts((prev) => ({
-            step1: dexieDrafts.step1 || prev.step1,
-            step2: dexieDrafts.step2 || prev.step2,
-            step3: dexieDrafts.step3 || prev.step3,
-            step4: dexieDrafts.step4 || prev.step4,
-            step5: dexieDrafts.step5 || prev.step5,
-            step6: dexieDrafts.step6 || prev.step6,
-            step7: dexieDrafts.step7 || prev.step7,
-          }));
+          setDrafts((prev) => {
+            let hasNewDraft = false;
+            const updated = { ...prev };
+            for (let s = 1; s <= 7; s++) {
+              const key = `step${s}` as keyof typeof prev;
+              if (dexieDrafts[key] && !prev[key]) {
+                (updated as Record<string, unknown>)[key] = dexieDrafts[key];
+                hasNewDraft = true;
+              }
+            }
+            return hasNewDraft ? updated : prev;
+          });
         }
       } catch (err) {
         console.warn('Dexie hydration warning:', err);
@@ -152,8 +148,57 @@ export const FpcRegistrationPage: React.FC = () => {
   const handleStepThreeSubmit = (values: FinancialInformationFormValues) =>
     runStep(3, () => invitationApi.submitStepThree(activeToken, values), values);
 
-  const handleStepFourSubmit = (values: BoardOfDirectorsFormValues) =>
-    runStep(4, () => invitationApi.submitStepFour(activeToken, values), values);
+  /**
+   * Uploads each new director identity document against its stable director key, then
+   * saves Step 4 with the returned document IDs. File objects never leave memory.
+   */
+  const handleStepFourSubmit = async (
+    values: BoardOfDirectorsFormValues,
+    files: DirectorDocumentsFileMap
+  ) => {
+    setStepSuccessMessage(null);
+
+    const directors = values.directors.map((director) => ({ ...director }));
+    const failedUploads: string[] = [];
+
+    for (const upload of Object.values(files)) {
+      try {
+        const uploaded = await uploadDocument({
+          token: activeToken,
+          documentType: upload.documentType,
+          file: upload.file,
+          directorKey: upload.directorKey,
+        }).unwrap();
+
+        const director = directors.find((d) => d.directorKey === upload.directorKey);
+        if (!director) continue;
+
+        if (upload.field === 'aadhaarDocName') {
+          director.aadhaarDocName = uploaded.fileName;
+          director.aadhaarDocumentId = uploaded.documentId;
+        } else if (upload.field === 'panDocName') {
+          director.panDocName = uploaded.fileName;
+          director.panDocumentId = uploaded.documentId;
+        } else if (upload.field === 'voterIdDocName') {
+          director.voterIdDocName = uploaded.fileName;
+          director.voterIdDocumentId = uploaded.documentId;
+        }
+      } catch (err: unknown) {
+        const errorMessage = (err as { data?: { message?: string }; message?: string })?.data?.message ||
+          (err as { message?: string })?.message ||
+          'Upload failed';
+        failedUploads.push(`${upload.field}: ${errorMessage}`);
+      }
+    }
+
+    // Preserve successful uploads in local draft state even if some uploads failed
+    const savedStep: BoardOfDirectorsFormValues = { directors };
+    await runStep(4, () => invitationApi.submitStepFour(activeToken, savedStep), savedStep);
+
+    if (failedUploads.length > 0) {
+      throw new Error(`Some identity documents could not be uploaded:\n${failedUploads.join('\n')}`);
+    }
+  };
 
   /**
    * Uploads the selected files first, then saves the step with the returned document IDs.
@@ -213,6 +258,7 @@ export const FpcRegistrationPage: React.FC = () => {
         const step1 = drafts.step1 || invitationApi.getStepOneData(activeToken);
         const step2 = drafts.step2 || invitationApi.getStepTwoData(activeToken);
         const step3 = drafts.step3 || invitationApi.getStepThreeData(activeToken);
+        const step4 = drafts.step4 || invitationApi.getStepFourData(activeToken);
         const step5 = drafts.step5 || invitationApi.getStepFiveData(activeToken);
         const step6 = drafts.step6 || invitationApi.getStepSixData(activeToken);
 
@@ -227,6 +273,7 @@ export const FpcRegistrationPage: React.FC = () => {
           fileName: string;
           documentId?: string;
           expiryDate?: string;
+          directorKey?: string;
         }> = [];
 
         if (step5?.logoFileName) {
@@ -296,11 +343,43 @@ export const FpcRegistrationPage: React.FC = () => {
           });
         }
 
+        // Director identity documents are attached by stable director key, never by index.
+        for (const director of step4?.directors ?? []) {
+          if (!director.directorKey) continue;
+
+          const identityDocuments = [
+            {
+              documentType: 'DirectorAadhaarCard',
+              fileName: director.aadhaarDocName,
+              documentId: director.aadhaarDocumentId,
+            },
+            {
+              documentType: 'DirectorPanCard',
+              fileName: director.panDocName,
+              documentId: director.panDocumentId,
+            },
+            {
+              documentType: 'DirectorVoterId',
+              fileName: director.voterIdDocName,
+              documentId: director.voterIdDocumentId,
+            },
+          ];
+
+          for (const identityDocument of identityDocuments) {
+            if (!identityDocument.fileName) continue;
+            documents.push({
+              ...identityDocument,
+              fileName: identityDocument.fileName,
+              directorKey: director.directorKey,
+            });
+          }
+        }
+
         const fullRegistrationPayload = {
           step1,
           step2,
           step3,
-          step4: drafts.step4 || invitationApi.getStepFourData(activeToken),
+          step4,
           step5,
           step6,
           step7: drafts.step7 || invitationApi.getStepSevenData(activeToken),

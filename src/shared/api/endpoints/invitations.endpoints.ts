@@ -12,6 +12,11 @@ export const INVITATION_ENDPOINTS = {
   ONBOARD_RECORDS: (args?: GetOnboardRecordsArgs | void) =>
     buildUrl('/fpc-invitations/onboard-records', args as Record<string, unknown>),
   DOCUMENTS: (token: string) => `/fpc-invitations/${encodeSegment(token)}/documents`,
+  DOCUMENT_CONTENT: (token: string, documentId: string, download?: boolean) =>
+    buildUrl(
+      `/fpc-invitations/${encodeSegment(token)}/documents/${encodeSegment(documentId)}/content`,
+      download ? { download: true } : undefined
+    ),
   COMPLETE: '/fpc-invitations/complete',
 } as const;
 

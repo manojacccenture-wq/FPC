@@ -1,4 +1,4 @@
-import React from 'react';
+import { forwardRef, useImperativeHandle } from 'react';
 import { Controller } from 'react-hook-form';
 import { ChevronRight } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
@@ -8,7 +8,7 @@ import { DatePicker } from '../../../shared/components/DatePicker';
 import { Button } from '../../../shared/components/Button';
 import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
 import { basicDetailsSchema, type BasicDetailsFormValues } from '../schemas/basicDetails.schema';
-import type { FpcInvitation, FpcBasicDetailsFormData } from '../types';
+import type { FpcInvitation, FpcBasicDetailsFormData, StepFormHandle } from '../types';
 import { basicDetailsGuidance } from '../constants/fieldGuidance';
 
 export interface FpcBasicDetailsFormProps {
@@ -47,22 +47,31 @@ const COMPANY_CATEGORIES = [
   },
 ];
 
-export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
+export const FpcBasicDetailsForm = forwardRef<StepFormHandle<BasicDetailsFormValues>, FpcBasicDetailsFormProps>(({
   invitation,
   initialData,
   onSubmit,
   onBackToLogin,
   isReadOnly = false,
   onNextStep,
-}) => {
+}, ref) => {
   const defaultRoc = invitation.state === 'Odisha' ? 'ROC Cuttack' : 'ROC Kolkata';
+  const stateCode = invitation.state?.toUpperCase() === 'ODISHA' ? 'ODI' : 'IND';
+  const defaultRegNumber =
+    initialData?.registrationNumber ||
+    (invitation as unknown as { registrationNumber?: string })?.registrationNumber ||
+    (invitation as unknown as { code?: string })?.code ||
+    `FPC-${stateCode}-001`;
+
   const formValues: BasicDetailsFormValues = {
     legalName: initialData?.legalName || invitation.companyName || '',
     cin: initialData?.cin || '',
-    registrationNumber: initialData?.registrationNumber || '',
+    registrationNumber: defaultRegNumber,
     rocOffice: initialData?.rocOffice || defaultRoc,
     dateOfIncorporation: initialData?.dateOfIncorporation || '',
     companyCategory: initialData?.companyCategory || 'Producer Company under Section 378A of CA 2013',
+    farmers: initialData?.farmers || '',
+    employees: initialData?.employees || '',
     contactEmail: initialData?.contactEmail || invitation.email || '',
     contactMobile: initialData?.contactMobile || invitation.phoneNumber || '',
     website: initialData?.website || '',
@@ -73,6 +82,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
     control,
     register,
     handleSubmit,
+    getValues,
     setError,
     formState: { errors, isSubmitting },
   } = useFpcForm<BasicDetailsFormValues>({
@@ -81,6 +91,10 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
     values: formValues,
     resetOptions: { keepDirtyValues: true },
   });
+
+  useImperativeHandle(ref, () => ({
+    getDraftValues: () => getValues(),
+  }), [getValues]);
 
   const submit = handleSubmit(async (values) => {
     try {
@@ -146,8 +160,9 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             guidance={basicDetailsGuidance.registrationNumber}
             label="FPC registration number *"
             required
+            readOnly
             disabled={isReadOnly}
-            placeholder="000001"
+            helperText="Read-only • System-assigned identifier"
             error={errors.registrationNumber?.message}
             {...register('registrationNumber')}
           />
@@ -212,7 +227,29 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             )}
           />
 
-          {/* Row 4: Official Email & Mobile (Read-only from invitation) */}
+          {/* Row 4: Farmers & Employees */}
+          <Input
+            id="fpc-farmers-count"
+            guidance={basicDetailsGuidance.farmers}
+            label="Farmers *"
+            required
+            disabled={isReadOnly}
+            placeholder="120"
+            error={errors.farmers?.message}
+            {...register('farmers')}
+          />
+          <Input
+            id="fpc-employees-count"
+            guidance={basicDetailsGuidance.employees}
+            label="Employees *"
+            required
+            disabled={isReadOnly}
+            placeholder="6"
+            error={errors.employees?.message}
+            {...register('employees')}
+          />
+
+          {/* Row 5: Official Email & Mobile (Read-only from invitation) */}
           <Input
             id="fpc-contact-email"
             type="email"
@@ -238,7 +275,7 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
             {...register('contactMobile')}
           />
 
-          {/* Row 5: Official Website (Optional, full-width) */}
+          {/* Row 6: Official Website (Optional, full-width) */}
           <div className="col-span-1 md:col-span-2">
             <Input
               id="fpc-website"
@@ -294,5 +331,8 @@ export const FpcBasicDetailsForm: React.FC<FpcBasicDetailsFormProps> = ({
       </div>
     </form>
   );
-};
+});
+
+FpcBasicDetailsForm.displayName = 'FpcBasicDetailsForm';
+
 

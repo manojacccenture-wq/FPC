@@ -31,12 +31,76 @@ export interface FpcSummaryDto {
 export interface FpcDocumentDto {
   id: string;
   documentType: string;
+  /** Present only on director identity documents. */
+  directorKey?: string | null;
   fileName: string;
   expiryDate?: string | null;
   storagePath?: string | null;
   contentType?: string | null;
   fileSizeBytes?: number | null;
-  uploadStatus?: 'Pending' | 'Attached' | 'LegacyMissingFile' | null;
+  uploadStatus?: 'Pending' | 'Attached' | 'LegacyMissingFile' | 'Superseded' | 'SoftDeleted' | null;
+  documentSlotKey?: string | null;
+  versionNumber?: number | null;
+  isLatest?: boolean | null;
+  amendmentNotes?: string | null;
+  effectiveDate?: string | null;
+  supersededAtUtc?: string | null;
+  uploadedAtUtc?: string | null;
+}
+
+export interface FpcDocumentVersionItemDto {
+  id: string;
+  documentSlotKey: string;
+  documentType: string;
+  directorKey?: string | null;
+  versionNumber: number;
+  isLatest: boolean;
+  uploadStatus: string;
+  fileName: string;
+  amendmentNotes?: string | null;
+  effectiveDate?: string | null;
+  expiryDate?: string | null;
+  uploadedAtUtc: string;
+  supersededAtUtc?: string | null;
+  uploaderName?: string | null;
+  fileSizeBytes?: number | null;
+}
+
+export interface LegacyDocumentAttachmentDto {
+  id: string;
+  documentType: string;
+  directorKey?: string | null;
+  fileName: string;
+  storagePath?: string | null;
+  uploadStatus?: string | null;
+  uploadedAtUtc: string;
+  expiryDate?: string | null;
+  isPreservedLegacy: boolean;
+  notice: string;
+}
+
+export interface FpcDocumentHistoryResponseDto {
+  fpcId: string;
+  documentSlotKey: string;
+  documentType: string;
+  directorKey?: string | null;
+  totalVersions: number;
+  latestActiveVersionNumber?: number | null;
+  hasLegacyDocument: boolean;
+  legacyDocument?: LegacyDocumentAttachmentDto | null;
+  versions: FpcDocumentVersionItemDto[];
+}
+
+export interface UploadFpcDocumentVersionRequest {
+  fpcId: string;
+  formData: FormData;
+  idempotencyKey?: string;
+}
+
+export interface SoftDeleteDocumentVersionRequest {
+  fpcId: string;
+  documentId: string;
+  reason: string;
 }
 
 export interface FpcDetailsDto {
@@ -127,24 +191,28 @@ export const fpcApi = baseApi.injectEndpoints({
       query: () => FPC_ENDPOINTS.ROOT,
       transformResponse: (response: ApiResponse<FpcSummaryDto[]>) => response.data,
       providesTags: [TAG_TYPES.Fpc],
+      keepUnusedDataFor: 300,
     }),
 
     getFpcsPaged: builder.query<PagedResult<FpcSummaryDto>, GetFpcsPagedArgs | void>({
       query: (args) => FPC_ENDPOINTS.PAGED(args),
       transformResponse: (response: ApiResponse<PagedResult<FpcSummaryDto>>) => response.data,
       providesTags: [TAG_TYPES.Fpc],
+      keepUnusedDataFor: 300,
     }),
 
     getFpcById: builder.query<FpcSummaryDto, string>({
       query: (id) => FPC_ENDPOINTS.BY_ID(id),
       transformResponse: (response: ApiResponse<FpcSummaryDto>) => response.data,
       providesTags: (_result, _error, id) => [{ type: TAG_TYPES.Fpc, id }],
+      keepUnusedDataFor: 300,
     }),
 
     getFpcDetails: builder.query<FpcDetailsDto, string>({
       query: (id) => FPC_ENDPOINTS.DETAILS(id),
       transformResponse: (response: ApiResponse<FpcDetailsDto>) => response.data,
       providesTags: (_result, _error, id) => [{ type: TAG_TYPES.Fpc, id }],
+      keepUnusedDataFor: 300,
     }),
 
     /**
@@ -218,6 +286,51 @@ export const fpcApi = baseApi.injectEndpoints({
         'Auth',
       ],
     }),
+
+    getFpcDocumentHistory: builder.query<
+      FpcDocumentHistoryResponseDto,
+      { fpcId: string; documentSlotKey: string }
+    >({
+      query: ({ fpcId, documentSlotKey }) =>
+        FPC_ENDPOINTS.DOCUMENT_HISTORY(fpcId, documentSlotKey),
+      transformResponse: (response: ApiResponse<FpcDocumentHistoryResponseDto>) =>
+        response.data,
+      providesTags: (_result, _error, { fpcId, documentSlotKey }) => [
+        { type: TAG_TYPES.Fpc, id: `${fpcId}-${documentSlotKey}` },
+      ],
+      keepUnusedDataFor: 300,
+    }),
+
+    uploadFpcDocumentVersion: builder.mutation<
+      ApiResponse<UploadedFpcDocumentDto>,
+      UploadFpcDocumentVersionRequest
+    >({
+      query: ({ fpcId, formData, idempotencyKey }) => ({
+        url: FPC_ENDPOINTS.DOCUMENT_VERSIONS(fpcId),
+        method: 'POST',
+        body: formData,
+        headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+      }),
+      invalidatesTags: (_result, _error, { fpcId }) => [
+        { type: TAG_TYPES.Fpc, id: fpcId },
+        TAG_TYPES.Fpc,
+      ],
+    }),
+
+    deleteFpcDocumentVersion: builder.mutation<
+      ApiResponse<UploadedFpcDocumentDto | null>,
+      SoftDeleteDocumentVersionRequest
+    >({
+      query: ({ fpcId, documentId, reason }) => ({
+        url: FPC_ENDPOINTS.DOCUMENT_BY_ID(fpcId, documentId),
+        method: 'DELETE',
+        body: { reason },
+      }),
+      invalidatesTags: (_result, _error, { fpcId }) => [
+        { type: TAG_TYPES.Fpc, id: fpcId },
+        TAG_TYPES.Fpc,
+      ],
+    }),
   }),
   overrideExisting: false,
 });
@@ -234,5 +347,9 @@ export const {
   useApproveFpcMutation,
   useRejectFpcMutation,
   useUploadFpcDocumentMutation,
+  useGetFpcDocumentHistoryQuery,
+  useLazyGetFpcDocumentHistoryQuery,
+  useUploadFpcDocumentVersionMutation,
+  useDeleteFpcDocumentVersionMutation,
 } = fpcApi;
 

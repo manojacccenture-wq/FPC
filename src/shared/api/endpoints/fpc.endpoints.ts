@@ -20,5 +20,10 @@ export const FPC_ENDPOINTS = {
       `/fpcs/${encodeSegment(fpcId)}/documents/${encodeSegment(documentId)}/content`,
       download ? { download: true } : undefined
     ),
+  DOCUMENT_HISTORY: (fpcId: string, documentSlotKey: string) =>
+    buildUrl(`/fpcs/${encodeSegment(fpcId)}/documents/history`, { documentSlotKey }),
+  DOCUMENT_VERSIONS: (fpcId: string) => `/fpcs/${encodeSegment(fpcId)}/documents/versions`,
+  DOCUMENT_BY_ID: (fpcId: string, documentId: string) =>
+    `/fpcs/${encodeSegment(fpcId)}/documents/${encodeSegment(documentId)}`,
 } as const;
 

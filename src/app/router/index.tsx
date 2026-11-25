@@ -38,11 +38,7 @@ const ResetPasswordPage = lazyWithRetry(
 const LoginRoute = () => {
   const { isAuthenticated, isInitialized, activeRole } = useAppSelector((state) => state.auth);
 
-  if (!isInitialized) {
-    return null;
-  }
-
-  if (isAuthenticated) {
+  if (isInitialized && isAuthenticated) {
     return <Navigate to={activeRole === 'FpcAdmin' ? '/fpc/dashboard' : '/admin/onboard'} replace />;
   }
 
@@ -57,11 +53,7 @@ const LoginRoute = () => {
 const TwoFactorRoute = () => {
   const { isAuthenticated, pendingTwoFactor, isInitialized, activeRole } = useAppSelector((state) => state.auth);
 
-  if (!isInitialized) {
-    return null;
-  }
-
-  if (isAuthenticated) {
+  if (isInitialized && isAuthenticated) {
     return <Navigate to={activeRole === 'FpcAdmin' ? '/fpc/dashboard' : '/admin/onboard'} replace />;
   }
 

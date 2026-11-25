@@ -1,4 +1,4 @@
-import React from 'react';
+import { forwardRef, useImperativeHandle, useState } from 'react';
 import { useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { Plus } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
@@ -8,21 +8,38 @@ import { DatePicker } from '../../../shared/components/DatePicker';
 import { Button } from '../../../shared/components/Button';
 import { FormField } from '../../../shared/components/FormField';
 import { FileUpload } from '../../../shared/components/FileUpload';
+import { DirectorIdentityDocuments } from './DirectorIdentityDocuments';
 import { useFilePreviews } from '../../../shared/hooks/useFilePreviews';
 import { useFpcForm, applyServerErrors, FormServerError } from '../../../shared/forms';
+import { API_BASE_URL } from '../../../shared/config/env';
+import { FPC_ENDPOINTS } from '../../../shared/api/endpoints/fpc.endpoints';
+import { INVITATION_ENDPOINTS } from '../../../shared/api/endpoints/invitations.endpoints';
 import {
   boardOfDirectorsSchema,
   type BoardOfDirectorsFormValues,
 } from '../schemas/boardOfDirectors.schema';
-import type { FpcBoardOfDirectorsFormData } from '../types';
+import type { FpcBoardOfDirectorsFormData, FpcDirector, StepFormHandle } from '../types';
 import { directorGuidance } from '../constants/fieldGuidance';
+import {
+  DIRECTOR_IDENTITY_DOCUMENTS,
+  directorUploadKey,
+  type DirectorDocumentNameField,
+  type DirectorDocumentsFileMap,
+} from '../constants/documentTypes';
 
 export interface FpcBoardOfDirectorsFormProps {
   initialData?: Partial<FpcBoardOfDirectorsFormData> | null;
-  onSubmit: (values: BoardOfDirectorsFormValues) => Promise<void> | void;
+  onSubmit: (
+    values: BoardOfDirectorsFormValues,
+    files: DirectorDocumentsFileMap
+  ) => Promise<void> | void;
   onPreviousStep: () => void;
   isReadOnly?: boolean;
   onNextStep?: () => void;
+  /** Present when an authenticated FPC is completing its own registration. */
+  fpcId?: string;
+  /** Present during token-based onboarding; enables saved-file previews. */
+  invitationToken?: string;
 }
 
 const DESIGNATION_OPTIONS = [
@@ -53,35 +70,96 @@ const ACTIVE_STATUS_OPTIONS = [
   { value: 'Inactive', label: 'Inactive' },
 ];
 
-export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = ({
+/** Upper bound for the date-of-birth calendar; future dates are never selectable. */
+const TODAY = new Date();
+
+const createDirectorKey = () =>
+  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `director-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+const emptyDirector = (overrides: Partial<FpcDirector> = {}): BoardOfDirectorsFormValues['directors'][number] => {
+  const key = overrides.directorKey || overrides.id || createDirectorKey();
+  return {
+    id: key,
+    directorKey: key,
+    fullName: '',
+    din: '',
+    designation: 'Director',
+    gender: '',
+    appointmentDate: '',
+    dateOfBirth: '',
+    mobileNumber: '',
+    email: '',
+    pan: '',
+    socialCategory: '',
+    activeStatus: 'Active',
+    photographName: '',
+    aadhaarDocName: '',
+    panDocName: '',
+    voterIdDocName: '',
+    ...overrides,
+  };
+};
+
+/** Backfills keys and new fields for drafts saved before this change. */
+const normalizeDirector = (
+  director: Partial<FpcDirector>
+): BoardOfDirectorsFormValues['directors'][number] => {
+  const key = director.directorKey || director.id || createDirectorKey();
+  return {
+    id: director.id || key,
+    directorKey: key,
+    fullName: director.fullName || '',
+    din: director.din || '',
+    designation: director.designation || 'Director',
+    gender: director.gender || '',
+    appointmentDate: director.appointmentDate || '',
+    dateOfBirth: director.dateOfBirth || '',
+    mobileNumber: director.mobileNumber || '',
+    email: director.email || '',
+    pan: director.pan || '',
+    socialCategory: director.socialCategory || '',
+    activeStatus: director.activeStatus || 'Active',
+    photographName: director.photographName || '',
+    identityDocName: director.identityDocName || '',
+    aadhaarDocName: director.aadhaarDocName || '',
+    aadhaarDocumentId: director.aadhaarDocumentId || '',
+    panDocName: director.panDocName || '',
+    panDocumentId: director.panDocumentId || '',
+    voterIdDocName: director.voterIdDocName || '',
+    voterIdDocumentId: director.voterIdDocumentId || '',
+  };
+};
+
+export const FpcBoardOfDirectorsForm = forwardRef<
+  StepFormHandle<BoardOfDirectorsFormValues, DirectorDocumentsFileMap>,
+  FpcBoardOfDirectorsFormProps
+>(({
   initialData,
   onSubmit,
   onPreviousStep,
   isReadOnly = false,
   onNextStep,
-}) => {
+  fpcId,
+  invitationToken,
+}, ref) => {
   const defaultDirectors = isReadOnly
     ? []
     : [
-        {
+        emptyDirector({
           id: 'director-1',
-          fullName: '',
-          din: '',
+          directorKey: 'director-1',
           designation: 'Managing Director',
           gender: 'Female',
-          appointmentDate: '',
-          mobileNumber: '',
-          email: '',
-          pan: '',
-          socialCategory: '',
-          activeStatus: 'Active',
-        },
+        }),
       ];
 
   const formValues: BoardOfDirectorsFormValues = {
-    directors: initialData?.directors && initialData.directors.length > 0
-      ? initialData.directors
-      : defaultDirectors,
+    directors:
+      initialData?.directors && initialData.directors.length > 0
+        ? initialData.directors.map(normalizeDirector)
+        : defaultDirectors,
   };
 
   // ZERO useEffect: initial values populated directly during component mount
@@ -89,7 +167,9 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
     register,
     control,
     handleSubmit,
+    getValues,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = useFpcForm<BoardOfDirectorsFormValues>({
     schema: boardOfDirectorsSchema,
@@ -103,15 +183,97 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
     name: 'directors',
   });
 
-  // Thumbnails for image uploads (photograph / identity document), keyed per director row.
+  // Thumbnails for image uploads, keyed per director row and per document slot.
   const { previews: filePreviews, setFile: setFilePreview, clearFile } = useFilePreviews();
+
+  // Selected identity-document files stay in memory until Step 4 is submitted.
+  const [directorFiles, setDirectorFiles] = useState<DirectorDocumentsFileMap>({});
+
+  useImperativeHandle(ref, () => ({
+    getDraftValues: () => getValues(),
+    getDraftFiles: () => directorFiles,
+  }), [getValues, directorFiles]);
 
   const previewKey = (directorId: string, field: 'photographName' | 'identityDocName') =>
     `${directorId}:${field}`;
 
+  const directorNamePath = (index: number, field: DirectorDocumentNameField) =>
+    `directors.${index}.${field}` as `directors.${number}.${DirectorDocumentNameField}`;
+
+  const validateDirectorFile = (file: File): string | null => {
+    const hasAllowedExtension = /\.(pdf|png|jpe?g)$/i.test(file.name);
+    const hasAllowedType =
+      !file.type || ['application/pdf', 'image/png', 'image/jpeg'].includes(file.type.toLowerCase());
+
+    if (!hasAllowedExtension || !hasAllowedType) {
+      return 'Only PDF, JPG, JPEG or PNG files are allowed';
+    }
+    if (file.size === 0) {
+      return 'The selected file is empty';
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      return 'File must be 5 MB or smaller';
+    }
+    return null;
+  };
+
+  const handleDirectorFileSelected = (
+    index: number,
+    directorKey: string,
+    field: DirectorDocumentNameField,
+    file: File
+  ) => {
+    const validationError = validateDirectorFile(file);
+    if (validationError) {
+      setError(directorNamePath(index, field), { type: 'manual', message: validationError });
+      return;
+    }
+
+    const config = DIRECTOR_IDENTITY_DOCUMENTS.find((doc) => doc.key === field);
+    if (!config) return;
+
+    const key = directorUploadKey(directorKey, field);
+    setDirectorFiles((previous) => ({
+      ...previous,
+      [key]: { directorKey, field, documentType: config.documentType, file },
+    }));
+    setFilePreview(key, file);
+  };
+
+  const handleDirectorFileCleared = (directorKey: string, field: DirectorDocumentNameField) => {
+    const key = directorUploadKey(directorKey, field);
+    clearFile(key);
+    setDirectorFiles((previous) => {
+      if (!(key in previous)) return previous;
+      const next = { ...previous };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const clearDirectorUploads = (directorKey: string) => {
+    DIRECTOR_IDENTITY_DOCUMENTS.forEach((doc) => clearFile(directorUploadKey(directorKey, doc.key)));
+    setDirectorFiles((previous) => {
+      const next: DirectorDocumentsFileMap = {};
+      for (const [key, upload] of Object.entries(previous)) {
+        if (upload.directorKey !== directorKey) next[key] = upload;
+      }
+      return next;
+    });
+  };
+
+  const storedDocumentUrl = (documentId?: string) => {
+    if (!documentId) return null;
+    if (fpcId) return `${API_BASE_URL}${FPC_ENDPOINTS.DOCUMENT_CONTENT(fpcId, documentId)}`;
+    if (invitationToken) {
+      return `${API_BASE_URL}${INVITATION_ENDPOINTS.DOCUMENT_CONTENT(invitationToken, documentId)}`;
+    }
+    return null;
+  };
+
   const submit = handleSubmit(async (values) => {
     try {
-      await onSubmit(values);
+      await onSubmit(values, directorFiles);
     } catch (err: unknown) {
       applyServerErrors(err, setError);
     }
@@ -120,19 +282,8 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
   const watchedDirectors = useWatch({ control, name: 'directors' });
 
   const handleAddDirector = () => {
-    append({
-      id: `director-${Date.now()}`,
-      fullName: '',
-      din: '',
-      designation: 'Director',
-      gender: '',
-      appointmentDate: '',
-      mobileNumber: '',
-      email: '',
-      pan: '',
-      socialCategory: '',
-      activeStatus: 'Active',
-    });
+    if (fields.length >= 20) return;
+    append(emptyDirector({ designation: 'Director' }));
   };
 
   const getInitials = (name?: string) => {
@@ -209,6 +360,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                       onClick={() => {
                         clearFile(previewKey(directorRow.id, 'photographName'));
                         clearFile(previewKey(directorRow.id, 'identityDocName'));
+                        clearDirectorUploads(liveDirector.directorKey);
                         remove(index);
                       }}
                       className="h-8 px-5 rounded-lg text-xs font-semibold shadow-2xs"
@@ -287,8 +439,8 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                     />
                   </div>
 
-                  {/* Row 3: Appointment date & Mobile number */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                  {/* Row 3: Appointment date, Date of birth & Mobile number */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-4">
                     <Controller
                       control={control}
                       name={`directors.${index}.appointmentDate`}
@@ -301,6 +453,25 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                           disabled={isReadOnly}
                           placeholder="dd-mm-yyyy"
                           error={directorErrors?.appointmentDate?.message}
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                        />
+                      )}
+                    />
+                    <Controller
+                      control={control}
+                      name={`directors.${index}.dateOfBirth`}
+                      render={({ field }) => (
+                        <DatePicker
+                          id={`director-dob-${index}`}
+                          guidance={directorGuidance.dateOfBirth}
+                          label="Date of birth *"
+                          required
+                          disabled={isReadOnly}
+                          placeholder="dd-mm-yyyy"
+                          maxDate={TODAY}
+                          error={directorErrors?.dateOfBirth?.message}
                           value={field.value}
                           onChange={field.onChange}
                           onBlur={field.onBlur}
@@ -385,7 +556,7 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                     />
                   </div>
 
-                  {/* Row 6: Uploads (Photograph & Identity Document) */}
+                  {/* Row 6: Photograph (legacy identity document shown only when already saved) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-1">
                     <Controller
                       control={control}
@@ -418,12 +589,13 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                       )}
                     />
 
+                    {liveDirector.identityDocName?.trim() && (
                     <Controller
                       control={control}
                       name={`directors.${index}.identityDocName`}
                       render={({ field }) => (
                         <FormField
-                          label="Identity document • Aadhaar / PAN"
+                          label="Identity document (legacy attachment)"
                           guidance={directorGuidance.identityDocName}
                         >
                           {isReadOnly ? (
@@ -451,7 +623,29 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
                         </FormField>
                       )}
                     />
+                    )}
                   </div>
+
+                  {/* Mandatory identity documents: one set per director, associated by directorKey */}
+                  <DirectorIdentityDocuments
+                    index={index}
+                    directorKey={liveDirector.directorKey}
+                    director={liveDirector}
+                    control={control}
+                    setValue={setValue}
+                    errors={{
+                      aadhaarDocName: directorErrors?.aadhaarDocName,
+                      panDocName: directorErrors?.panDocName,
+                      voterIdDocName: directorErrors?.voterIdDocName,
+                    }}
+                    isReadOnly={isReadOnly}
+                    previews={filePreviews}
+                    onFileSelected={(field, file) =>
+                      handleDirectorFileSelected(index, liveDirector.directorKey, field, file)
+                    }
+                    onFileCleared={(field) => handleDirectorFileCleared(liveDirector.directorKey, field)}
+                    storedDocumentUrl={storedDocumentUrl}
+                  />
                 </div>
               </div>
             );
@@ -466,11 +660,12 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
             <Button
               type="button"
               variant="outline"
+              disabled={fields.length >= 20}
               onClick={handleAddDirector}
-              className="w-full py-3.5 px-4 rounded-xl border-dashed border-neutral-300 hover:border-neutral-400 bg-white hover:bg-neutral-50/50 text-secondary hover:text-primary text-xs sm:text-sm font-semibold shadow-2xs"
+              className="w-full py-3.5 px-4 rounded-xl border-dashed border-neutral-300 hover:border-neutral-400 bg-white hover:bg-neutral-50/50 text-secondary hover:text-primary text-xs sm:text-sm font-semibold shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
               leadingIcon={<Plus className="w-4 h-4" />}
             >
-              Add Director
+              {fields.length >= 20 ? 'Maximum Directors Limit Reached (20)' : 'Add Director'}
             </Button>
           )}
         </div>
@@ -511,5 +706,8 @@ export const FpcBoardOfDirectorsForm: React.FC<FpcBoardOfDirectorsFormProps> = (
       </div>
     </form>
   );
-};
+});
+
+FpcBoardOfDirectorsForm.displayName = 'FpcBoardOfDirectorsForm';
+
 

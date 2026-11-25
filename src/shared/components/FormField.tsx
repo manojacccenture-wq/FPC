@@ -8,7 +8,7 @@ export interface FormFieldProps {
   label?: string;
   required?: boolean;
   error?: string;
-  helperText?: string;
+  helperText?: React.ReactNode;
   className?: string;
   /** Explanatory content rendered as an information icon next to the label. */
   guidance?: FieldGuidance;

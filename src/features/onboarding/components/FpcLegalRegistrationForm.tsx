@@ -1,4 +1,4 @@
-import React from 'react';
+import { forwardRef, useImperativeHandle } from 'react';
 import { useFieldArray, Controller } from 'react-hook-form';
 import { ChevronRight, Plus } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
@@ -10,7 +10,7 @@ import {
   legalRegistrationSchema,
   type LegalRegistrationFormValues,
 } from '../schemas/legalRegistration.schema';
-import type { FpcLegalRegistrationFormData } from '../types';
+import type { FpcLegalRegistrationFormData, StepFormHandle } from '../types';
 import {
   legalRegistrationGuidance,
   additionalLicenseGuidance,
@@ -35,13 +35,13 @@ const LICENSE_TYPE_OPTIONS = [
   { value: 'Other Operating License', label: 'Other Operating License' },
 ];
 
-export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> = ({
+export const FpcLegalRegistrationForm = forwardRef<StepFormHandle<LegalRegistrationFormValues>, FpcLegalRegistrationFormProps>(({
   initialData,
   onSubmit,
   onPreviousStep,
   isReadOnly = false,
   onNextStep,
-}) => {
+}, ref) => {
   const defaultLicenses = isReadOnly
     ? []
     : [
@@ -70,6 +70,7 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
     register,
     control,
     handleSubmit,
+    getValues,
     setError,
     formState: { errors, isSubmitting },
   } = useFpcForm<LegalRegistrationFormValues>({
@@ -78,6 +79,10 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
     values: formValues,
     resetOptions: { keepDirtyValues: true },
   });
+
+  useImperativeHandle(ref, () => ({
+    getDraftValues: () => getValues(),
+  }), [getValues]);
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -329,5 +334,8 @@ export const FpcLegalRegistrationForm: React.FC<FpcLegalRegistrationFormProps> =
       </div>
     </form>
   );
-};
+});
+
+FpcLegalRegistrationForm.displayName = 'FpcLegalRegistrationForm';
+
 

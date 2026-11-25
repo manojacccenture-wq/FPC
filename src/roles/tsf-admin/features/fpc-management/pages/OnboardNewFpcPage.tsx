@@ -14,6 +14,7 @@ import {
   Pagination,
 } from '../../../../../shared/components';
 import { usePaginationState } from '../../../../../shared/hooks/usePaginationState';
+import { formatDateTimeLocal } from '../../../../../shared/utils/date';
 import { InviteFpcModal, type InviteFpcFormData } from '../components/InviteFpcModal';
 import { FpcStatusBadge, type FpcStatus } from '../components/FpcStatusBadge';
 import { calculateRegistrationProgress } from '../utils/registrationProgress';
@@ -39,6 +40,7 @@ interface FpcRecord {
   cin?: string;
   name: string;
   location: string;
+  createdAtUtc: string;
   farmers: number;
   shareholders: string | number;
   status: FpcStatus;
@@ -75,11 +77,18 @@ export const OnboardNewFpcPage: React.FC = () => {
   const {
     pageNumber,
     pageSize,
+    sortBy,
+    sortDescending,
     setPage,
     changePageSize,
     resetPagination,
     paginationParams,
-  } = usePaginationState({ initialPage: 1, initialPageSize: 10 });
+  } = usePaginationState({
+    initialPage: 1,
+    initialPageSize: 10,
+    initialSortBy: 'created',
+    initialSortDescending: true,
+  });
 
   // RTK Query: Unified backend onboarding records (PostgreSQL UNION ALL pagination)
   const {
@@ -126,6 +135,7 @@ export const OnboardNewFpcPage: React.FC = () => {
       cin: row.cin ?? undefined,
       name: row.name,
       location: row.location,
+      createdAtUtc: row.createdAtUtc,
       farmers: row.farmers,
       shareholders: row.shareholders > 0 ? row.shareholders : '-',
       status: row.status as FpcStatus,
@@ -224,9 +234,12 @@ export const OnboardNewFpcPage: React.FC = () => {
 
   const handleDownloadCsv = async () => {
     try {
+      // Export reuses the same server-side filtering, ordering, and single-row representation.
       const exportResult = await triggerExport({
         search: searchQuery,
         status: selectedFilter,
+        sortBy,
+        sortDescending,
         all: true,
       }).unwrap();
 
@@ -236,7 +249,7 @@ export const OnboardNewFpcPage: React.FC = () => {
         return;
       }
 
-      const headers = ['ID', 'Type', 'Name', 'Location', 'Farmers', 'Shareholders', 'Status'];
+      const headers = ['ID', 'Type', 'Name', 'Location', 'Farmers', 'Shareholders', 'Created At', 'Status'];
       const rows = items.map((r) => [
         `"${r.id.replace(/"/g, '""')}"`,
         `"${r.recordType}"`,
@@ -244,6 +257,7 @@ export const OnboardNewFpcPage: React.FC = () => {
         `"${r.location.replace(/"/g, '""')}"`,
         r.farmers,
         r.shareholders,
+        `"${formatDateTimeLocal(r.createdAtUtc)}"`,
         `"${r.statusLabel.replace(/"/g, '""')}"`,
       ]);
 
@@ -329,6 +343,13 @@ export const OnboardNewFpcPage: React.FC = () => {
       widthClassName: 'w-[110px]',
       tone: 'secondary',
       cell: (item) => item.shareholders,
+    },
+    {
+      id: 'createdAt',
+      header: 'Created At',
+      widthClassName: 'w-[170px]',
+      tone: 'secondary',
+      cell: (item) => formatDateTimeLocal(item.createdAtUtc),
     },
     {
       id: 'status',
@@ -541,7 +562,7 @@ export const OnboardNewFpcPage: React.FC = () => {
         <Table
           data={tableRecords}
           columns={fpcColumns}
-          getRowKey={(item) => item.invitationId || item.fpcId || item.id}
+          getRowKey={(item) => `${item.recordType}:${item.invitationId ?? item.fpcId ?? item.id}`}
           ariaLabel="FPC onboarding records"
           isLoading={isLoadingRecords}
           emptyState={emptyState}

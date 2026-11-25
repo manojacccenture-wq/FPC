@@ -153,3 +153,24 @@ export function formatDateToDMY(val?: Date | string | null): string {
   return '';
 }
 
+/**
+ * Formats a UTC timestamp as DD-MM-YYYY, hh:mm AM/PM in the browser's local timezone.
+ * Returns '-' when the value is missing or cannot be parsed.
+ */
+export function formatDateTimeLocal(val?: Date | string | null): string {
+  if (!val) return '-';
+
+  const date = val instanceof Date ? val : new Date(val);
+  if (Number.isNaN(date.getTime())) return '-';
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const hours24 = date.getHours();
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const meridiem = hours24 < 12 ? 'AM' : 'PM';
+
+  return `${day}-${month}-${year}, ${hours12}:${minutes} ${meridiem}`;
+}
+

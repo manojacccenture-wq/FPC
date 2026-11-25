@@ -134,6 +134,44 @@ class InvitationApi {
   }
 
   /**
+   * Reads stored drafts for all steps in a single key resolution pass,
+   * avoiding 7 redundant localStorage scans on initial mount.
+   */
+  public getAllDrafts(identifier: DraftIdentifierInput): AllOnboardingDrafts {
+    const token = this.resolveDraftKey(identifier);
+    if (!token) {
+      return {
+        step1: null,
+        step2: null,
+        step3: null,
+        step4: null,
+        step5: null,
+        step6: null,
+        step7: null,
+      };
+    }
+
+    const readStep = <T,>(step: number): Partial<T> | null => {
+      try {
+        const raw = localStorage.getItem(`fpc_step${step}_${token}`);
+        return raw ? (JSON.parse(raw) as Partial<T>) : null;
+      } catch {
+        return null;
+      }
+    };
+
+    return {
+      step1: readStep<FpcBasicDetailsFormData>(1),
+      step2: readStep<FpcLegalRegistrationFormData>(2),
+      step3: readStep<FpcFinancialInformationFormData>(3),
+      step4: readStep<FpcBoardOfDirectorsFormData>(4),
+      step5: readStep<FpcLogoDocumentsFormData>(5),
+      step6: readStep<FpcAddressLocationFormData>(6),
+      step7: readStep<FpcBusinessActivitiesFormData>(7),
+    };
+  }
+
+  /**
    * Reads stored Step 1 details synchronously for zero useEffect render.
    */
   public getStepOneData(identifier: DraftIdentifierInput): Partial<FpcBasicDetailsFormData> | null {

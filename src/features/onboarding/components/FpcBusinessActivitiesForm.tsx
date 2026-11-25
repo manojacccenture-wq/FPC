@@ -1,9 +1,8 @@
-import React from 'react';
+import { forwardRef, useImperativeHandle } from 'react';
 import { Controller } from 'react-hook-form';
 import { ChevronRight, Search } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Input } from '../../../shared/components/Input';
-import { Select } from '../../../shared/components/Select';
 import { DatePicker } from '../../../shared/components/DatePicker';
 import { MultiSelect, type MultiSelectOption } from '../../../shared/components/MultiSelect';
 import { Button } from '../../../shared/components/Button';
@@ -12,7 +11,7 @@ import {
   businessActivitiesSchema,
   type BusinessActivitiesFormValues,
 } from '../schemas/businessActivities.schema';
-import type { FpcBusinessActivitiesFormData } from '../types';
+import type { FpcBusinessActivitiesFormData, StepFormHandle } from '../types';
 import { businessActivitiesGuidance } from '../constants/fieldGuidance';
 
 export interface FpcBusinessActivitiesFormProps {
@@ -31,13 +30,6 @@ const PRIMARY_ACTIVITY_OPTIONS: MultiSelectOption[] = [
   { value: 'Marketing & Aggregation', label: 'Marketing & Aggregation' },
   { value: 'Dairy & Livestock Farming', label: 'Dairy & Livestock Farming' },
   { value: 'Fisheries & Aquaculture', label: 'Fisheries & Aquaculture' },
-];
-
-const OPERATIONAL_STATUS_OPTIONS = [
-  { value: 'Operational', label: 'Operational' },
-  { value: 'Pre-operational', label: 'Pre-operational' },
-  { value: 'Pilot Operations', label: 'Pilot Operations' },
-  { value: 'Commercial Operations', label: 'Commercial Operations' },
 ];
 
 const COMMODITIES_HANDLED_OPTIONS: MultiSelectOption[] = [
@@ -95,16 +87,18 @@ const parseCommodities = (val?: string[] | string | null): string[] => {
   return [];
 };
 
-export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps> = ({
+export const FpcBusinessActivitiesForm = forwardRef<
+  StepFormHandle<BusinessActivitiesFormValues>,
+  FpcBusinessActivitiesFormProps
+>(({
   initialData,
   onSubmit,
   onPreviousStep,
   isReadOnly = false,
   onNextStep,
-}) => {
+}, ref) => {
   const formValues: BusinessActivitiesFormValues = {
     primaryActivity: parseActivities(initialData?.primaryActivity),
-    operationalStatus: initialData?.operationalStatus || 'Operational',
     commencementDate: initialData?.commencementDate || '',
     commoditiesHandled: parseCommodities(initialData?.commoditiesHandled),
     targetFarmers: initialData?.targetFarmers || '',
@@ -118,6 +112,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
     register,
     handleSubmit,
     setError,
+    getValues,
     formState: { errors, isSubmitting },
   } = useFpcForm<BusinessActivitiesFormValues>({
     schema: businessActivitiesSchema,
@@ -125,6 +120,14 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
     values: formValues,
     resetOptions: { keepDirtyValues: true },
   });
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getDraftValues: () => getValues(),
+    }),
+    [getValues]
+  );
 
   const submit = handleSubmit(async (values) => {
     try {
@@ -161,46 +164,29 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
 
         {/* Form Inputs Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-          {/* Row 1: Primary business activity & Operational status */}
-          <Controller
-            name="primaryActivity"
-            control={control}
-            render={({ field }) => (
-              <MultiSelect
-                id="fpc-primary-activity"
-                guidance={businessActivitiesGuidance.primaryActivity}
-                label="Primary business activity *"
-                required
-                disabled={isReadOnly}
-                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-                placeholder="Select primary business activities..."
-                options={PRIMARY_ACTIVITY_OPTIONS}
-                value={Array.isArray(field.value) ? field.value : parseActivities(field.value)}
-                onChange={(vals) => field.onChange(vals)}
-                onBlur={field.onBlur}
-                error={errors.primaryActivity?.message}
-              />
-            )}
-          />
-          <Controller
-            name="operationalStatus"
-            control={control}
-            render={({ field }) => (
-              <Select
-                id="fpc-operational-status"
-                guidance={businessActivitiesGuidance.operationalStatus}
-                label="Operational status *"
-                required
-                disabled={isReadOnly}
-                options={OPERATIONAL_STATUS_OPTIONS}
-                trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
-                error={errors.operationalStatus?.message}
-                value={field.value}
-                onChange={(e) => field.onChange(e.target.value)}
-                onBlur={field.onBlur}
-              />
-            )}
-          />
+          {/* Row 1: Primary business activity */}
+          <div className="col-span-1 md:col-span-2">
+            <Controller
+              name="primaryActivity"
+              control={control}
+              render={({ field }) => (
+                <MultiSelect
+                  id="fpc-primary-activity"
+                  guidance={businessActivitiesGuidance.primaryActivity}
+                  label="Primary business activity *"
+                  required
+                  disabled={isReadOnly}
+                  trailingIcon={<ChevronRight className="w-4 h-4 text-neutral-400 stroke-[2]" />}
+                  placeholder="Select primary business activities..."
+                  options={PRIMARY_ACTIVITY_OPTIONS}
+                  value={Array.isArray(field.value) ? field.value : parseActivities(field.value)}
+                  onChange={(vals) => field.onChange(vals)}
+                  onBlur={field.onBlur}
+                  error={errors.primaryActivity?.message}
+                />
+              )}
+            />
+          </div>
 
           {/* Row 2: Date of commencement & Commodities handled */}
           <Controller
@@ -316,5 +302,7 @@ export const FpcBusinessActivitiesForm: React.FC<FpcBusinessActivitiesFormProps>
       </div>
     </form>
   );
-};
+});
+
+FpcBusinessActivitiesForm.displayName = 'FpcBusinessActivitiesForm';
 

@@ -215,6 +215,25 @@ export const coordinateStringSchema = (fieldName: string, min: number, max: numb
       { message: `${fieldName} must be a decimal degree value between ${min} and ${max}` }
     );
 
+/**
+ * Mandatory decimal-degree coordinate field.
+ * Rejects empty/whitespace values, non-numeric input, more than 6 decimals and
+ * anything outside the given axis range.
+ */
+export const requiredCoordinateStringSchema = (fieldName: string, min: number, max: number) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${fieldName} is required`)
+    .refine(
+      (val) => {
+        if (!/^[+-]?\d{1,3}(\.\d{1,6})?$/.test(val)) return false;
+        const parsed = Number(val);
+        return Number.isFinite(parsed) && parsed >= min && parsed <= max;
+      },
+      { message: `${fieldName} must be a decimal degree value between ${min} and ${max}` }
+    );
+
 export const optionalUrlSchema = z
   .string()
   .trim()

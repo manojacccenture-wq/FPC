@@ -19,6 +19,8 @@ export const basicDetailsSchema = z.object({
   rocOffice: requiredString('ROC office', 2),
   dateOfIncorporation: dateStringSchema('Date of incorporation'),
   companyCategory: requiredString('Company category', 2),
+  farmers: requiredString('Farmers'),
+  employees: requiredString('Employees'),
   contactEmail: emailSchema,
   contactMobile: phoneSchema,
   website: optionalUrlSchema,

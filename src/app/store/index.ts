@@ -3,6 +3,7 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 import { rootReducer } from './rootReducer';
 import { baseApi } from '../api/baseApi';
 import { geocodingApi } from '../../features/onboarding/api/geocodingApi';
+import { ifscApi } from '../../features/onboarding/api/ifscApi';
 
 export const store = configureStore({
   reducer: rootReducer,
@@ -12,7 +13,7 @@ export const store = configureStore({
         // Ignore Date or specific offline payload fields if necessary
         ignoredActions: ['sync/syncCompleted'],
       },
-    }).concat(baseApi.middleware, geocodingApi.middleware),
+    }).concat(baseApi.middleware, geocodingApi.middleware, ifscApi.middleware),
   devTools: import.meta.env.DEV,
 });
 

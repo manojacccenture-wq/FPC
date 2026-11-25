@@ -38,7 +38,7 @@ export interface CoordinateLocationControlProps {
 }
 
 const SOURCE_LABELS: Record<CoordinateSource, string> = {
-  '': 'Optional — use your device location or enter manually',
+  '': 'Use your device location or enter manually',
   gps: 'From your device location',
   geocoding: 'From the registered address',
   manual: 'Entered manually',

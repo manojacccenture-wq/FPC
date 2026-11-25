@@ -83,6 +83,8 @@ export interface UploadFpcDocumentRequest {
   documentType: string;
   file: File;
   expiryDate?: string;
+  /** Stable director identifier for director identity documents. */
+  directorKey?: string;
 }
 
 export interface CompleteFpcInvitationRequest {
@@ -123,23 +125,27 @@ export const fpcInvitationApi = baseApi.injectEndpoints({
       query: () => INVITATION_ENDPOINTS.ROOT,
       transformResponse: (response: ApiResponse<FpcInvitationDto[]>) => response.data,
       providesTags: [TAG_TYPES.FpcInvitation],
+      keepUnusedDataFor: 300,
     }),
 
     getOnboardRecords: builder.query<PagedResult<OnboardRecordDto>, GetOnboardRecordsArgs | void>({
       query: (args) => INVITATION_ENDPOINTS.ONBOARD_RECORDS(args),
       transformResponse: (response: ApiResponse<PagedResult<OnboardRecordDto>>) => response.data,
       providesTags: [TAG_TYPES.FpcInvitation, TAG_TYPES.Fpc],
+      keepUnusedDataFor: 300,
     }),
 
     getFpcInvitationById: builder.query<FpcInvitationDto, string>({
       query: (id) => INVITATION_ENDPOINTS.BY_ID(id),
       transformResponse: (response: ApiResponse<FpcInvitationDto>) => response.data,
       providesTags: (_result, _error, id) => [{ type: TAG_TYPES.FpcInvitation, id }],
+      keepUnusedDataFor: 300,
     }),
 
     validateFpcInvitation: builder.query<InvitationValidationResult, string>({
       query: (token) => INVITATION_ENDPOINTS.VALIDATE(token),
       transformResponse: (response: ApiResponse<InvitationValidationResult>) => response.data,
+      keepUnusedDataFor: 300,
     }),
 
     createFpcInvitation: builder.mutation<FpcInvitationDto, CreateFpcInvitationRequest>({
@@ -165,12 +171,15 @@ export const fpcInvitationApi = baseApi.injectEndpoints({
      * multipart boundary, so no Content-Type header is forced for this endpoint.
      */
     uploadDocument: builder.mutation<UploadedFpcDocument, UploadFpcDocumentRequest>({
-      query: ({ token, documentType, file, expiryDate }) => {
+      query: ({ token, documentType, file, expiryDate, directorKey }) => {
         const body = new FormData();
         body.append('documentType', documentType);
         body.append('file', file, file.name);
         if (expiryDate) {
           body.append('expiryDate', expiryDate);
+        }
+        if (directorKey) {
+          body.append('directorKey', directorKey);
         }
 
         return {

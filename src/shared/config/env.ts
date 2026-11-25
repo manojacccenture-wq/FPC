@@ -38,6 +38,17 @@ export const ADDRESS_GEOCODING_ENABLED =
   (import.meta.env.VITE_ENABLE_ADDRESS_GEOCODING ?? 'false').trim().toLowerCase() === 'true';
 
 /**
+ * IFSC → bank/branch lookup for the Primary Bank Account Details form.
+ *
+ * Uses the public, keyless Razorpay IFSC endpoint, so no credentials are
+ * involved and the browser may call it directly. Enabled unless a build
+ * explicitly sets `VITE_ENABLE_IFSC_LOOKUP=false`; the lookup only ever
+ * pre-fills editable fields, so turning it off leaves the form fully usable.
+ */
+export const IFSC_LOOKUP_ENABLED =
+  (import.meta.env.VITE_ENABLE_IFSC_LOOKUP ?? 'true').trim().toLowerCase() !== 'false';
+
+/**
  * Demo-only switch that lets the onboarding wizard run with client-side
  * validation enforcement OFF. Enabled on the dev server by default; a built
  * artifact exposes it only when the build sets `VITE_DEMO_VALIDATION_TOGGLE=true`.

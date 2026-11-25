@@ -1,13 +1,14 @@
-import React from 'react';
+import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { FpcBasicDetailsForm } from '../FpcBasicDetailsForm';
 import { FpcLegalRegistrationForm } from '../FpcLegalRegistrationForm';
 import { FpcFinancialInformationForm } from '../FpcFinancialInformationForm';
 import { FpcBoardOfDirectorsForm } from '../FpcBoardOfDirectorsForm';
 import { FpcLogoDocumentsForm, type LogoDocumentsFileMap } from '../FpcLogoDocumentsForm';
+import type { DirectorDocumentsFileMap } from '../../constants/documentTypes';
 import { FpcAddressLocationForm } from '../FpcAddressLocationForm';
 import { FpcBusinessActivitiesForm } from '../FpcBusinessActivitiesForm';
 import { FpcFinalReviewForm } from '../FpcFinalReviewForm';
-import type { FpcInvitation } from '../../types';
+import type { FpcInvitation, StepFormHandle } from '../../types';
 import type { FpcInvitationDto } from '../../api/fpcInvitationApi';
 import type { FpcDetailsDto } from '../../../fpc/api/fpcApi';
 import type { BasicDetailsFormValues } from '../../schemas/basicDetails.schema';
@@ -17,7 +18,12 @@ import type { BoardOfDirectorsFormValues } from '../../schemas/boardOfDirectors.
 import type { LogoDocumentsFormValues } from '../../schemas/logoDocuments.schema';
 import type { AddressLocationFormValues } from '../../schemas/addressLocation.schema';
 import type { BusinessActivitiesFormValues } from '../../schemas/businessActivities.schema';
+import { withLegacyHeadcounts } from '../../utils/fpcFormMapper';
 import type { RegistrationStepDrafts } from '../../utils/fpcFormMapper';
+
+export interface FpcRegistrationFormHandle {
+  getActiveStepData: () => { values: unknown; files?: unknown } | null;
+}
 
 export interface FpcRegistrationFormProps {
   mode: 'editable' | 'readonly';
@@ -29,7 +35,10 @@ export interface FpcRegistrationFormProps {
   onStepOneSubmit?: (values: BasicDetailsFormValues) => Promise<void> | void;
   onStepTwoSubmit?: (values: LegalRegistrationFormValues) => Promise<void> | void;
   onStepThreeSubmit?: (values: FinancialInformationFormValues) => Promise<void> | void;
-  onStepFourSubmit?: (values: BoardOfDirectorsFormValues) => Promise<void> | void;
+  onStepFourSubmit?: (
+    values: BoardOfDirectorsFormValues,
+    files: DirectorDocumentsFileMap
+  ) => Promise<void> | void;
   onStepFiveSubmit?: (values: LogoDocumentsFormValues, files: LogoDocumentsFileMap) => Promise<void> | void;
   onStepSixSubmit?: (values: AddressLocationFormValues) => Promise<void> | void;
   onStepSevenSubmit?: (values: BusinessActivitiesFormValues) => Promise<void> | void;
@@ -42,7 +51,7 @@ export interface FpcRegistrationFormProps {
 
 const noop = () => {};
 
-export const FpcRegistrationForm: React.FC<FpcRegistrationFormProps> = ({
+export const FpcRegistrationForm = forwardRef<FpcRegistrationFormHandle, FpcRegistrationFormProps>(({
   mode,
   currentStep,
   onStepChange,
@@ -59,8 +68,23 @@ export const FpcRegistrationForm: React.FC<FpcRegistrationFormProps> = ({
   onBackToLogin,
   isSubmitting = false,
   fpcDetails,
-}) => {
+}, ref) => {
   const isReadOnly = mode === 'readonly';
+  const stepFormRef = useRef<StepFormHandle<any, any>>(null);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getActiveStepData: () => {
+        if (!stepFormRef.current) return null;
+        return {
+          values: stepFormRef.current.getDraftValues(),
+          files: stepFormRef.current.getDraftFiles?.(),
+        };
+      },
+    }),
+    []
+  );
 
   // Construct fallback minimal invitation for Step 1 when in readonly mode without an invitation object
   const activeInvitation: FpcInvitation = invitation
@@ -93,8 +117,9 @@ export const FpcRegistrationForm: React.FC<FpcRegistrationFormProps> = ({
     case 1:
       return (
         <FpcBasicDetailsForm
+          ref={stepFormRef}
           invitation={activeInvitation}
-          initialData={drafts.step1}
+          initialData={withLegacyHeadcounts(drafts.step1, drafts.step3)}
           onSubmit={onStepOneSubmit || noop}
           onBackToLogin={onBackToLogin}
           isReadOnly={isReadOnly}
@@ -105,6 +130,7 @@ export const FpcRegistrationForm: React.FC<FpcRegistrationFormProps> = ({
     case 2:
       return (
         <FpcLegalRegistrationForm
+          ref={stepFormRef}
           initialData={drafts.step2}
           onSubmit={onStepTwoSubmit || noop}
           onPreviousStep={() => onStepChange(1)}
@@ -116,6 +142,7 @@ export const FpcRegistrationForm: React.FC<FpcRegistrationFormProps> = ({
     case 3:
       return (
         <FpcFinancialInformationForm
+          ref={stepFormRef}
           initialData={drafts.step3}
           onSubmit={onStepThreeSubmit || noop}
           onPreviousStep={() => onStepChange(2)}
@@ -127,17 +154,21 @@ export const FpcRegistrationForm: React.FC<FpcRegistrationFormProps> = ({
     case 4:
       return (
         <FpcBoardOfDirectorsForm
+          ref={stepFormRef}
           initialData={drafts.step4}
           onSubmit={onStepFourSubmit || noop}
           onPreviousStep={() => onStepChange(3)}
           isReadOnly={isReadOnly}
           onNextStep={() => onStepChange(5)}
+          fpcId={fpcDetails?.id}
+          invitationToken={invitation?.token}
         />
       );
 
     case 5:
       return (
         <FpcLogoDocumentsForm
+          ref={stepFormRef}
           initialData={drafts.step5}
           onSubmit={onStepFiveSubmit || noop}
           onPreviousStep={() => onStepChange(4)}
@@ -151,6 +182,7 @@ export const FpcRegistrationForm: React.FC<FpcRegistrationFormProps> = ({
     case 6:
       return (
         <FpcAddressLocationForm
+          ref={stepFormRef}
           initialData={drafts.step6}
           onSubmit={onStepSixSubmit || noop}
           onPreviousStep={() => onStepChange(5)}
@@ -162,6 +194,7 @@ export const FpcRegistrationForm: React.FC<FpcRegistrationFormProps> = ({
     case 7:
       return (
         <FpcBusinessActivitiesForm
+          ref={stepFormRef}
           initialData={drafts.step7}
           onSubmit={onStepSevenSubmit || noop}
           onPreviousStep={() => onStepChange(6)}
@@ -191,8 +224,9 @@ export const FpcRegistrationForm: React.FC<FpcRegistrationFormProps> = ({
     default:
       return (
         <FpcBasicDetailsForm
+          ref={stepFormRef}
           invitation={activeInvitation}
-          initialData={drafts.step1}
+          initialData={withLegacyHeadcounts(drafts.step1, drafts.step3)}
           onSubmit={onStepOneSubmit || noop}
           onBackToLogin={onBackToLogin}
           isReadOnly={isReadOnly}
@@ -200,4 +234,6 @@ export const FpcRegistrationForm: React.FC<FpcRegistrationFormProps> = ({
         />
       );
   }
-};
+});
+
+FpcRegistrationForm.displayName = 'FpcRegistrationForm';

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { ChevronRight } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
@@ -10,7 +10,7 @@ import {
   addressLocationSchema,
   type AddressLocationFormValues,
 } from '../schemas/addressLocation.schema';
-import type { FpcAddressLocationFormData } from '../types';
+import type { FpcAddressLocationFormData, StepFormHandle } from '../types';
 import { addressLocationGuidance } from '../constants/fieldGuidance';
 import {
   CoordinateLocationControl,
@@ -75,13 +75,13 @@ const VILLAGE_OPTIONS = [
 const GEOCODE_FAILURE_MESSAGE =
   'Address lookup is unavailable right now. Use your current location or enter the coordinates manually.';
 
-export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
+export const FpcAddressLocationForm = forwardRef<StepFormHandle<AddressLocationFormValues>, FpcAddressLocationFormProps>(({
   initialData,
   onSubmit,
   onPreviousStep,
   isReadOnly = false,
   onNextStep,
-}) => {
+}, ref) => {
   const formValues: AddressLocationFormValues = {
     streetAddress: initialData?.streetAddress || '',
     state: initialData?.state || 'Odisha',
@@ -114,6 +114,14 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
     values: formValues,
     resetOptions: { keepDirtyValues: true },
   });
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getDraftValues: () => getValues(),
+    }),
+    [getValues]
+  );
 
   const gps = useDeviceLocation();
   const [triggerGeocode] = useLazyGeocodeAddressQuery();
@@ -258,12 +266,12 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
 
   const sourceHelperText =
     coordinateSource === 'gps'
-      ? 'Optional · From your device location'
+      ? 'From your device location'
       : coordinateSource === 'geocoding'
-        ? 'Optional · From the registered address'
+        ? 'From the registered address'
         : coordinateSource === 'manual'
-          ? 'Optional · Entered manually'
-          : 'Optional';
+          ? 'Entered manually'
+          : undefined;
 
   return (
     <form onSubmit={submit} className="space-y-6" noValidate>
@@ -477,7 +485,8 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
           <Input
             id="fpc-latitude"
             guidance={addressLocationGuidance.latitude}
-            label="Latitude"
+            label="Latitude *"
+            required
             disabled={isReadOnly}
             placeholder="Enter latitude"
             helperText={sourceHelperText}
@@ -492,7 +501,8 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
           <Input
             id="fpc-longitude"
             guidance={addressLocationGuidance.longitude}
-            label="Longitude"
+            label="Longitude *"
+            required
             disabled={isReadOnly}
             placeholder="Enter longitude"
             helperText={sourceHelperText}
@@ -563,4 +573,6 @@ export const FpcAddressLocationForm: React.FC<FpcAddressLocationFormProps> = ({
       </div>
     </form>
   );
-};
+});
+
+FpcAddressLocationForm.displayName = 'FpcAddressLocationForm';

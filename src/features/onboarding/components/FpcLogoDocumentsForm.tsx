@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { forwardRef, useImperativeHandle, useState } from 'react';
 import { Controller } from 'react-hook-form';
-import { Upload, Eye, Download } from 'lucide-react';
+import { Upload, Eye, Download, History } from 'lucide-react';
 import { Card } from '../../../shared/components/Card';
 import { Button } from '../../../shared/components/Button';
 import { Badge } from '../../../shared/components/Badge';
@@ -16,8 +16,10 @@ import {
   logoDocumentsSchema,
   type LogoDocumentsFormValues,
 } from '../schemas/logoDocuments.schema';
-import type { FpcLogoDocumentsFormData } from '../types';
+import type { FpcLogoDocumentsFormData, StepFormHandle } from '../types';
 import { logoDocumentsGuidance } from '../constants/fieldGuidance';
+import { buildSlotKey } from '../constants/documentTypes';
+import { DocumentVersionHistoryModal } from './DocumentVersionHistoryModal';
 
 /** Selected files held in component state only; never persisted to storage. */
 export type LogoDocumentsFileMap = Partial<Record<keyof LogoDocumentsFormValues, File>>;
@@ -29,6 +31,10 @@ export interface StoredFpcDocument {
   expiryDate?: string | null;
   storagePath?: string | null;
   uploadStatus?: string | null;
+  documentSlotKey?: string | null;
+  versionNumber?: number | null;
+  isLatest?: boolean | null;
+  amendmentNotes?: string | null;
 }
 
 export interface FpcLogoDocumentsFormProps {
@@ -78,7 +84,10 @@ const STATUTORY_DOCUMENTS: StatutoryDocConfig[] = [
   { key: 'boardResolutionDocName', title: 'Board Resolution / Supporting Documents', documentType: 'BoardResolution' },
 ];
 
-export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
+export const FpcLogoDocumentsForm = forwardRef<
+  StepFormHandle<LogoDocumentsFormValues, LogoDocumentsFileMap>,
+  FpcLogoDocumentsFormProps
+>(({
   initialData,
   onSubmit,
   onPreviousStep,
@@ -86,8 +95,30 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
   onNextStep,
   fpcId,
   storedDocuments,
-}) => {
+}, ref) => {
   const [triggerGetContent, { isLoading: isFetchingContent }] = useLazyGetFpcDocumentContentQuery();
+
+  const [activeHistoryModal, setActiveHistoryModal] = useState<{
+    isOpen: boolean;
+    slotTitle: string;
+    documentType: string;
+    slotKey: string;
+    fieldKey: keyof LogoDocumentsFormValues;
+  } | null>(null);
+
+  const handleOpenHistoryModal = (
+    title: string,
+    documentType: string,
+    fieldKey: keyof LogoDocumentsFormValues
+  ) => {
+    setActiveHistoryModal({
+      isOpen: true,
+      slotTitle: title,
+      documentType,
+      slotKey: buildSlotKey(documentType),
+      fieldKey,
+    });
+  };
 
   const handlePreviewDocument = async (documentId: string) => {
     if (!fpcId) return;
@@ -185,6 +216,7 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
   const {
     control,
     handleSubmit,
+    getValues,
     setError,
     formState: { errors, isSubmitting },
   } = useFpcForm<LogoDocumentsFormValues>({
@@ -193,6 +225,11 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
     values: formValues,
     resetOptions: { keepDirtyValues: true },
   });
+
+  useImperativeHandle(ref, () => ({
+    getDraftValues: () => getValues(),
+    getDraftFiles: () => selectedFiles,
+  }), [getValues, selectedFiles]);
 
   const submit = handleSubmit(async (values) => {
     try {
@@ -321,7 +358,7 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
 
                   return (
                     <div className="rounded-2xl border border-neutral-200/80 p-5 bg-white space-y-3.5 shadow-2xs">
-                      {/* Card Header: Title & Pending / Uploaded Badge */}
+                      {/* Card Header: Title & Pending / Uploaded / Version Badge */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-0.5 min-w-0">
                           <h5 className="font-semibold text-primary">
@@ -332,12 +369,21 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
                             fieldLabel={doc.title}
                           />
                         </div>
-                        <Badge
-                          variant={isUploaded ? 'brand' : 'warning'}
-                          size="sm"
-                        >
-                          {isUploaded ? 'Uploaded' : 'Pending'}
-                        </Badge>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {matchingDoc?.versionNumber ? (
+                            <Badge variant="brand" size="sm">
+                              v{matchingDoc.versionNumber} (Latest)
+                            </Badge>
+                          ) : isUploaded ? (
+                            <Badge variant="neutral" size="sm">
+                              Legacy Original
+                            </Badge>
+                          ) : (
+                            <Badge variant="warning" size="sm">
+                              Pending
+                            </Badge>
+                          )}
+                        </div>
                       </div>
 
                       {/* Subtext info */}
@@ -349,7 +395,7 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
                       {isReadOnly ? (
                         isUploaded ? (
                           docId && fpcId ? (
-                            <div className="flex items-center gap-2 pt-1">
+                            <div className="flex items-center gap-2 pt-1 flex-wrap">
                               <Button
                                 type="button"
                                 variant="secondary"
@@ -372,6 +418,18 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
                               >
                                 Download
                               </Button>
+                              {fpcId && (
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="xs"
+                                  onClick={() => handleOpenHistoryModal(doc.title, doc.documentType, doc.key)}
+                                  leadingIcon={<History className="w-3.5 h-3.5 text-neutral-600" />}
+                                  className="rounded-lg text-xs font-semibold bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                                >
+                                  History
+                                </Button>
+                              )}
                             </div>
                           ) : (
                             <div className="pt-1">
@@ -382,26 +440,44 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
                           )
                         ) : null
                       ) : (
-                        <label className="w-full rounded-2xl border border-dashed border-neutral-300 hover:border-neutral-400 p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-neutral-50/50 transition-colors">
-                          <input
-                            type="file"
-                            accept="application/pdf"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              field.onChange(file.name);
-                              rememberFile(doc.key, file);
-                            }}
-                          />
-                          <div className="flex items-center gap-1.5 font-semibold text-primary">
-                            <Upload className="w-3.5 h-3.5 text-secondary" />
-                            <span>Attach File</span>
-                          </div>
-                          <small className="text-secondary mt-0.5 block">
-                            PDF • Maximum 5 MB
-                          </small>
-                        </label>
+                        <div className="space-y-2">
+                          <label className="w-full rounded-2xl border border-dashed border-neutral-300 hover:border-neutral-400 p-4 sm:p-5 flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-neutral-50/50 transition-colors">
+                            <input
+                              type="file"
+                              accept="application/pdf"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                field.onChange(file.name);
+                                rememberFile(doc.key, file);
+                              }}
+                            />
+                            <div className="flex items-center gap-1.5 font-semibold text-primary">
+                              <Upload className="w-3.5 h-3.5 text-secondary" />
+                              <span>Attach File</span>
+                            </div>
+                            <small className="text-secondary mt-0.5 block">
+                              PDF • Maximum 5 MB
+                            </small>
+                          </label>
+
+                          {/* Version History & Amendments button when registered under an established FPC */}
+                          {fpcId && (
+                            <div className="flex items-center justify-between pt-0.5">
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="xs"
+                                onClick={() => handleOpenHistoryModal(doc.title, doc.documentType, doc.key)}
+                                leadingIcon={<History className="w-3.5 h-3.5 text-brand" />}
+                                className="rounded-lg text-xs font-semibold bg-brand-soft text-brand hover:bg-forest-100"
+                              >
+                                Version History & Amendments
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       )}
 
                       {/* Expiry Date Field if statutory license has an expiry date */}
@@ -472,6 +548,22 @@ export const FpcLogoDocumentsForm: React.FC<FpcLogoDocumentsFormProps> = ({
           </Button>
         )}
       </div>
+
+      {/* Document Version History Modal */}
+      {activeHistoryModal && fpcId && (
+        <DocumentVersionHistoryModal
+          isOpen={activeHistoryModal.isOpen}
+          onClose={() => setActiveHistoryModal(null)}
+          fpcId={fpcId}
+          slotKey={activeHistoryModal.slotKey}
+          documentType={activeHistoryModal.documentType}
+          slotTitle={activeHistoryModal.slotTitle}
+          canAmend={!isReadOnly}
+        />
+      )}
     </form>
   );
-};
+});
+
+FpcLogoDocumentsForm.displayName = 'FpcLogoDocumentsForm';
+

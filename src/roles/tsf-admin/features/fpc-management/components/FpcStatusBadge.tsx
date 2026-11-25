@@ -1,8 +1,21 @@
 import React from 'react';
 import { Badge, type BadgeVariant } from '../../../../../shared/components';
 
-/** FPC lifecycle statuses shown in FPC management tables. */
-export type FpcStatus = 'Active' | 'Onboarding' | 'Overdue' | 'Inactive' | 'Compliance';
+/**
+ * FPC and onboarding-invitation lifecycle statuses shown in FPC management tables.
+ * Invitation rows surface their own lifecycle (Pending/InProgress/Completed/Expired/Revoked).
+ */
+export type FpcStatus =
+  | 'Active'
+  | 'Onboarding'
+  | 'Overdue'
+  | 'Inactive'
+  | 'Compliance'
+  | 'Pending'
+  | 'InProgress'
+  | 'Completed'
+  | 'Expired'
+  | 'Revoked';
 
 const STATUS_VARIANTS: Record<FpcStatus, BadgeVariant> = {
   Active: 'brand',
@@ -10,6 +23,11 @@ const STATUS_VARIANTS: Record<FpcStatus, BadgeVariant> = {
   Overdue: 'warning',
   Inactive: 'neutral',
   Compliance: 'danger',
+  Pending: 'neutral',
+  InProgress: 'info',
+  Completed: 'brand',
+  Expired: 'warning',
+  Revoked: 'warning',
 };
 
 export interface FpcStatusBadgeProps {

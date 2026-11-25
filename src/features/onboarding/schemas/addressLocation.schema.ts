@@ -4,7 +4,7 @@ import {
   emailSchema,
   phoneSchema,
   pinCodeSchema,
-  coordinateStringSchema,
+  requiredCoordinateStringSchema,
 } from '../../../shared/validation/schemas';
 import { MAX_LATITUDE, MAX_LONGITUDE, MIN_LATITUDE, MIN_LONGITUDE } from '../../../shared/utils/coordinates';
 
@@ -22,30 +22,14 @@ export const addressLocationSchema = z
     pinCode: pinCodeSchema,
     officeMobile: phoneSchema,
     officialEmail: emailSchema,
-    latitude: coordinateStringSchema('Latitude', MIN_LATITUDE, MAX_LATITUDE),
-    longitude: coordinateStringSchema('Longitude', MIN_LONGITUDE, MAX_LONGITUDE),
+    latitude: requiredCoordinateStringSchema('Latitude', MIN_LATITUDE, MAX_LATITUDE),
+    longitude: requiredCoordinateStringSchema('Longitude', MIN_LONGITUDE, MAX_LONGITUDE),
     coordinateSource: coordinateSourceSchema,
     coordinatesConfirmed: z.boolean().optional(),
   })
   .superRefine((values, ctx) => {
     const latitude = (values.latitude ?? '').trim();
     const longitude = (values.longitude ?? '').trim();
-
-    if (latitude && !longitude) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['longitude'],
-        message: 'Enter the longitude as well, or clear the latitude',
-      });
-    }
-
-    if (!latitude && longitude) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['latitude'],
-        message: 'Enter the latitude as well, or clear the longitude',
-      });
-    }
 
     if (!latitude || !longitude) return;
 

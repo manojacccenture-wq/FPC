@@ -36,7 +36,7 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
   fileName,
   progress = 64,
   errorMessage = "The upload could not be completed. Check your connection and retry.",
-  accept = "PDF, PNG or JPG",
+  accept = "application/pdf,image/png,image/jpeg",
   maxSizeMB = 15,
   highlightMint = false,
   promptText,
@@ -130,6 +130,7 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
           else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = el;
         }}
         type="file"
+        accept={accept}
         disabled={isDisabled || isUploading}
         onChange={handleChange}
         className="hidden"
@@ -149,7 +150,7 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
               {fileName || promptText || 'Upload file'}
             </span>
             <small className="text-secondary mt-0.5 block">
-              {helperText || `${accept} • Maximum ${maxSizeMB} MB`}
+              {helperText || `PDF, PNG or JPG • Maximum ${maxSizeMB} MB`}
             </small>
           </div>
         ) : (
@@ -166,7 +167,7 @@ export const FileUpload = forwardRef<HTMLInputElement, FileUploadProps>(({
                 )}
               </p>
               <small className="text-secondary mt-0.5 block">
-                {helperText || `${accept} up to ${maxSizeMB}MB`}
+                {helperText || `PDF, PNG or JPG up to ${maxSizeMB}MB`}
               </small>
             </div>
           </div>
